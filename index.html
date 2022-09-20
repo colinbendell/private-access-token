@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Private Acccess Token Generator</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+</head>
+<body>
+    <h1>Private Acccess Token Generator</h1>
+    <label for="token_type">Token Type</label><br/>
+    <select id="token_type">
+        <option value="0">Basic</option>
+        <option value="1">ECDSA</option>
+        <option value="2" selected>RSA</option>
+        <option value="3">ECDSA (P-256)</option>
+    </select>
+    <br/>
+    <br/>
+    <label for="issuer_name">Issuer (hostname)</label><br/>
+    <select id="issuer_name">
+        <option value="demo-pat.issuer.cloudflare.com" selected>Cloudflare</option>
+        <option value="demo-issuer.private-access-tokens.fastly.com">Fastly</option>
+    </select>
+    <br/>
+    <br/>
+    <label for="redemption_context">Redemption Context (optional; disabled)</label><br/>
+    <input type="text" id="redemption_context" value="" disabled>
+    <br/>
+    <br/>
+    <label for="origin_info">Origin (hostname)</label><br/>
+    <input type="text" id="origin_info" placeholder="shoesbycolin.com">
+    <br/>
+    <br/>
+    <pre id="output"></pre>
+    <script>
+        const CLOUDFLARE_PUB_KEY="MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAysdWcET7XEBJbjsM-QPnk89xWDkmQy-hPRdvbbXiwMtWc8D2WJPfaE0diWcjbKjpJCJww_gzDIZgtTKjCs8Grya4sTCHCdGbC-_pDB4I5thB50fGQif5jLQ5wHY9J6ZGITmfcBGpZa1jT56jwcJOStgIWsvM5_vPt82NkzvsxAqQlu0x6XJ2X4htfslcRceLekxhYk-4qIzapMeU9fOvKX8002AZPYnF9H1aJhvwSGfO_vmpw0MIXB5ULOlsGnYSFgxnRcukfetBtUP7BOG6-IhOCowsfN_ExGQ6KQV89gf4nvr4WXWF6de20vnY13cFdw-iN3FVIQcqjEuvLgkqJwIDAQAB";
+        const FASTLY_PUB_KEY="MIICUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAg8AMIICCgKCAgEAubzND7lvK";
+        const publicKeys = new Map();
+        publicKeys.set('demo-pat.issuer.cloudflare.com', CLOUDFLARE_PUB_KEY);
+        publicKeys.set('demo-issuer.private-access-tokens.fastly.com', FASTLY_PUB_KEY);
+        function htons(n) {
+            return [(n >> 8) & 0xff, n & 0xff];
+        }
+        function getElement(id) {
+            return document.getElementById(id).value;
+        }
+        function bin2str(value = []) {
+            return value.map(char => String.fromCharCode(char)).join('');
+        }
+
+        function base64url(data) {
+            return btoa(data.replace(/\+/g,'-').replace(/\//g,'_'))
+        }
+
+        function getChallenge() {
+            const tokenType = parseInt(getElement("token_type"));
+            const issuerName = getElement("issuer_name");
+            const redemptionContext = getElement("redemption_context");
+            const originInfo = getElement("origin_info");
+            const challenge = bin2str(htons(tokenType))
+                + bin2str(htons(issuerName.length)) + issuerName
+                + bin2str(htons(redemptionContext.length)) + redemptionContext
+                + bin2str(htons(originInfo.length)) + originInfo
+
+            return base64url(challenge);
+        }
+
+        function update(){
+            document.getElementById('output').innerHTML = `WWW-Authenticate: PrivateToken
+    challenge=${getChallenge()},
+    token-key=${publicKeys.get(getElement("issuer_name"))}`;
+        }
+
+        function init() {
+            update();
+            document.getElementsByTagName('body')[0].onkeyup = update;
+            [...document.getElementsByTagName('select')].forEach(s => s.onchange = update);
+        }
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
