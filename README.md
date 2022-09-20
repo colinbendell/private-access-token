@@ -2,8 +2,8 @@
 
 Based on the ietf draft of [PrivacyPass](https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html):
 
-* [A PrivateAccess auth scheme generator](https://colinbendell.github.io/private-access-token/index.html) to produce a valid challenge token
-* [A PAT demo site](https://colinbendell.github.io/private-access-token/test.html) that only emits `WWW-Authenticate: PrivateAccess` auth schemes to test the flow on Safari16.
+* [A PrivateAccess auth scheme generator](https://private-access-token.colinbendell.dev) to produce a valid challenge token
+* [A PAT demo site](https://private-access-token.colinbendell.dev/test.html) that only emits `WWW-Authenticate: PrivateAccess` auth schemes to test the flow on Safari16.
 
 Currently PATs are only supported in Safari16 and use the [Private Access auth scheme](https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html). However there are a few important details for Safari 16:
 
