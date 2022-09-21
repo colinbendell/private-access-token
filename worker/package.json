@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "name": "worker",
+  "version": "1.0.0",
+  "description": "A simple PrivateToken auth scheme challenge",
+  "main": "index.js",
+  "author": "Colin Bendell <colin@bendell.ca>",
+  "license": "MIT",
+  "dependencies": {
+  },
+  "scripts": {
+    "format": "prettier --write '**/*.{js,css,json,md}'"
+  },
+  "devDependencies": {
+    "prettier": "^1.18.2"
+  }
+}
