@@ -5,68 +5,157 @@
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <title>Private Acccess Token Generator</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-</head>
-<body>
-    <h1>Private Acccess Token Generator</h1>
-    <label for="token_type">Token Type</label><br/>
-    <select id="token_type">
-        <option value="0">Basic</option>
-        <option value="1">ECDSA</option>
-        <option value="2" selected>RSA</option>
-        <option value="3">ECDSA (P-256)</option>
-    </select>
-    <br/>
-    <br/>
-    <label for="issuer_name">Issuer (hostname)</label><br/>
-    <select id="issuer_name">
-        <option value="demo-pat.issuer.cloudflare.com" selected>Cloudflare</option>
-        <option value="demo-issuer.private-access-tokens.fastly.com">Fastly</option>
-    </select>
-    <br/>
-    <br/>
-    <label for="redemption_context">Redemption Context (optional; disabled)</label><br/>
-    <input type="text" id="redemption_context" value="" disabled>
-    <br/>
-    <br/>
-    <label for="origin_info">Origin (hostname)</label><br/>
-    <input type="text" id="origin_info" placeholder="shoesbycolin.com">
-    <br/>
-    <br/>
-    <pre id="output"></pre>
+    <style>
+        /* Box sizing rules */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        /* Remove default margin */
+        body,
+        h1,
+        h2,
+        h3,
+        h4,
+        p,
+        figure,
+        blockquote,
+        dl,
+        dd {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, system-ui, sans-serif;
+        }
+
+        /* Remove list styles on ul, ol elements with a list role, which suggests default styling will be removed */
+        ul[role="list"],
+        ol[role="list"] {
+            list-style: none;
+        }
+
+        /* Set core root defaults */
+        html:focus-within {
+            scroll-behavior: smooth;
+        }
+
+        /* Set core body defaults */
+        body {
+            min-height: 100vh;
+            text-rendering: optimizeSpeed;
+            line-height: 1.5;
+        }
+
+        /* A elements that don't have a class get default styles */
+        a:not([class]) {
+            text-decoration-skip-ink: auto;
+        }
+
+        /* Make images easier to work with */
+        img,
+        picture {
+            max-width: 100%;
+            display: block;
+        }
+
+        /* Inherit fonts for inputs and buttons */
+        input,
+        button,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+        main {
+            margin: 1rem;
+        }
+
+        select, code {
+            display: block;
+        }
+
+        code {
+            font-family: monospace;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr 4fr);
+            grid-column-gap: 0.5rem;
+            max-width: 60rem;
+        }
+        .grid label {
+            grid-column: span 2 / auto;
+            margin-top: 0.5rem;
+        }
+        .grid select {
+            margin-bottom: auto;
+        }
+        .grid input {
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+        .grid pre {
+            overflow: scroll;
+            grid-column: span 2 / auto;
+        }
+
+    </style>
     <script>
-        const CLOUDFLARE_PUB_KEY="MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAm6JetF74YBtERLPcIcqd5545MmIky5yVFiGXPPt28Ddn_5bPWvNxpB6AHrsr3Yn2ex6seGsW0B12M0HqPgvRaiWeAv3jiV52ikdfoHYdBxJBe-ykvjE-hktUXZ6KHk8A87hfoSMNOiB9Upm_TmRaVR_dybG2yXuF8hm6C5N6BZ8nNm9af4DETtDMeJFCUI_bLwoYfzI__YSzYIgeA3ywwdECUDy98u_t9Rc5tO27omB61d4akr6YetiRsJnoAd-muzM-IW12V-1oEbZAjT5AcfHlzpaVu-0o4TL8RhwLxobv9mRCjNjuOvEFau-ATaw8VlJv1_nhfyyu96kV3JQ__wIDAQAB";
-        const FASTLY_PUB_KEY="MIICUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAg8AMIICCgKCAgEAubzND7lvK";
+        const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAm6JetF74YBtERLPcIcqd5545MmIky5yVFiGXPPt28Ddn_5bPWvNxpB6AHrsr3Yn2ex6seGsW0B12M0HqPgvRaiWeAv3jiV52ikdfoHYdBxJBe-ykvjE-hktUXZ6KHk8A87hfoSMNOiB9Upm_TmRaVR_dybG2yXuF8hm6C5N6BZ8nNm9af4DETtDMeJFCUI_bLwoYfzI__YSzYIgeA3ywwdECUDy98u_t9Rc5tO27omB61d4akr6YetiRsJnoAd-muzM-IW12V-1oEbZAjT5AcfHlzpaVu-0o4TL8RhwLxobv9mRCjNjuOvEFau-ATaw8VlJv1_nhfyyu96kV3JQ__wIDAQAB";
+        const FASTLY_PUB_KEY = "MIICUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAg8AMIICCgKCAgEAubzND7lvK";
         const publicKeys = new Map();
         publicKeys.set('demo-pat.issuer.cloudflare.com', CLOUDFLARE_PUB_KEY);
         publicKeys.set('demo-issuer.private-access-tokens.fastly.com', FASTLY_PUB_KEY);
+
+        function htonl(n) {
+            return [(n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+        }
+
         function htons(n) {
             return [(n >> 8) & 0xff, n & 0xff];
         }
+
         function getElement(id) {
             return document.getElementById(id).value;
         }
+
         function bin2str(value = []) {
             return value.map(char => String.fromCharCode(char)).join('');
         }
 
         function base64url(data) {
-            return btoa(data.replace(/\+/g,'-').replace(/\//g,'_'))
+            return btoa(data).replace(/\+/g, '-').replace(/\//g, '_')
+        }
+
+        function debugHex(name, value) {
+            document.getElementById(name).innerHTML = JSON.stringify(value).replaceAll(',', ', ');
         }
 
         function getChallenge() {
             const tokenType = parseInt(getElement("token_type"));
             const issuerName = getElement("issuer_name");
-            const redemptionContext = getElement("redemption_context");
+            const redemptionContext = parseInt(getElement("redemption_context"));
             const originInfo = getElement("origin_info");
+
+            debugHex('token_type_debug', htons(tokenType));
+            debugHex('issuer_name_length_debug', htons(issuerName.length));
+            debugHex('issuer_name_debug', [...new TextEncoder().encode(issuerName)]);
+            debugHex('redemption_context_length_debug', redemptionContext ? [32] : [0]);
+            debugHex('redemption_context_debug', redemptionContext ? htonl(redemptionContext) : []);
+            debugHex('origin_info_length_debug', htons(originInfo.length));
+            debugHex('origin_info_debug', [...new TextEncoder().encode(originInfo)]);
+
             const challenge = bin2str(htons(tokenType))
                 + bin2str(htons(issuerName.length)) + issuerName
-                + bin2str(htons(redemptionContext.length)) + redemptionContext
+                + bin2str(redemptionContext ? [32] : [0]) + bin2str(redemptionContext ? htonl(redemptionContext) : [])
                 + bin2str(htons(originInfo.length)) + originInfo
 
             return base64url(challenge);
         }
 
-        function update(){
+        function update() {
             document.getElementById('output').innerHTML = `WWW-Authenticate: PrivateToken
     challenge=${getChallenge()},
     token-key=${publicKeys.get(getElement("issuer_name"))}`;
@@ -76,8 +165,49 @@
             update();
             document.getElementsByTagName('body')[0].onkeyup = update;
             [...document.getElementsByTagName('select')].forEach(s => s.onchange = update);
+            [...document.getElementsByTagName('input')].forEach(s => s.onchange = update);
         }
+
         window.addEventListener('load', init);
     </script>
+</head>
+<body>
+<main>
+    <h1>Private Acccess Token Generator</h1>
+    <div class="grid">
+            <label for="token_type">Token Type</label>
+            <select id="token_type">
+                <option value="0">Basic</option>
+                <option value="1">ECDSA</option>
+                <option value="2" selected>RSA</option>
+                <option value="3">ECDSA (P-256)</option>
+            </select>
+        <div>
+            <code id="token_type_debug"></code>
+        </div>
+            <label for="issuer_name">Issuer (hostname)</label>
+            <select id="issuer_name">
+                <option value="demo-pat.issuer.cloudflare.com" selected>Cloudflare</option>
+                <option value="demo-issuer.private-access-tokens.fastly.com">Fastly</option>
+            </select>
+        <div>
+            <code id="issuer_name_length_debug"></code>
+            <code id="issuer_name_debug"></code>
+        </div>
+            <label for="redemption_context">Redemption Context</label>
+            <input type="number" min="0" max="4294967295" id="redemption_context" value="">
+        <div>
+            <code id="redemption_context_length_debug"></code>
+            <code id="redemption_context_debug"></code>
+        </div>
+            <label for="origin_info">Origin (hostname)</label>
+            <input type="text" id="origin_info" placeholder="shoesbycolin.com">
+        <div>
+            <code id="origin_info_length_debug"></code>
+            <code id="origin_info_debug"></code>
+        </div>
+        <pre id="output"></pre>
+    </div>
+</main>
 </body>
 </html>
