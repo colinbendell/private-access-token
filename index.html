@@ -3,7 +3,7 @@
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>Private Acccess Token Generator</title>
+    <title>Private Access Token Generator</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <style>
         /* Box sizing rules */
@@ -102,11 +102,19 @@
             grid-column: span 2 / auto;
         }
 
+        .grid .grid {
+            grid-template-columns: repeat(1, 4fr 1fr);
+        }
+
     </style>
     <script>
         const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAm6JetF74YBtERLPcIcqd5545MmIky5yVFiGXPPt28Ddn_5bPWvNxpB6AHrsr3Yn2ex6seGsW0B12M0HqPgvRaiWeAv3jiV52ikdfoHYdBxJBe-ykvjE-hktUXZ6KHk8A87hfoSMNOiB9Upm_TmRaVR_dybG2yXuF8hm6C5N6BZ8nNm9af4DETtDMeJFCUI_bLwoYfzI__YSzYIgeA3ywwdECUDy98u_t9Rc5tO27omB61d4akr6YetiRsJnoAd-muzM-IW12V-1oEbZAjT5AcfHlzpaVu-0o4TL8RhwLxobv9mRCjNjuOvEFau-ATaw8VlJv1_nhfyyu96kV3JQ__wIDAQAB";
         const FASTLY_PUB_KEY = "MIICUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAg8AMIICCgKCAgEAubzND7lvK";
-        const publicKeys = new Map();
+        const publicKeys = new Map([
+            ['demo-pat.issuer.cloudflare.com', CLOUDFLARE_PUB_KEY],
+            ['demo-issuer.private-access-tokens.fastly.com', FASTLY_PUB_KEY],
+
+        ]);
         publicKeys.set('demo-pat.issuer.cloudflare.com', CLOUDFLARE_PUB_KEY);
         publicKeys.set('demo-issuer.private-access-tokens.fastly.com', FASTLY_PUB_KEY);
 
@@ -143,9 +151,8 @@
         }
 
         function generateRedemption() {
-            const randValue = Array(32).fill(0).map(() => Math.round(Math.random()*255).toString(16).padStart(2, '0')).join('');
-            document.getElementById("redemption_context").value = randValue;
-            update();
+            const value = Array(32).fill(0).map(() => Math.round(Math.random()*255).toString(16).padStart(2, '0')).join('');
+            document.getElementById("redemption_context").value = value;
         }
 
         function hexToByte(s) {
@@ -175,7 +182,7 @@
                 htons(originInfo.length),
                 originInfo)
 
-            debugHex('debug', challenge);
+            debugHex('challenge_debug', challenge);
 
             return bin2str(challenge);
         }
@@ -189,8 +196,9 @@
         function init() {
             update();
             document.getElementsByTagName('body')[0].onkeyup = update;
-            [...document.getElementsByTagName('select')].forEach(s => s.onchange = update);
-            [...document.getElementsByTagName('input')].forEach(s => s.onchange = update);
+            [...document.getElementsByTagName('select')].forEach(s => s.addEventListener('change', update));
+            [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('change', update));
+            [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('click', update));
         }
 
         window.addEventListener('load', init);
@@ -213,8 +221,8 @@
         </div>
             <label for="issuer_name">Issuer (hostname)</label>
             <select id="issuer_name">
-                <option value="demo-pat.issuer.cloudflare.com" selected>Cloudflare</option>
-                <option value="demo-issuer.private-access-tokens.fastly.com">Fastly</option>
+                <option value="demo-pat.issuer.cloudflare.com" selected>Cloudflare (demo-pat.issuer.cloudflare.com)</option>
+                <option value="demo-issuer.private-access-tokens.fastly.com">Fastly (demo-issuer.private-access-tokens.fastly.com)</option>
             </select>
         <div>
             <code id="issuer_name_length_debug"></code>
@@ -236,9 +244,10 @@
             <code id="origin_info_debug"></code>
         </div>
 
-        <label for="debug">Final <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.1">TokenChallenge</a></label>
-        <div></div>
-        <div><code id="debug"></code></div>
+        <label for="challenge_debug">&nbsp;</label>
+        <div>TokenChallenge</div>
+        <div><code id="challenge_debug"></code></div>
+
         <pre id="output"></pre>
     </div>
 </main>
