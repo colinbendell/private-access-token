@@ -118,6 +118,10 @@
             return [(n >> 8) & 0xff, n & 0xff];
         }
 
+        function stringToBinary(value) {
+            return [...new TextEncoder().encode(value ?? '')]
+        }
+
         function getElement(id) {
             return document.getElementById(id).value;
         }
@@ -130,35 +134,55 @@
             return btoa(data).replace(/\+/g, '-').replace(/\//g, '_')
         }
 
-        function debugHex(name, value) {
-            document.getElementById(name).innerHTML = JSON.stringify(value).replaceAll(',', ', ');
+        function debugHex(name, value = []) {
+            // hex encode
+            // document.getElementById(name).innerHTML = "[" + value.map(v => v.toString(16).padStart(2, '0')).join(", ") + "]";
+
+            // keep decimal encode - because humans
+            document.getElementById(name).innerHTML = JSON.stringify(value).replaceAll(",", ", ");
+        }
+
+        function generateRedemption() {
+            const randValue = Array(32).fill(0).map(() => Math.round(Math.random()*255).toString(16).padStart(2, '0')).join('');
+            document.getElementById("redemption_context").value = randValue;
+            update();
+        }
+
+        function hexToByte(s) {
+            return s?.replaceAll(/[^0-9a-z]/gi, '0')?.match(/.{1,2}/g)?.map(a => parseInt(a, 16));
         }
 
         function getChallenge() {
             const tokenType = parseInt(getElement("token_type"));
-            const issuerName = getElement("issuer_name");
-            const redemptionContext = parseInt(getElement("redemption_context"));
-            const originInfo = getElement("origin_info");
+            const issuerName = stringToBinary(getElement("issuer_name"));
+            const redemptionContext = hexToByte(getElement("redemption_context"))?.concat(Array(32).fill(0))?.slice(0,32) || [];
+            const originInfo = stringToBinary(getElement("origin_info"));
 
             debugHex('token_type_debug', htons(tokenType));
             debugHex('issuer_name_length_debug', htons(issuerName.length));
-            debugHex('issuer_name_debug', [...new TextEncoder().encode(issuerName)]);
-            debugHex('redemption_context_length_debug', redemptionContext ? [32] : [0]);
-            debugHex('redemption_context_debug', redemptionContext ? htonl(redemptionContext) : []);
+            debugHex('issuer_name_debug', issuerName);
+            debugHex('redemption_context_length_debug', [redemptionContext.length]);
+            debugHex('redemption_context_debug', redemptionContext);
             debugHex('origin_info_length_debug', htons(originInfo.length));
-            debugHex('origin_info_debug', [...new TextEncoder().encode(originInfo)]);
+            debugHex('origin_info_debug', originInfo);
 
-            const challenge = bin2str(htons(tokenType))
-                + bin2str(htons(issuerName.length)) + issuerName
-                + bin2str(redemptionContext ? [32] : [0]) + bin2str(redemptionContext ? htonl(redemptionContext) : [])
-                + bin2str(htons(originInfo.length)) + originInfo
+            const challenge = [].concat(
+                htons(tokenType),
+                htons(issuerName.length),
+                issuerName,
+                [redemptionContext.length],
+                redemptionContext,
+                htons(originInfo.length),
+                originInfo)
 
-            return base64url(challenge);
+            debugHex('debug', challenge);
+
+            return bin2str(challenge);
         }
 
         function update() {
             document.getElementById('output').innerHTML = `WWW-Authenticate: PrivateToken
-    challenge=${getChallenge()},
+    challenge=${base64url(getChallenge())},
     token-key=${publicKeys.get(getElement("issuer_name"))}`;
         }
 
@@ -174,9 +198,8 @@
 </head>
 <body>
 <main>
-    <h1>Private Access Token Generator</h1>
-    
-    <a href="/test.html">Test Private Access Token Scheme</a>
+    <h1>Private Access Token Generator <a href="https://github.com/colinbendell/private-access-token"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a></h1>
+    <div>This tools helps generate TokenChallenge structs used in a <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.1">PrivateToken</a> HTTP Authentication scheme. A <a href="/test.html">test implementation</a> is also available.</div>
     <div class="grid">
             <label for="token_type">Token Type</label>
             <select id="token_type">
@@ -197,8 +220,11 @@
             <code id="issuer_name_length_debug"></code>
             <code id="issuer_name_debug"></code>
         </div>
-            <label for="redemption_context">Redemption Context</label>
-            <input type="number" min="0" max="4294967295" id="redemption_context" value="">
+        <label for="redemption_context">Redemption Context</label>
+        <div class="grid">
+            <input type="text" id="redemption_context" value="">
+            <input type="button" value="Generate" onclick="generateRedemption()">
+        </div>
         <div>
             <code id="redemption_context_length_debug"></code>
             <code id="redemption_context_debug"></code>
@@ -209,6 +235,10 @@
             <code id="origin_info_length_debug"></code>
             <code id="origin_info_debug"></code>
         </div>
+
+        <label for="debug">Final <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.1">TokenChallenge</a></label>
+        <div></div>
+        <div><code id="debug"></code></div>
         <pre id="output"></pre>
     </div>
 </main>
