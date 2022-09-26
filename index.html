@@ -67,10 +67,23 @@
             font: inherit;
         }
 
-        main {
-            margin: 1rem;
+        html {
+            max-width: 70ch;
+            padding: 3em 1em;
+            margin: auto;
+            line-height: 1.75;
+            font-size: 1.25em;
         }
-
+        p,ul,ol {
+            margin-bottom: 2em;
+            color: #1d1d1d;
+            font-family: sans-serif;
+        }
+        main {
+            max-width: 38rem;
+            width: 38rem;
+            padding: 2rem;
+        }
         select, code {
             display: block;
         }
@@ -83,7 +96,6 @@
             display: grid;
             grid-template-columns: repeat(1, 1fr 4fr);
             grid-column-gap: 0.5rem;
-            max-width: 60rem;
         }
         .grid label {
             grid-column: span 2 / auto;
@@ -96,6 +108,10 @@
             margin-top: 0.25rem;
             margin-bottom: auto;
             line-height: 1rem;
+            min-width: 10rem;
+        }
+        .grid input[type="button"] {
+            min-width: auto;
         }
         .grid pre {
             overflow: scroll;
@@ -113,10 +129,7 @@
         const publicKeys = new Map([
             ['demo-pat.issuer.cloudflare.com', CLOUDFLARE_PUB_KEY],
             ['demo-issuer.private-access-tokens.fastly.com', FASTLY_PUB_KEY],
-
         ]);
-        publicKeys.set('demo-pat.issuer.cloudflare.com', CLOUDFLARE_PUB_KEY);
-        publicKeys.set('demo-issuer.private-access-tokens.fastly.com', FASTLY_PUB_KEY);
 
         function htonl(n) {
             return [(n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
@@ -207,23 +220,26 @@
 <body>
 <main>
     <h1>Private Access Token Generator <a href="https://github.com/colinbendell/private-access-token"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a></h1>
-    <div>This tools helps generate TokenChallenge structs used in a <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.1">PrivateToken</a> HTTP Authentication scheme. A <a href="/test.html">test implementation</a> is also available.</div>
+    <p>Safari 16 introduced support for Private Access Tokens. This tool helps generate valid <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.1">PrivateToken</a> challenges for HTTP Authentication scheme.
+        <br>
+        👉 <a href="/test.html">Test your browser</a>
+    </p>
     <div class="grid">
-            <label for="token_type">Token Type</label>
-            <select id="token_type">
-                <option value="0">Basic</option>
-                <option value="1">ECDSA</option>
-                <option value="2" selected>RSA</option>
-                <option value="3">ECDSA (P-256)</option>
-            </select>
+        <label for="token_type">Token Type</label>
+        <select id="token_type">
+            <option value="0">Basic</option>
+            <option value="1">ECDSA</option>
+            <option value="2" selected>RSA</option>
+            <option value="3">ECDSA (P-256)</option>
+        </select>
         <div>
             <code id="token_type_debug"></code>
         </div>
-            <label for="issuer_name">Issuer (hostname)</label>
-            <select id="issuer_name">
-                <option value="demo-pat.issuer.cloudflare.com" selected>Cloudflare (demo-pat.issuer.cloudflare.com)</option>
-                <option value="demo-issuer.private-access-tokens.fastly.com">Fastly (demo-issuer.private-access-tokens.fastly.com)</option>
-            </select>
+        <label for="issuer_name">Issuer (hostname)</label>
+        <select id="issuer_name">
+            <option value="demo-pat.issuer.cloudflare.com" selected>Cloudflare</option>
+            <option value="demo-issuer.private-access-tokens.fastly.com">Fastly</option>
+        </select>
         <div>
             <code id="issuer_name_length_debug"></code>
             <code id="issuer_name_debug"></code>
