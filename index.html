@@ -124,7 +124,7 @@
 
     </style>
     <script>
-        const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAm6JetF74YBtERLPcIcqd5545MmIky5yVFiGXPPt28Ddn_5bPWvNxpB6AHrsr3Yn2ex6seGsW0B12M0HqPgvRaiWeAv3jiV52ikdfoHYdBxJBe-ykvjE-hktUXZ6KHk8A87hfoSMNOiB9Upm_TmRaVR_dybG2yXuF8hm6C5N6BZ8nNm9af4DETtDMeJFCUI_bLwoYfzI__YSzYIgeA3ywwdECUDy98u_t9Rc5tO27omB61d4akr6YetiRsJnoAd-muzM-IW12V-1oEbZAjT5AcfHlzpaVu-0o4TL8RhwLxobv9mRCjNjuOvEFau-ATaw8VlJv1_nhfyyu96kV3JQ__wIDAQAB";
+        const CLOUDFLARE_PUB_KEY = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm6JetF74YBtERLPcIcqd5545MmIky5yVFiGXPPt28Ddn_5bPWvNxpB6AHrsr3Yn2ex6seGsW0B12M0HqPgvRaiWeAv3jiV52ikdfoHYdBxJBe-ykvjE-hktUXZ6KHk8A87hfoSMNOiB9Upm_TmRaVR_dybG2yXuF8hm6C5N6BZ8nNm9af4DETtDMeJFCUI_bLwoYfzI__YSzYIgeA3ywwdECUDy98u_t9Rc5tO27omB61d4akr6YetiRsJnoAd-muzM-IW12V-1oEbZAjT5AcfHlzpaVu-0o4TL8RhwLxobv9mRCjNjuOvEFau-ATaw8VlJv1_nhfyyu96kV3JQ__wIDAQAB";
         const FASTLY_PUB_KEY = "MIICUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAg8AMIICCgKCAgEAubzND7lvK";
         const publicKeys = new Map([
             ['demo-pat.issuer.cloudflare.com', CLOUDFLARE_PUB_KEY],
@@ -196,6 +196,7 @@
                 originInfo)
 
             debugHex('challenge_debug', challenge);
+            document.getElementById('challenge_base64_debug').innerHTML = base64url(bin2str(challenge)).match(/.{1,35}/g)?.join('<br>');
 
             return bin2str(challenge);
         }
@@ -237,8 +238,8 @@
         </div>
         <label for="issuer_name">Issuer (hostname)</label>
         <select id="issuer_name">
-            <option value="demo-pat.issuer.cloudflare.com" selected>Cloudflare</option>
-            <option value="demo-issuer.private-access-tokens.fastly.com">Fastly</option>
+            <option value="demo-pat.issuer.cloudflare.com" selected>…issuer.cloudflare.com</option>
+            <option value="demo-issuer.private-access-tokens.fastly.com">…issuer.fastly.com</option>
         </select>
         <div>
             <code id="issuer_name_length_debug"></code>
@@ -260,9 +261,12 @@
             <code id="origin_info_debug"></code>
         </div>
 
-        <label for="challenge_debug">&nbsp;</label>
-        <div>TokenChallenge</div>
-        <div><code id="challenge_debug"></code></div>
+<!--        <label for="challenge_debug">&nbsp;</label>-->
+        <div style="margin-top:1.5rem">TokenChallenge</div>
+        <div style="margin-top:1.5rem">
+            <code id="challenge_debug"></code>
+            <code id="challenge_base64_debug" style="margin-top:1rem"></code>
+        </div>
 
         <pre id="output"></pre>
     </div>
