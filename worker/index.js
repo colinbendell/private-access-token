@@ -1,15 +1,23 @@
-const TOKEN = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAmfx9AB3xGHk6MJhEo4QbUEv2ACjOFB8NV3kUuCSCldhSDKw5MNenDdSJGY8o9e4Zjlt249qJraUsstvhS7_6uKVfnf4-F80uUAnFvBkBQw3AmxoUN62VFZEF8JdQVRLobDD8R6Ck6Om4YSBDJ4Rc_F0_1p-aJXfVxb5MVTDGk7OKO00EDviNRP2an-nx67K8b7SgPyf6soZqgkLRg-IX7vJCMcnBNB7nxnCwAW1Og_AbnFjYUtbEgjcn3QJouFeFtQKMgXTqAJvjvGAaVZTgASucZrVmXRXg-zTKVkSmbl298zqooaz1eBAPy4M4SfQtfx-AiHJMjYYdA2NmzJz0qwIDAQAB";
-const CHALLENGE = "AAIAHmRlbW8tcGF0Lmlzc3Vlci5jbG91ZGZsYXJlLmNvbQAAAA==";
+const TOKEN_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA31_dzDPwYTZrxWRWlYcB8Qa2tiZ6VMUVDLNgLsLtl2jXDiF7i0JQjgWLS28X7o3-fgeKSh7290F1-6OksevONnjgwt2ejDqXZIQRqDpZX8ynZvRxsoU84fU48paBbEA8WrkIxtxT5vpf1xCodelaFfssNTg7I8ipFJNa_rCI3UGkkgTwkeytstZBCEhlkhAylZeNGI5KMP-j1-QboOEip5OkcI2zYycNF88l9pW8JBE3YRleUMwq42VX_EskAWOzu6MiZS38656zLoypug-44miauLTFVBQ1S-YTcuzm9AUEMJ_LlO6EbHAvtjvMzWzyDLaFWystwwadoVE7mqrwmwIDAQAB";
+const CHALLENGE = "AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=";
 const CHALLENGE_PREFIX = "AAIAHmRlbW8tcGF0Lmlzc3Vlci5jbG91ZGZsYXJlLmNvbSA"; // select cloudflare as origin
 const CHALLENGE_SUFFIX = "AAlcHJpdmF0ZS1hY2Nlc3MtdG9rZW4uY29saW5iZW5kZWxsLmRldg=="; // specify private-acccess-token.colinbendell.dev as origin
-// const WWW_AUTHENTICATE = `PrivateToken challenge=${CHALLENGE}, token-key=${TOKEN}, max-age=60`
 
 async function handleRequest(request) {
   if (!request.url.includes('/test.html')) {
     return fetch(request);
   }
 
-  const auth = request.headers.get("Authorization")?.split('PrivateToken token=')[1];
+  const query = request.url.split('?')[1]
+  const challenge = query?.split('challenge=')[1]?.split('&')[0] || CHALLENGE;
+//   const nonce = btoa(crypto.getRandomValues(new Uint16Array(33))).substring(1,43); // 31bytes (even though it should be 32)
+//   const challenge = `${CHALLENGE_PREFIX}${nonce}${CHALLENGE_SUFFIX}`;
+
+  const publicKey = query?.split('key=')[1]?.split('&')[0] || TOKEN_KEY;
+  const tokenParam = query?.split('token=')[1]?.split('&')[0];
+  const tokenHeader = request.headers.get("Authorization")?.split('PrivateToken token=')[1];
+
+  const auth = tokenHeader || tokenParam;
   if (auth) {
     return new Response(`<!DOCTYPE html>
 <html lang="en">
@@ -82,7 +90,6 @@ async function handleRequest(request) {
 
         html {
             max-width: 70ch;
-            padding: 3em 1em;
             margin: auto;
             line-height: 1.75;
             font-size: 1.25em;
@@ -93,12 +100,12 @@ async function handleRequest(request) {
             font-family: sans-serif;
         }
         main {
-            max-width: 38rem;
-            width: 38rem;
             padding: 2rem;
         }
-        select, code {
+        select, code, input {
             display: block;
+            width: 100%;
+            margin-bottom: 0.5rem;
         }
 
         code {
@@ -106,7 +113,7 @@ async function handleRequest(request) {
         }
     </style>
     <script>
-        const CLOUDFLARE_PUB_KEY = "${TOKEN}";
+        const CLOUDFLARE_PUB_KEY = "${publicKey}";
 
         function getElement(id) {
             return document.getElementById(id).value;
@@ -143,7 +150,9 @@ async function handleRequest(request) {
             return Uint8Array.from(base64urlDecode(base64_string), c => c.charCodeAt(0));
         }
 
-
+        function compareArray(a, b) {
+            return a.toString() === b.toString();
+        }
         async function parseToken() {
             const token = getElement("token");
             const binToken = str2bin(base64urlDecode(token))
@@ -153,16 +162,24 @@ async function handleRequest(request) {
             const challenge = binToken.slice(34,66);
             const tokenKeyID = binToken.slice(66,98);
             const authenticator = binToken.slice(98);
+            
             debugHex('token_type_debug', tokenType);
             debugHex('nonce_debug', nonce);
             debugHex('challenge_digest_debug', challenge);
             debugHex('token_key_id_debug', tokenKeyID);
             debugHex('authenticator_debug', authenticator);
+
+            const expectedChallenge = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(str2bin(base64urlDecode("${challenge}"))))));            
+            document.querySelector("label[for='token_type_debug'] span").textContent = compareArray(tokenType, [0,2]) ? '✅ ' : '❌ ';
+            document.querySelector("label[for='nonce_debug'] span").textContent = nonce.length === 32 ? '✅ ' : '❌ ';
+            document.querySelector("label[for='challenge_digest_debug'] span").textContent = compareArray(expectedChallenge, challenge) ? '✅ ' : '❌ ';
+            document.querySelector("label[for='authenticator_debug'] span").textContent = authenticator.length === 256 ? '✅ ' : '❌ ';
+            
             try {
                 const publicKey = await crypto.subtle.importKey("spki", b642ab(CLOUDFLARE_PUB_KEY), { name: "RSA-PSS", hash: "SHA-384" }, false, ["verify"])
-                const signature = Uint8Array.from(token.slice(0,98))
-                const encoded = Uint8Array.from(token.slice(98))
-                console.log(await crypto.subtle.verify({name:"RSA-PSS", saltLength: 256},  publicKey, signature, encoded ));
+                const data = Uint8Array.from(binToken.slice(0,98))
+                const signature = Uint8Array.from(binToken.slice(98))
+                console.log(await crypto.subtle.verify({name:"RSA-PSS", saltLength: 48},  publicKey, signature, data ));
             }
             catch (e) {
                 console.error(e);
@@ -184,20 +201,17 @@ async function handleRequest(request) {
 <main>
     <h1>👍 Public Access Token Works!</h1>
     <div>
-        <div>
         <label for="token">Token</label>
-        <input id="token" type="text" value="${auth}">
-        </div>
-        <code id="token_debug"></code>
-        <label for="token_type_debug">Token Type</label>
+        <input id="token" type="text" disabled value="${auth}">
+        <label for="token_type_debug"><span></span>Token Type</label>
         <code id="token_type_debug"></code>
-        <label for="nonce_debug">Nonce</label>
+        <label for="nonce_debug"><span></span>Nonce</label>
         <code id="nonce_debug"></code>
-        <label for="challenge_digest_debug">Challenge Digest</label>
+        <label for="challenge_digest_debug"><span></span>Challenge Digest</label>
         <code id="challenge_digest_debug"></code>
-        <label for="token_key_id_debug">Token Key ID</label>
+        <label for="token_key_id_debug"><span></span>Token Key ID</label>
         <code id="token_key_id_debug"></code>
-        <label for="authenticator_debug">Authenticator</label>
+        <label for="authenticator_debug"><span></span>Authenticator</label>
         <code id="authenticator_debug"></code>
     </div>
 </main>
@@ -210,8 +224,6 @@ async function handleRequest(request) {
     });
   }
 
-  const nonce = btoa(crypto.getRandomValues(new Uint16Array(33))).substring(1,43); // 31bytes (even though it should be 32)
-  const challenge = `${CHALLENGE_PREFIX}${nonce}${CHALLENGE_SUFFIX}`;
   const resp = new Response(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -227,7 +239,7 @@ async function handleRequest(request) {
     status: 401,
     headers: {
       'Content-Type': `text/html`,
-      'WWW-Authenticate': `PrivateToken challenge=${challenge}, token-key=${TOKEN}`,
+      'WWW-Authenticate': `PrivateToken challenge=${challenge}, token-key=${publicKey}`,
     },
   });
 
