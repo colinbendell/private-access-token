@@ -69,7 +69,7 @@
 
         html {
             max-width: 70ch;
-            padding: 3em 1em;
+            /*padding: 3em 1em;*/
             margin: auto;
             line-height: 1.75;
             font-size: 1.25em;
@@ -207,6 +207,7 @@
             document.getElementById('output').innerHTML = `WWW-Authenticate: PrivateToken
     challenge=${base64url(getChallenge())},
     token-key=${publicKeys.get(getElement("issuer_name"))}`;
+            document.getElementById('test').href = `/test.html?challenge=${base64url(getChallenge())}&key=${publicKeys.get(getElement("issuer_name"))}`;
         }
 
         function init() {
@@ -263,7 +264,7 @@
         </div>
 
 <!--        <label for="challenge_debug">&nbsp;</label>-->
-        <div style="margin-top:1.5rem">TokenChallenge</div>
+        <div style="margin-top:1.5rem"><a id="test">TokenChallenge</a></div>
         <div style="margin-top:1.5rem">
             <code id="challenge_debug"></code>
             <code id="challenge_base64_debug" style="margin-top:1rem"></code>
