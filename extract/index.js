@@ -62,8 +62,8 @@ async function build() {
         const path = __dirname + '/../' + file;
         const content = fs.readFileSync(path, 'utf8');
         const newContent = content
-        .replace(/CLOUDFLARE_PUB_KEY = .*;/g, `CLOUDFLARE_PUB_KEY = "${prodKey}"`)
-        .replace(/CLOUDFLARE_DEMO_PUB_KEY/g, `CLOUDFLARE_DEMO_PUB_KEY = "${demoKey}"`);
+        .replace(/CLOUDFLARE_PUB_KEY = .*;/g, `CLOUDFLARE_PUB_KEY = "${prodKey}";`)
+        .replace(/CLOUDFLARE_DEMO_PUB_KEY = .*;/g, `CLOUDFLARE_DEMO_PUB_KEY = "${demoKey}";`);
         fs.writeFileSync(path, newContent, 'utf8');
     }
 }
