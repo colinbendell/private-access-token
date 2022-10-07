@@ -1,4 +1,4 @@
-const TOKEN_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA31_dzDPwYTZrxWRWlYcB8Qa2tiZ6VMUVDLNgLsLtl2jXDiF7i0JQjgWLS28X7o3-fgeKSh7290F1-6OksevONnjgwt2ejDqXZIQRqDpZX8ynZvRxsoU84fU48paBbEA8WrkIxtxT5vpf1xCodelaFfssNTg7I8ipFJNa_rCI3UGkkgTwkeytstZBCEhlkhAylZeNGI5KMP-j1-QboOEip5OkcI2zYycNF88l9pW8JBE3YRleUMwq42VX_EskAWOzu6MiZS38656zLoypug-44miauLTFVBQ1S-YTcuzm9AUEMJ_LlO6EbHAvtjvMzWzyDLaFWystwwadoVE7mqrwmwIDAQAB";
+const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA31_dzDPwYTZrxWRWlYcB8Qa2tiZ6VMUVDLNgLsLtl2jXDiF7i0JQjgWLS28X7o3-fgeKSh7290F1-6OksevONnjgwt2ejDqXZIQRqDpZX8ynZvRxsoU84fU48paBbEA8WrkIxtxT5vpf1xCodelaFfssNTg7I8ipFJNa_rCI3UGkkgTwkeytstZBCEhlkhAylZeNGI5KMP-j1-QboOEip5OkcI2zYycNF88l9pW8JBE3YRleUMwq42VX_EskAWOzu6MiZS38656zLoypug-44miauLTFVBQ1S-YTcuzm9AUEMJ_LlO6EbHAvtjvMzWzyDLaFWystwwadoVE7mqrwmwIDAQAB"
 const CHALLENGE = "AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=";
 const CHALLENGE_PREFIX = "AAIAHmRlbW8tcGF0Lmlzc3Vlci5jbG91ZGZsYXJlLmNvbSA"; // select cloudflare as origin
 const CHALLENGE_SUFFIX = "AAlcHJpdmF0ZS1hY2Nlc3MtdG9rZW4uY29saW5iZW5kZWxsLmRldg=="; // specify private-acccess-token.colinbendell.dev as origin
@@ -13,7 +13,7 @@ async function handleRequest(request) {
 //   const nonce = btoa(crypto.getRandomValues(new Uint16Array(33))).substring(1,43); // 31bytes (even though it should be 32)
 //   const challenge = `${CHALLENGE_PREFIX}${nonce}${CHALLENGE_SUFFIX}`;
 
-  const publicKey = query?.split('key=')[1]?.split('&')[0] || TOKEN_KEY;
+  const publicKey = query?.split('key=')[1]?.split('&')[0] || CLOUDFLARE_PUB_KEY;
   const tokenParam = query?.split('token=')[1]?.split('&')[0];
   const tokenHeader = request.headers.get("Authorization")?.split('PrivateToken token=')[1];
 
@@ -113,7 +113,7 @@ async function handleRequest(request) {
         }
     </style>
     <script>
-        const CLOUDFLARE_PUB_KEY = "${publicKey}";
+        const PUBLIC_KEY = "${publicKey}";
 
         function getElement(id) {
             return document.getElementById(id).value;
@@ -142,6 +142,12 @@ async function handleRequest(request) {
             document.getElementById(name).innerHTML = JSON.stringify(value).replaceAll(",", ", ");
         }
 
+        function debugBool(name, value) {
+            const status = value === null ? '❓ ' : (value ? '✅ ' : '❌ ')
+            console.log(name, ":", status)
+            document.querySelector("label[for='" + name + "'] span").textContent = status;
+        }
+
         function hexToByte(s) {
             return s?.replaceAll(/[^0-9a-z]/gi, '0')?.match(/.{1,2}/g)?.map(a => parseInt(a, 16));
         }
@@ -162,34 +168,37 @@ async function handleRequest(request) {
             const challenge = binToken.slice(34,66);
             const tokenKeyID = binToken.slice(66,98);
             const authenticator = binToken.slice(98);
-            
-            debugHex('token_type_debug', tokenType);
-            debugHex('nonce_debug', nonce);
-            debugHex('challenge_digest_debug', challenge);
-            debugHex('token_key_id_debug', tokenKeyID);
-            debugHex('authenticator_debug', authenticator);
 
-            const expectedChallenge = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(str2bin(base64urlDecode("${challenge}"))))));            
-            document.querySelector("label[for='token_type_debug'] span").textContent = compareArray(tokenType, [0,2]) ? '✅ ' : '❌ ';
-            document.querySelector("label[for='nonce_debug'] span").textContent = nonce.length === 32 ? '✅ ' : '❌ ';
-            document.querySelector("label[for='challenge_digest_debug'] span").textContent = compareArray(expectedChallenge, challenge) ? '✅ ' : '❌ ';
-            document.querySelector("label[for='authenticator_debug'] span").textContent = authenticator.length === 256 ? '✅ ' : '❌ ';
-            
+            debugHex('token_type', tokenType);
+            debugHex('nonce', nonce);
+            debugHex('challenge_digest', challenge);
+            debugHex('token_key_id', tokenKeyID);
+            debugHex('authenticator', authenticator);
+
+            const expectedChallenge = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(str2bin(base64urlDecode("${challenge}"))))));
+            debugBool('token_type', compareArray(tokenType, [0,2]));
+            debugBool('nonce', nonce.length === 32);
+            debugBool('challenge_digest', compareArray(expectedChallenge, challenge));
+            debugBool('authenticator', authenticator.length === 256);
+
+
+            // sadly WebCrypto support for rsa-pss on Chrome/WebKit is missing. Works on Firefox
             try {
-                const publicKey = await crypto.subtle.importKey("spki", b642ab(CLOUDFLARE_PUB_KEY), { name: "RSA-PSS", hash: "SHA-384" }, false, ["verify"])
+                const publicKey = await crypto.subtle.importKey("spki", b642ab(PUBLIC_KEY), { name: "RSA-PSS", hash: "SHA-384" }, false, ["verify"])
                 const data = Uint8Array.from(binToken.slice(0,98))
                 const signature = Uint8Array.from(binToken.slice(98))
-                console.log(await crypto.subtle.verify({name:"RSA-PSS", saltLength: 48},  publicKey, signature, data ));
+                const valid = await crypto.subtle.verify({name:"RSA-PSS", saltLength: 48},  publicKey, signature, data);
+                debugBool('token', valid);
             }
             catch (e) {
                 console.error(e);
+                debugBool('token', null);
             }
             return token;
         }
 
         function init() {
             parseToken();
-            document.getElementsByTagName('body')[0].onkeyup = parseToken;
             [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('change', parseToken));
             [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('click', parseToken));
         }
@@ -201,18 +210,18 @@ async function handleRequest(request) {
 <main>
     <h1>👍 Public Access Token Works!</h1>
     <div>
-        <label for="token">Token</label>
+        <label for="token"><span></span>Token</label>
         <input id="token" type="text" disabled value="${auth}">
-        <label for="token_type_debug"><span></span>Token Type</label>
-        <code id="token_type_debug"></code>
-        <label for="nonce_debug"><span></span>Nonce</label>
-        <code id="nonce_debug"></code>
-        <label for="challenge_digest_debug"><span></span>Challenge Digest</label>
-        <code id="challenge_digest_debug"></code>
-        <label for="token_key_id_debug"><span></span>Token Key ID</label>
-        <code id="token_key_id_debug"></code>
-        <label for="authenticator_debug"><span></span>Authenticator</label>
-        <code id="authenticator_debug"></code>
+        <label for="token_type"><span></span>Token Type</label>
+        <code id="token_type"></code>
+        <label for="nonce"><span></span>Nonce</label>
+        <code id="nonce"></code>
+        <label for="challenge_digest"><span></span>Challenge Digest</label>
+        <code id="challenge_digest"></code>
+        <label for="token_key_id"><span></span>Token Key ID</label>
+        <code id="token_key_id"></code>
+        <label for="authenticator"><span></span>Authenticator</label>
+        <code id="authenticator"></code>
     </div>
 </main>
 </body>

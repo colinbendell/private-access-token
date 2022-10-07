@@ -1,0 +1,32 @@
+name: CI
+on:
+  workflow_dispatch:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 * * * *"
+jobs:
+  build:
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@Z
+      - name: Install Dependencies
+        uses: actions/setup-node@v2
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
+        working-directory: ./extract
+        with:
+          args: install
+      - name: Extract PublicKey
+        uses: mujo-code/puppeteer-headful@v2
+        working-directory: ./extract
+        with:
+          args: npm run extract
+      - name: Commit to branch
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Sync Data"

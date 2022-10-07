@@ -1,0 +1,14 @@
+{
+  "name": "Cloudflare PAT harvest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "extract": "node index.js"
+  },
+  "author": "Colin Bendell <colin@bendell.ca>",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^18.2.1"
+  }
+}
