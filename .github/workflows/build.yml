@@ -23,11 +23,9 @@ jobs:
         run: npm install
       - name: Extract PublicKey
         uses: mujo-code/puppeteer-headful@v2
-      - name: Extract Public Keys
-        env:
-          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
         working-directory: ./extract
-        run: npm run extract
+        with:
+          args: npm run extract
       - name: Commit to branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
