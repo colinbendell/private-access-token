@@ -24,7 +24,8 @@ jobs:
       - name: Extract PublicKey
         uses: mujo-code/puppeteer-headful@v2
         with:
-          args: cd extract; npm run extract
+          workdir: extract
+          args: npm run extract
       - name: Commit to branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
