@@ -21,7 +21,7 @@ jobs:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
         run: npm --prefix public-keys install
       - name: Extract PublicKey
-        uses: mujo-code/puppeteer-headful@12.3.1
+        uses: mujo-code/puppeteer-headful@v4
         with:
           args: npm --prefix public-keys run extract
       - name: Commit to branch
