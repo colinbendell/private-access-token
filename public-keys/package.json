@@ -1,7 +1,7 @@
 {
-  "name": "Cloudflare PAT harvest",
+  "name": "public-keys",
   "version": "1.0.0",
-  "description": "",
+  "description": "Cloudflare Public Key harvester",
   "main": "index.js",
   "scripts": {
     "extract": "node index.js"

@@ -1,4 +1,4 @@
-name: CI
+name: Update Cloudflare Public Keys
 on:
   workflow_dispatch:
     branches:
@@ -19,12 +19,11 @@ jobs:
       - name: Install Dependencies
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
-        working-directory: ./extract
-        run: npm install
+        run: npm --prefix public-keys install
       - name: Extract PublicKey
-        uses: mujo-code/puppeteer-headful@v2
+        uses: mujo-code/puppeteer-headful@latest
         with:
-          args: npm --prefix extract run extract
+          args: npm --prefix public-keys run extract
       - name: Commit to branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
