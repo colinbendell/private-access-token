@@ -7,69 +7,9 @@
     <meta name='viewport' content='width=device-width, initial-scale=1'>
 </head>
 <body>
-    <div class="field field--required">
-        <script>
-            //<![CDATA[
-            var onCaptchaSuccess = function() {
-                var event;
-
-                try {
-                    event = new Event('captchaSuccess', {bubbles: true, cancelable: true});
-                } catch (e) {
-                    event = document.createEvent('Event');
-                    event.initEvent('captchaSuccess', true, true);
-                }
-
-                window.dispatchEvent(event);
-            }
-
-            //]]>
-        </script>
-        <script>
-            //<![CDATA[
-            window.addEventListener('captchaSuccess', function() {
-                var responseInput = document.querySelector('.g-recaptcha-response');
-                var submitButton = document.querySelector('.dialog-submit');
-
-                if (submitButton instanceof HTMLElement) {
-                    var needResponse = (responseInput instanceof HTMLElement);
-                    var responseValueMissing = !responseInput.value;
-                    submitButton.disabled = (needResponse && responseValueMissing);
-                }
-            }, false);
-
-            //]]>
-        </script>
-        <script>
-            //<![CDATA[
-            var recaptchaCallback = function() {
-                grecaptcha.render('#g-recaptcha', {
-                    sitekey: "0x4AAAAAAAApqVojClIl7FJT",
-                    theme: 'light',
-                    size: (window.innerWidth > 320) ? 'normal' : 'compact',
-                    //Had to inline the function because turnstile JS can't call by name...
-                    callback:  function() {
-                        console.log("Captcha success FOOO");
-                        var event;
-                        try {
-                            event = new Event('captchaSuccess', {bubbles: true, cancelable: true});
-                        } catch (e) {
-                            event = document.createEvent('Event');
-                            event.initEvent('captchaSuccess', true, true);
-                        }
-                        window.dispatchEvent(event);
-                    },
-                });
-            };
-
-            //]]>
-        </script>
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?compat=recaptcha&amp;onload=recaptchaCallback&amp;render=explicit&amp;hl=en" async="async">
-            //<![CDATA[
-
-            //]]>
-        </script>
-        <div id="g-recaptcha" class="g-recaptcha"><iframe src="https://challenges.cloudflare.com/cdn-cgi/challenge-platform/turnstile/if/ov2/av0/shgfz/0x4AAAAAAAApqVojClIl7FJT/light" id="cf-chl-widget-shgfz" tabindex="0" title="Widget containing a Cloudflare security challenge" style="border: none; overflow: hidden; width: 300px; height: 65px;"></iframe><input type="hidden" name="cf-turnstile-response" id="cf-chl-widget-shgfz_response" value=""><input type="hidden" name="g-recaptcha-response" id="cf-chl-widget-shgfz_g_response" value=""></div>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" async defer></script>
+    <div>
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAAAAnIDH4ZWbCmbRe"></div>
     </div>
 
 </body>
