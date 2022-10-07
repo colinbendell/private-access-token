@@ -23,9 +23,8 @@ jobs:
         run: npm install
       - name: Extract PublicKey
         uses: mujo-code/puppeteer-headful@v2
-        working-directory: ./extract
         with:
-          args: npm run extract
+          args: cd extract; npm run extract
       - name: Commit to branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
