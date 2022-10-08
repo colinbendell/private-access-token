@@ -185,8 +185,8 @@ async function handleRequest(request) {
             // sadly WebCrypto support for rsa-pss on Chrome/WebKit is missing. Works on Firefox
             try {
                 const publicKey = await crypto.subtle.importKey("spki", b642ab(PUBLIC_KEY), { name: "RSA-PSS", hash: "SHA-384" }, false, ["verify"])
-                const data = Uint8Array.from(binToken.slice(0,98))
-                const signature = Uint8Array.from(binToken.slice(98))
+                const data = Uint8Array.from(binToken.slice(0,98));
+                const signature = Uint8Array.from(binToken.slice(98));
                 const valid = await crypto.subtle.verify({name:"RSA-PSS", saltLength: 48},  publicKey, signature, data);
                 debugBool('token', valid);
             }

@@ -1,0 +1,3 @@
+name = "private-access-token"
+main = "index.js"
+compatibility_date = "2022-10-08"
