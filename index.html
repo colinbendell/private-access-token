@@ -68,14 +68,12 @@
         }
 
         html {
-            max-width: 70ch;
-            /*padding: 3em 1em;*/
+            max-width: 38rem;
             margin: auto;
             line-height: 1.75;
             font-size: 1.25em;
         }
         p,ul,ol {
-            margin-bottom: 2em;
             color: #1d1d1d;
             font-family: sans-serif;
         }
@@ -89,12 +87,30 @@
         }
 
         code {
-            font-family: monospace;
+            border: 1px solid #eee;
+            overflow-wrap: anywhere;
+            margin: 0;
+        }
+        code + code {
+            margin-top: 1em;
+
         }
 
+        tt, code, pre {
+            background-color: #f9f9f9;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        a[href]:hover {
+            background-color: #f2f2f2;
+        }
+        a[href] {
+            color: #22e;
+            text-decoration: none;
+        }
         .grid {
             display: grid;
-            grid-template-columns: repeat(1, 1fr 4fr);
+            grid-template-columns: repeat(1, 1fr 1fr);
             grid-column-gap: 0.5rem;
         }
         .grid label {
@@ -105,10 +121,12 @@
             margin-bottom: auto;
         }
         .grid input {
-            margin-top: 0.25rem;
             margin-bottom: auto;
             line-height: 1rem;
-            min-width: 10rem;
+            /*min-width: 10rem;*/
+        }
+        .grid button {
+            width: 100%;
         }
         .grid input[type="button"] {
             min-width: auto;
@@ -197,17 +215,23 @@
                 htons(originInfo.length),
                 originInfo)
 
-            debugHex('challenge_debug', challenge);
-            document.getElementById('challenge_base64_debug').innerHTML = base64url(bin2str(challenge)).match(/.{1,35}/g)?.join('<br>');
+            // debugHex('challenge_debug', challenge);
+            document.getElementById('challenge_base64_debug').innerHTML = base64url(bin2str(challenge));
 
             return bin2str(challenge);
         }
 
         function update() {
+            const challenge = getChallenge();
+            const tokenKey = publicKeys.get(getElement("issuer_name"));
             document.getElementById('output').innerHTML = `WWW-Authenticate: PrivateToken
-    challenge=${base64url(getChallenge())},
-    token-key=${publicKeys.get(getElement("issuer_name"))}`;
-            document.getElementById('test').href = `/test.html?challenge=${base64url(getChallenge())}&key=${publicKeys.get(getElement("issuer_name"))}`;
+    challenge=${base64url(challenge)},
+    token-key=${tokenKey}`;
+            if (challenge.length !== 52) {
+                for (const form of document.getElementsByTagName("form")) {
+                    form.action = `/test.html?challenge=${base64url(challenge)}&key=${tokenKey}`;
+                }
+            }
         }
 
         function init() {
@@ -223,13 +247,19 @@
 </head>
 <body>
 <main>
-    <h1>Private Access Token Generator <a href="https://github.com/colinbendell/private-access-token"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a></h1>
-    <p>Safari 16 introduced support for Private Access Tokens. This tool helps generate valid <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.1">PrivateToken</a> challenges for HTTP Authentication scheme.
-        <br>
-        👉 <a href="/test.html">Test your browser</a>
-    </p>
+    <h1>Private Access Token Generator</h1>
+    <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
+            [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
+            [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
+            [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-06.html">IETF Draft</a>]
+    </div>
     <div class="grid">
-        <label for="token_type"><a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1">Token Type</a></label>
+        <p>Create a valid <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-06.html#section-2.1">PrivateToken</a>
+            HTTP Authentication challenge for Safari 16 (iOS16 or macOS13).
+        </p>
+        <form action="/test.html"><button type="submit">Test</button></form>
+
+        <label for="token_type">Token Type <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1" style="vertical-align: super; font-size: 0.75rem;">ⓘ︎</a></label>
         <select id="token_type">
             <option value="1">VOPRF (P-384, SHA-384)</option>
             <option value="2" selected>Blind RSA (SHA-384, 2048-bit)</option>
@@ -239,7 +269,7 @@
         </div>
         <label for="issuer_name">Issuer (hostname)</label>
         <select id="issuer_name">
-            <option value="demo-pat.issuer.cloudflare.com" selected>…demo.cloudflare.com</option>
+            <option value="demo-pat.issuer.cloudflare.com" selected>demo-pat.issuer.cloudflare.com</option>
             <option value="pat-issuer.cloudflare.com">pat-issuer.cloudflare.com</option>
             <option value="demo-issuer.private-access-tokens.fastly.com">…issuer.fastly.com</option>
         </select>
@@ -263,12 +293,13 @@
             <code id="origin_info_debug"></code>
         </div>
 
-<!--        <label for="challenge_debug">&nbsp;</label>-->
-        <div style="margin-top:1.5rem"><a id="test">TokenChallenge</a></div>
+        <div style="margin-top:1.5rem">TokenChallenge <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-06.html#section-2.1" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a></div>
         <div style="margin-top:1.5rem">
-            <code id="challenge_debug"></code>
-            <code id="challenge_base64_debug" style="margin-top:1rem"></code>
+<!--            <code id="challenge_debug"></code>-->
+            <code id="challenge_base64_debug"></code>
+            <form action="/test.html"><button type="submit">Test</button></form>
         </div>
+        <div></div>
 
         <pre id="output"></pre>
     </div>
