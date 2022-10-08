@@ -1,31 +1,34 @@
-const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA31_dzDPwYTZrxWRWlYcB8Qa2tiZ6VMUVDLNgLsLtl2jXDiF7i0JQjgWLS28X7o3-fgeKSh7290F1-6OksevONnjgwt2ejDqXZIQRqDpZX8ynZvRxsoU84fU48paBbEA8WrkIxtxT5vpf1xCodelaFfssNTg7I8ipFJNa_rCI3UGkkgTwkeytstZBCEhlkhAylZeNGI5KMP-j1-QboOEip5OkcI2zYycNF88l9pW8JBE3YRleUMwq42VX_EskAWOzu6MiZS38656zLoypug-44miauLTFVBQ1S-YTcuzm9AUEMJ_LlO6EbHAvtjvMzWzyDLaFWystwwadoVE7mqrwmwIDAQAB"
+const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA31_dzDPwYTZrxWRWlYcB8Qa2tiZ6VMUVDLNgLsLtl2jXDiF7i0JQjgWLS28X7o3-fgeKSh7290F1-6OksevONnjgwt2ejDqXZIQRqDpZX8ynZvRxsoU84fU48paBbEA8WrkIxtxT5vpf1xCodelaFfssNTg7I8ipFJNa_rCI3UGkkgTwkeytstZBCEhlkhAylZeNGI5KMP-j1-QboOEip5OkcI2zYycNF88l9pW8JBE3YRleUMwq42VX_EskAWOzu6MiZS38656zLoypug-44miauLTFVBQ1S-YTcuzm9AUEMJ_LlO6EbHAvtjvMzWzyDLaFWystwwadoVE7mqrwmwIDAQAB";
 const CHALLENGE = "AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=";
 // const CHALLENGE_PREFIX = "AAIAHmRlbW8tcGF0Lmlzc3Vlci5jbG91ZGZsYXJlLmNvbSA"; // select cloudflare as origin
 // const CHALLENGE_SUFFIX = "AAlcHJpdmF0ZS1hY2Nlc3MtdG9rZW4uY29saW5iZW5kZWxsLmRldg=="; // specify private-acccess-token.colinbendell.dev as origin
 
 async function handleRequest(request) {
-  if (!request.url.includes('/test.html')) {
+  if (!request.url.includes("/test.html")) {
     return fetch(request);
   }
 
-  const query = request.url.split('?')[1]
-  const challenge = query?.split('challenge=')[1]?.split('&')[0] || CHALLENGE;
-//   const nonce = btoa(crypto.getRandomValues(new Uint16Array(33))).substring(1,43); // 31bytes (even though it should be 32)
-//   const challenge = `${CHALLENGE_PREFIX}${nonce}${CHALLENGE_SUFFIX}`;
+  const query = request.url.split("?")[1];
+  const challenge = query?.split("challenge=")[1]?.split("&")[0] || CHALLENGE;
+  //   const nonce = btoa(crypto.getRandomValues(new Uint16Array(33))).substring(1,43); // 31bytes (even though it should be 32)
+  //   const challenge = `${CHALLENGE_PREFIX}${nonce}${CHALLENGE_SUFFIX}`;
 
-  const publicKey = query?.split('key=')[1]?.split('&')[0] || CLOUDFLARE_PUB_KEY;
-  const tokenParam = query?.split('token=')[1]?.split('&')[0];
-  const tokenHeader = request.headers.get("Authorization")?.split('PrivateToken token=')[1];
+  const publicKey = query?.split("key=")[1]?.split("&")[0] || CLOUDFLARE_PUB_KEY;
+  const tokenParam = query?.split("token=")[1]?.split("&")[0];
+  const tokenHeader = request.headers.get("Authorization")?.split("PrivateToken token=")[1];
 
   const auth = tokenHeader || tokenParam;
-  const respInit = auth ? { headers: {'Content-Type': `text/html`}} : {
-    status: 401,
-    headers: {
-      'Content-Type': `text/html`,
-      'WWW-Authenticate': `PrivateToken challenge=${challenge}, token-key=${publicKey}`,
-    },
-  };
-  return new Response(`<!DOCTYPE html>
+  const respInit = auth
+    ? { headers: { "Content-Type": `text/html` } }
+    : {
+        status: 401,
+        headers: {
+          "Content-Type": `text/html`,
+          "WWW-Authenticate": `PrivateToken challenge=${challenge}, token-key=${publicKey}`,
+        },
+      };
+  return new Response(
+    `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset='utf-8'>
@@ -238,7 +241,11 @@ async function handleRequest(request) {
 <body>
 <main>
   <h1>Public Access Token Test</h1>
-  ${auth ? "" : "<div style='margin: -0.6rem 0 0.6rem 0;'>😵😩 No Public-Access-Token for you.</div>"}
+  ${
+    auth
+      ? ""
+      : "<div style='margin: -0.6rem 0 0.6rem 0;'>😵😩 No Public-Access-Token for you.</div>"
+  }
   <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
           [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
           [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
@@ -295,10 +302,11 @@ async function handleRequest(request) {
   </details>
 </main>
 </body>
-</html>
-`, respInit);
+</html>`,
+    respInit
+  );
 }
 
-addEventListener('fetch', event => {
+addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event.request));
 });
