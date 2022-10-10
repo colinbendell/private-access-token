@@ -101,7 +101,7 @@ async function handleRequest(request) {
           max-width: 58ch;
           margin: auto;
           line-height: 1.75;
-          font-size: 1.25em;
+          /*font-size: 1.25em;*/
       }
       p,ul,ol {
           margin-bottom: 2em;
@@ -110,6 +110,10 @@ async function handleRequest(request) {
       }
       main {
           padding: 2rem;
+      }
+      h1 {
+        line-height: 1;
+        padding-bottom: 0.6rem;
       }
       select, code, input, details {
           display: block;
@@ -131,30 +135,38 @@ async function handleRequest(request) {
           background-color: #f9f9f9;
           font-size: 0.75rem;
       }
+      details {
+        margin-left: 1.75rem;
+      }
       details summary::-webkit-details-marker {
           display:none;
+      }
+      details summary::marker {
+          display:none;
+          content:"";
       }
       details summary { 
           cursor: pointer;
       }
-      details > summary > *:first-child:before {
-        content: "▶";
-        padding-right: 0.25rem;
+      details > summary:before {
+        margin-left: -1.75rem;
         color: initial;
         line-height: 1;
         font-size: 1.1rem;
-
       }
-      details[open] > summary > *:first-child:before {
-        content: "▼";
+      details.pass > summary:before {
+        content: "✅";
       }
-      
-      .flex {
-          display: inline-flex;
-          width: 24.5rem;
-          justify-content: space-between;
+      details.fail > summary:before {
+        content: "❌";
       }
-      .flex > div {
+      details.unknown > summary:before {
+        content: "❓";
+      }
+      #token_valid_test:not(.unknown) > code {
+        display: none;
+      }
+      details summary {
           color: darkgray;
       }
   </style>
@@ -189,9 +201,9 @@ async function handleRequest(request) {
       }
 
       function debugBool(name, value) {
-          const status = value === null ? '❓' : (value ? '✅' : '❌')
+          const status = value === null ? 'unknown' : (value ? 'pass' : 'fail')
           console.log(name, ":", status)
-          document.querySelector("#" + name + "_test > summary > *:last-child").textContent = status;            
+          document.getElementById(name + "_test").className = status;            
       }
 
       function hexToByte(s) {
@@ -269,54 +281,46 @@ async function handleRequest(request) {
           [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
           [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html">IETF Draft</a>]
   </div>
-  <details id="token_test">
-    <summary class="flex">
-        <div>Authorization: <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#name-token-redemption">PrivateToken</a> token=</div>
-        <span>❌</span>
-    </summary>
+  <details open id="token_test">
+    <summary>
+        Authorization: <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#name-token-redemption">PrivateToken</a> token=</summary>
     <input id="token" type="text" disabled value="${auth}">
   </details>
+  <details open id="token_valid_test">
+      <summary>
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#name-token-verification-2">RSA-Verify</a>(token[0-98], publicKey, authenticator)</>          
+      </summary>
+      <code><em>NB: Safari, Chrome and Cloudflare Workers do not support <a href="https://github.com/w3c/webcrypto/issues/307">oid=RSARSS-PSS in WebCrypto.validate()</a></em></code>
+  </details>
   <details id="token_type_test">
-      <summary class="flex">
-          <div><a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1">token_type</a> == 0x0002</div>
-          <span>❌</span>
+      <summary>
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1">token_type</a> == 0x0002</div>          
       </summary>
       <code id="token_type"></code>
   </details>
   <details id="nonce_test">
-      <summary class="flex">
-          <div><a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.2">nonce</a> .length()==256</div>
-          <span>❌</span>
+      <summary>
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.2">nonce</a> .length()==256</div>          
       </summary>
       <code id="nonce"></code>
   </details>
   <details id="challenge_digest_test">
-      <summary class="flex">
-          <div><a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.3">challenge_digest</a> == sha256(challenge)</div>
-          <span>❌</span>
+      <summary>
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.3">challenge_digest</a> == sha256(challenge)</div>          
       </summary>
       <code id="challenge_digest"></code>
   </details>
   <details id="token_key_id_test">
-      <summary class="flex">
-          <div><a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.4">token_key_id</a> .length()==32</div>
-          <span>❌</span>
+      <summary>
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.4">token_key_id</a> .length()==32</div>          
       </summary>
       <code id="token_key_id"></code>
   </details>
   <details id="authenticator_test">
-      <summary class="flex">
-          <div><a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.4">authenticator</a> .length()==256</div>
-          <span>❌</span>
+      <summary>
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.4">authenticator</a> .length()==256</div>          
       </summary>
       <code id="authenticator"></code>
-  </details>
-  <details id="token_valid_test">
-      <summary class="flex">
-          <div><a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#name-token-verification-2">RSA-Verify</a>(token[0-98], publicKey, authenticator)</div>
-          <span>❌</span>
-      </summary>
-      <code><em>NB: Safari, Chrome and Cloudflare Workers do not support <a href="https://github.com/w3c/webcrypto/issues/307">oid=RSARSS-PSS in WebCrypto.validate()</a></em></code>
   </details>
 </main>
 </body>
