@@ -153,12 +153,10 @@ async function handleRequest(request) {
         color: initial;
         line-height: 1;
         font-size: 1.1rem;
+        content: "❌";
       }
       details.pass > summary:before {
         content: "✅";
-      }
-      details.fail > summary:before {
-        content: "❌";
       }
       details.unknown > summary:before {
         content: "❓";
@@ -284,7 +282,7 @@ async function handleRequest(request) {
   <details open id="token_test">
     <summary>
         Authorization: <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#name-token-redemption">PrivateToken</a> token=</summary>
-    <input id="token" type="text" disabled value="${auth}">
+    <input id="token" type="text" disabled value="${auth || ''}">
   </details>
   <details open id="token_valid_test">
       <summary>
