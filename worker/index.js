@@ -1,4 +1,4 @@
-const CLOUDFLARE_PUB_KEY = "undefined";
+const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEArsA3as5W6Lg0XdMgVp9Sy0dbjXFhAyc3atwbVEOb5J4uV5P-Q3-habexaTHgGbGNdBcQo_2xIhgHjrmbwHXWLmBPfoqgY_cbRsU7XWexl2lOPNrLj3_nPhJwLg2_W9vY6-mROEQCcrPnpMBTRMhnu9NmwcNZyRtJQiMctl3qj4usg64q0tZbc3e4tDKv2WLTu0vG1_zN1jIetr4t-6H-zEk7aFtoLxwVVrO0J-W21X3rGzq70v-VLhVvZroBKCWIh0iI9156HA1lVsIyrL8CU9HZf1WyeiWWdenBbzb_E-heTChqDrkzKVLXgj1b-h7NWQ4iWO0DeKo7_FMUnVEZ5wIDAQAB";
 const CHALLENGE = "AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=";
 // const CHALLENGE_PREFIX = "AAIAHmRlbW8tcGF0Lmlzc3Vlci5jbG91ZGZsYXJlLmNvbSA"; // select cloudflare as origin
 // const CHALLENGE_SUFFIX = "AAlcHJpdmF0ZS1hY2Nlc3MtdG9rZW4uY29saW5iZW5kZWxsLmRldg=="; // specify private-acccess-token.colinbendell.dev as origin
