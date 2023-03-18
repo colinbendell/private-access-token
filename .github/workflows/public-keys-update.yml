@@ -1,21 +1,19 @@
 name: Update Cloudflare Public Keys
 on:
-  workflow_dispatch:
-    branches:
-      - main
   push:
-    branches:
-      - main
+    branches: [$default-branch]
+  workflow_dispatch:
   schedule:
     - cron: "0 * * * *"
 jobs:
   build:
-    name: Install Dependencies
+    name: Extract Cloudflare Public Keys
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install Dependencies
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
       - name: Install Dependencies
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
@@ -28,3 +26,5 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Update Public Keys"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
