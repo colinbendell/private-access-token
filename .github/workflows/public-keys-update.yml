@@ -13,13 +13,13 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: latest
       - name: Install Dependencies
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
         run: npm --prefix public-keys install
       - name: Extract PublicKey
-        uses: mujo-code/puppeteer-headful@v2
+        uses: mujo-code/puppeteer-headful@18.9.0
         with:
           args: npm --prefix public-keys run extract
       - name: Commit to branch
