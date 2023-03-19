@@ -1,4 +1,4 @@
-name: Update Cloudflare Public Keys
+name: Update Public Keys
 on:
   push:
     branches: [$default-branch]
