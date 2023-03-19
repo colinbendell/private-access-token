@@ -6,12 +6,11 @@
   "main": "index.js",
   "author": "Colin Bendell <colin@bendell.ca>",
   "license": "MIT",
-  "dependencies": {
-  },
+  "dependencies": {},
   "scripts": {
     "format": "prettier --write '**/*.{js,css,json,md}'"
   },
   "devDependencies": {
-    "prettier": "^1.18.2"
+    "prettier": "^2"
   }
 }
