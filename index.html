@@ -229,7 +229,8 @@
     token-key=${tokenKey}`;
             if (challenge.length !== 52) {
                 for (const form of document.getElementsByTagName("form")) {
-                    form.action = `/test.html?challenge=${base64url(challenge)}&key=${tokenKey}`;
+                    form.innerHTML=`<input type="hidden" name="challenge" value="${base64url(challenge)}"><input type="hidden" name="key" value="${tokenKey}"><button type="submit">Test</button>`;
+                    // form.action = `/test.html?challenge=${base64url(challenge)}&key=${tokenKey}`;
                 }
             }
         }
