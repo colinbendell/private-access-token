@@ -145,7 +145,7 @@ async function handleRequest(request) {
           display:none;
           content:"";
       }
-      details summary { 
+      details summary {
           cursor: pointer;
       }
       details > summary:before {
@@ -201,7 +201,7 @@ async function handleRequest(request) {
       function debugBool(name, value) {
           const status = value === null ? 'unknown' : (value ? 'pass' : 'fail')
           console.log(name, ":", status)
-          document.getElementById(name + "_test").className = status;            
+          document.getElementById(name + "_test").className = status;
       }
 
       function hexToByte(s) {
@@ -282,41 +282,41 @@ async function handleRequest(request) {
   <details open id="token_test">
     <summary>
         Authorization: <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#name-token-redemption">PrivateToken</a> token=</summary>
-    <input id="token" type="text" disabled value="${auth || ''}">
+    <input id="token" type="text" value="${auth || ''}">
   </details>
   <details open id="token_valid_test">
       <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#name-token-verification-2">RSA-Verify</a>(token[0-98], publicKey, authenticator)</>          
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#name-token-verification-2">RSA-Verify</a>(token[0-98], publicKey, authenticator)</>
       </summary>
       <code><em>NB: Safari, Chrome and Cloudflare Workers do not support <a href="https://github.com/w3c/webcrypto/issues/307">oid=RSARSS-PSS in WebCrypto.validate()</a></em></code>
   </details>
   <details id="token_type_test">
       <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1">token_type</a> == 0x0002</div>          
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1">token_type</a> == 0x0002</div>
       </summary>
       <code id="token_type"></code>
   </details>
   <details id="nonce_test">
       <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.2">nonce</a> .length()==256</div>          
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.2">nonce</a> .length()==256</div>
       </summary>
       <code id="nonce"></code>
   </details>
   <details id="challenge_digest_test">
       <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.3">challenge_digest</a> == sha256(challenge)</div>          
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.3">challenge_digest</a> == sha256(challenge)</div>
       </summary>
       <code id="challenge_digest"></code>
   </details>
   <details id="token_key_id_test">
       <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.4">token_key_id</a> .length()==32</div>          
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.4">token_key_id</a> .length()==32</div>
       </summary>
       <code id="token_key_id"></code>
   </details>
   <details id="authenticator_test">
       <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.4">authenticator</a> .length()==256</div>          
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.4">authenticator</a> .length()==256</div>
       </summary>
       <code id="authenticator"></code>
   </details>
