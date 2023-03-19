@@ -27,24 +27,23 @@ jobs:
         with:
           path: |
             node_modules
+            public-keys/node_modules
           key: ${{ runner.os }}-cache-${{ hashFiles('**/package-lock.json') }}
       - uses: actions/setup-node@v3
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
         with:
           node-version: latest
-          args: install
+          args: --prefix public-keys install
         # run: npm --prefix public-keys install
       - name: Extract PublicKey
         uses: mujo-code/puppeteer-headful@18.9.0
         with:
-          args: npm run extract
+          args: npm --prefix public-keys run extract
       - name: Commit to branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Update Public Keys"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   worker:
     name: Update Cloudflare Worker
     needs: extract
