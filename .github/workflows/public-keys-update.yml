@@ -49,18 +49,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            node_modules
-          key: ${{ runner.os }}-cache-${{ hashFiles('**/package-lock.json') }}
-      - uses: actions/setup-node@v3
-        env:
-          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
-        with:
-          node-version: latest
-          args: install
       - name: Update Cloudflare
         uses: cloudflare/wrangler-action@2.0.0
         with:
