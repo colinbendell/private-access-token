@@ -17,42 +17,70 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  extract:
     name: Extract Cloudflare Public Keys
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Cache
+        uses: actions/cache@v2
         with:
-          node-version: latest
-      - name: Install Dependencies
+          path: |
+            node_modules
+          key: ${{ runner.os }}-cache-${{ hashFiles('**/package-lock.json') }}
+      - uses: actions/setup-node@v3
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
-        run: npm --prefix public-keys install
+        with:
+          node-version: latest
+          args: install
+        # run: npm --prefix public-keys install
       - name: Extract PublicKey
         uses: mujo-code/puppeteer-headful@18.9.0
         with:
-          args: npm --prefix public-keys run extract
+          args: npm run extract
       - name: Commit to branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Update Public Keys"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            - name: Update Cloudflare
+  worker:
+    name: Update Cloudflare Worker
+    needs: extract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-cache-${{ hashFiles('**/package-lock.json') }}
+      - uses: actions/setup-node@v3
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
+        with:
+          node-version: latest
+          args: install
       - name: Update Cloudflare
         uses: cloudflare/wrangler-action@2.0.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           workingDirectory: 'worker'
+  pages:
+    name: Update GH Pages
+    needs: extract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
       - run: mkdir build;cp *.html build
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          # Upload entire repository
           path: 'build'
       - name: Deploy to GitHub Pages
         id: deployment
