@@ -30,12 +30,11 @@ jobs:
             public-keys/node_modules
           key: ${{ runner.os }}-cache-${{ hashFiles('**/package-lock.json') }}
       - uses: actions/setup-node@v3
-        env:
-          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
         with:
           node-version: latest
-          args: --prefix public-keys install
-        # run: npm --prefix public-keys install
+      - run: npm --prefix public-keys install
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
       - name: Extract PublicKey
         uses: mujo-code/puppeteer-headful@18.9.0
         with:
