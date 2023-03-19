@@ -5,6 +5,17 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 * * * *"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Extract Cloudflare Public Keys
@@ -28,3 +39,21 @@ jobs:
           commit_message: "Update Public Keys"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Update Cloudflare
+      - name: Update Cloudflare
+        uses: cloudflare/wrangler-action@2.0.0
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: 'worker'
+      - run: mkdir build;cp *.html build
+      - name: Setup Pages
+        uses: actions/configure-pages@v2
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          # Upload entire repository
+          path: 'build'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
