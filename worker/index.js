@@ -187,7 +187,7 @@ async function handleRequest(request) {
           return btoa(data).replace(/\\\+/g, '-').replace(/\\\//g, '_')
       }
       function base64urlDecode(data) {
-          return atob(data?.replace(/-/g, '+')?.replace(/_/g, '/'))
+          return atob(decodeURIComponent(data)?.replace(/-/g, '+')?.replace(/_/g, '/'))
       }
 
       function debugHex(name, value = []) {
