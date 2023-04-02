@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Private Access Token Generator</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <!-- <script src="testharness.js"></script> -->
+    <!-- <script src="testharnessreport.js"></script> -->
+    <style>
+        /* Box sizing rules */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        /* Remove default margin */
+        body,
+        h1,
+        h2,
+        h3,
+        h4,
+        p,
+        figure,
+        blockquote,
+        dl,
+        dd {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, system-ui, sans-serif;
+        }
+
+        /* Remove list styles on ul, ol elements with a list role, which suggests default styling will be removed */
+        ul[role="list"],
+        ol[role="list"] {
+            list-style: none;
+        }
+
+        /* Set core root defaults */
+        html:focus-within {
+            scroll-behavior: smooth;
+        }
+
+        /* Set core body defaults */
+        body {
+            min-height: 100vh;
+            text-rendering: optimizeSpeed;
+            line-height: 1.5;
+        }
+
+        /* A elements that don't have a class get default styles */
+        a:not([class]) {
+            text-decoration-skip-ink: auto;
+        }
+
+        /* Make images easier to work with */
+        img,
+        picture {
+            max-width: 100%;
+            display: block;
+        }
+
+        /* Inherit fonts for inputs and buttons */
+        input,
+        button,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+        html {
+            max-width: 38rem;
+            margin: auto;
+            line-height: 1.75;
+            font-size: 1.25em;
+        }
+        p,ul,ol {
+            color: #1d1d1d;
+            font-family: sans-serif;
+        }
+        main {
+            max-width: 38rem;
+            width: 38rem;
+            padding: 2rem;
+        }
+        select, code {
+            display: block;
+        }
+
+        code {
+            border: 1px solid #eee;
+            overflow-wrap: anywhere;
+            margin: 0;
+        }
+        code + code {
+            margin-top: 1em;
+
+        }
+
+        tt, code, pre {
+            background-color: #f9f9f9;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        a[href]:hover {
+            background-color: #f2f2f2;
+        }
+        a[href] {
+            color: #22e;
+            text-decoration: none;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr 1fr);
+            grid-column-gap: 0.5rem;
+        }
+        .grid label {
+            grid-column: span 2 / auto;
+            margin-top: 0.5rem;
+        }
+        .grid select {
+            margin-bottom: auto;
+        }
+        .grid input {
+            margin-bottom: auto;
+            line-height: 1rem;
+            /*min-width: 10rem;*/
+        }
+        .grid button {
+            width: 100%;
+        }
+        .grid input[type="button"] {
+            min-width: auto;
+        }
+        .grid pre {
+            overflow: scroll;
+            grid-column: span 2 / auto;
+        }
+
+        .grid .grid {
+            grid-template-columns: repeat(1, 4fr 1fr);
+        }
+
+        .grid.code {
+            border: 1px solid #eee;
+            background-color: #f9f9f9;
+            grid-template-columns: repeat(1, 1fr 3fr);
+            grid-column: span 2 / auto;
+            margin-bottom: 1rem;
+        }
+
+        details {
+            margin-left: 1.75rem;
+        }
+        details summary::-webkit-details-marker {
+            display:none;
+        }
+        details summary::marker {
+            display:none;
+            content:"";
+        }
+        details summary {
+            cursor: pointer;
+        }
+        details > summary:before {
+            margin-left: -1.75rem;
+            color: initial;
+            line-height: 1;
+            font-size: 1.1rem;
+            content: "❌ ";
+        }
+        details.pass > summary:before {
+            content: "✅ ";
+        }
+        details.unknown > summary:before {
+            content: "❓ ";
+        }
+        details summary {
+            color: darkgray;
+        }
+        details summary span {
+            color: black;
+        }
+
+    </style>
+    <script>
+        const CLOUDFLARE_DEMO_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAr0UG9LP1zD-ejLPZkZMkXdaBmh8pyNxTox9lJHXFeInRehWETX9c7og0cDLq2lpaAQJ0A_EkEyor124ClboJl64reZ1Jeg1PpJVnns68I0iN3WTBXxm-W5KB1lMo_77ev6FYDzGvT2ZFYt930tpRHm74WXCAcJdnM9steI59RDpsYF3U2vEpbUCqQKeMuzcgngHJuEVVAxkjUbo3d9Luc-6MtHKYgxc83lRHIhY5oVA_lQVQgWawvEnvmrZFc_kQeMk4K0xHDcj6drFHqH9bKXC-5CrrD5pTHJIOvZN1uLHBl1mSFjX_knJp9aLGfxA0M6wmyJD_PTugu1dzQCRTZQIDAQAB";
+        const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAosgoN3xmwny44x-b3uhcfXXPKHIjdLBDH6qWJkmK-lLNepJd9XkfZUhHXsrVh6dzzlG-78EYB_2by01p8nVTQ1aNZ_rL3t0CYrClRTJqD5u7jiZqQmXtLMdIwOgSVlmpZ3E1uQpAY1u0YJgfVayHdzwjAvVfouhmPwUEyFCjy6NTlUQvV2mZXUmXwwis17sQI6DlNu3UNK2tm5s-MaIjJKVibP1sHHMgJmKUJfYvLXb6URhUNpiRD8HP6LpCdEG6sk4ga7xzrhgd7WSq2Ty1NGCBzyiYx-pm2tWO-rSpSPj6Icm7PKNWIGdCoorskjZXZqEM9gHeOR1-RRaYu75E7wIDAQAB";
+        const FASTLY_PUB_KEY = "MIICUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAg8AMIICCgKCAgEAubzND7lvK";
+        const publicKeys = new Map([
+            ['demo-pat.issuer.cloudflare.com', CLOUDFLARE_DEMO_PUB_KEY],
+            ['pat-issuer.cloudflare.com', CLOUDFLARE_PUB_KEY],
+            ['demo-issuer.private-access-tokens.fastly.com', FASTLY_PUB_KEY],
+        ]);
+
+        // host to network long
+        function htonl(n) {
+            return [(n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+        }
+
+        // host to network short
+        function htons(n) {
+            return [(n >> 8) & 0xff, n & 0xff];
+        }
+
+        // network to host long
+        function ntohl(n) {
+            return (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3];
+        }
+
+        // network to host short
+        function ntohs(n) {
+            return (n[0] << 8) + n[1];
+        }
+
+        function bin2str(value = []) {
+            return value.map(char => String.fromCharCode(char)).join('');
+        }
+
+        function base64url(data) {
+            return btoa(data).replace(/\+/g, '-').replace(/\//g, '_')
+        }
+
+        function base64urlDecode(data) {
+            return atob(data.replace(/-/g, '+').replace(/_/g, '\/')).split('').map( c => c.charCodeAt(0));
+        }
+
+        function stringToBinary(value) {
+            return [...new TextEncoder().encode(value ?? '')]
+        }
+
+        function getElement(id) {
+            return document.getElementById(id).value;
+        }
+
+
+        function debugHex(name, value = []) {
+            // hex encode
+            // document.getElementById(name).innerHTML = "[" + value.map(v => v.toString(16).padStart(2, '0')).join(", ") + "]";
+
+            // keep decimal encode - because humans
+            document.getElementById(name).innerHTML = JSON.stringify(value).replaceAll(",", ", ");
+        }
+
+        function generateRedemption() {
+            const value = Array(32).fill(0).map(() => Math.round(Math.random()*255).toString(16).padStart(2, '0')).join('');
+            document.getElementById("redemption_context").value = value;
+        }
+
+        function hexToByte(s) {
+            return s?.replaceAll(/[^0-9a-z]/gi, '0')?.match(/.{1,2}/g)?.map(a => parseInt(a, 16));
+        }
+
+        function update() {
+            calcToken();
+        }
+
+        function init() {
+            update();
+            document.getElementsByTagName('body')[0].onkeyup = update;
+            [...document.getElementsByTagName('select')].forEach(s => s.addEventListener('change', update));
+            [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('change', update));
+            [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('click', update));
+        }
+
+        async function calcToken() {
+            const token = getElement("token")?.replaceAll(/^"|"$/g, "");
+            const tokenIssuerName = [...publicKeys.entries()].find(([k, v]) => v === token)[0] || "";
+            const tokenBytes = await Promise.resolve(base64urlDecode(token)).catch(() => null)
+
+            let challenge = getElement("challenge");
+
+            const tests = [];
+            tests.push([ "Token-Key", !!tokenIssuerName, ` == "${tokenIssuerName}"`, JSON.stringify(tokenBytes).replaceAll(",", ", ") ]);
+            tests.push([
+                "Challenge is quoted",
+                /^[^="]+$/.test(challenge) || /^"[^"=]+=*"$|^[^="]+$/.test(challenge),
+                /=/.test(challenge) ? ' (required with base64url() `=` padding)' : '',
+            ]);
+
+            tests.push([ "Challenge is base64url()", /^["A-Za-z0-9=_-]+$/.test(challenge), '', challenge ]);
+
+            challenge = challenge.replaceAll(/^"|"$/g, "");
+            const challengeBytes = await Promise.resolve(base64urlDecode(challenge)).catch(() => null);
+            tests.push([ "base64url.decode(challenge)", !!challengeBytes, '', challengeBytes ]);
+
+            const tokenType = ntohs(challengeBytes.slice(0, 2));
+            tests.push([ "Token Type is VOPRF or Blind RSA", [1,2].includes(tokenType), ` == ${tokenType === 1 ? 'VOPRF' : tokenType === 2 ? 'Blind RSA' : ''}`, htons(tokenType) ]);
+
+            const issuerNameLength = ntohs(challengeBytes.slice(2, 4));
+            tests.push([ "Issuer Name has length", issuerNameLength > 0, ` == ${issuerNameLength}`, htons(issuerNameLength)]);
+
+            const issuerName = bin2str(challengeBytes.slice(4, 4 + issuerNameLength));
+            tests.push([ "Issuer Name matches Token-Key", issuerName === tokenIssuerName, ` == "${issuerName}"`, ]);
+
+            const redemptionContextLength = challengeBytes[4 + issuerNameLength];
+            tests.push([ "Redemption Context has length 0 or 32", [0, 32].includes(redemptionContextLength), ` == ${redemptionContextLength}`, redemptionContextLength]);
+
+            const redemptionContext = challengeBytes.slice(4 + issuerNameLength + 1, 4 + issuerNameLength + 1 + redemptionContextLength);
+            tests.push([ "Redemption Context has correct length", redemptionContext.length === redemptionContextLength, ` == ${redemptionContext.length}`, redemptionContext ]);
+
+            const originInfoLength = ntohs(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength, 4 + issuerNameLength + 1 + redemptionContextLength + 2));
+            tests.push([ "Origin Info has length", originInfoLength >= 0, ` == ${originInfoLength}`, htons(originInfoLength) ]);
+
+            const originInfo = bin2str(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength + 2, 4 + issuerNameLength + 1 + redemptionContextLength + 2 + originInfoLength));
+            tests.push([ "Origin Info has correct length", originInfo.length === originInfoLength, ` == ${originInfo}`, stringToBinary(originInfo) ]);
+
+            tests.push([
+                "Browser supports PAT (Safari 16+)",
+                /like Mac OS X\) AppleWebKit\/[0-9.]+ \(KHTML, like Gecko\) Version\/(1[6-9]|[2-9])[.0-9]+ .*Safari\/[0-9.]+/.test(navigator.userAgent)
+            ]);
+
+            let output = "";
+            for (const [name, result, value, longValue] of tests) {
+                const code = longValue ? `<code>${JSON.stringify(longValue)?.replaceAll(',', ', ').replaceAll('"', '') || ""}</code>` : "";
+                output += `<details class="${result ? 'pass' : 'fail'}"><summary><span>${result ? ' PASS' : ' FAIL'} ${name}</span>${value || ""}</summary>${code}</details>`;
+            }
+            document.getElementById('tests').innerHTML = output;
+        }
+        window.addEventListener('load', init);
+    </script>
+</head>
+<body>
+<main>
+    <h1>Private Access Token Debugger</h1>
+    <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
+            [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
+            [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
+            [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html">IETF Draft</a>]
+    </div>
+    <div class="grid code">
+        <code style="grid-column: span 2 / auto; margin: 0; border: 0;">WWW-Authenticate: PrivateToken</code>
+        <code style="padding-left: 2rem; margin: 0; border: 0;">challenge=</code>
+        <input id="challenge" type="text" value="AAIAHmRlbW8tcGF0Lmlzc3Vlci5jbG91ZGZsYXJlLmNvbQAAAA==">
+        <code style="padding-left: 2rem; margin: 0; border: 0;">token-key=</code>
+        <input id="token" type="text" value="MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAr0UG9LP1zD-ejLPZkZMkXdaBmh8pyNxTox9lJHXFeInRehWETX9c7og0cDLq2lpaAQJ0A_EkEyor124ClboJl64reZ1Jeg1PpJVnns68I0iN3WTBXxm-W5KB1lMo_77ev6FYDzGvT2ZFYt930tpRHm74WXCAcJdnM9steI59RDpsYF3U2vEpbUCqQKeMuzcgngHJuEVVAxkjUbo3d9Luc-6MtHKYgxc83lRHIhY5oVA_lQVQgWawvEnvmrZFc_kQeMk4K0xHDcj6drFHqH9bKXC-5CrrD5pTHJIOvZN1uLHBl1mSFjX_knJp9aLGfxA0M6wmyJD_PTugu1dzQCRTZQIDAQAB">
+    </div>
+
+    <div id="tests">
+        <details id="token_type_test">
+            <summary>
+                <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1">token_type</a> == 0x0002
+            </summary>
+            <code id="token_type"></code>
+        </details>
+    </div>
+</main>
+</body>
+</html>
