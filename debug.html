@@ -222,7 +222,7 @@
             return btoa(data).replace(/\+/g, '-').replace(/\//g, '_')
         }
 
-        function base64urlDecode(data) {
+        async function base64urlDecode(data) {
             return atob(data.replace(/-/g, '+').replace(/_/g, '\/')).split('').map( c => c.charCodeAt(0));
         }
 
@@ -269,16 +269,18 @@
 
         async function calcToken() {
             const token = getElement("token-key")?.replaceAll(/^"|"$/g, "");
-            const tokenIssuerName = [...publicKeys.entries()].find(([k, v]) => v === token)[0] || "";
-            const tokenBytes = await Promise.resolve(base64urlDecode(token)).catch(() => null)
+            const findToken = async () => [...publicKeys.entries()].find(([k, v]) => v === token)[0];
+            const tokenIssuerName = await findToken().catch(() => "") || "";
+            const tokenBytes = await base64urlDecode(token).catch(() => [])
 
             const tests = [];
-            tests.push([ "token-key matches", !!tokenIssuerName, ` == "${tokenIssuerName}"`, JSON.stringify(tokenBytes).replaceAll(",", ", ") ]);
             tests.push([
                 `token-key is "quoted"`,
-                /^[^="]+$/.test(token) || /^"[^"=]+=*"$|^[^="]+$/.test(token),
+                /^[^="]+$|^"[^"=]+=*"$|^[^="]+$/.test(token),
                 /=/.test(token) ? ' (required with base64url() `=` padding)' : '',
             ]);
+            tests.push([ "token-key can base64url.decode()", tokenBytes.length > 0, '', tokenBytes ]);
+            tests.push([ "token-key matches", !!tokenIssuerName, ` == "${tokenIssuerName}"` ]);
 
 
             let challenge = getElement("challenge");
@@ -296,10 +298,10 @@
                 challenge.length % 4 == 0,
                 ` == ${challenge.length % 4}`,
             ]);
-            tests.push([ "challenge is base64url() formatted", /^[A-Za-z0-9=_-]+$/.test(challenge), '', challenge ]);
+            tests.push([ "challenge is formatted as base64url() ", /^[A-Za-z0-9=_-]+$/.test(challenge), '', challenge ]);
 
-            const challengeBytes = await Promise.resolve(base64urlDecode(challenge)).catch(() => null);
-            tests.push([ "base64url.decode( challenge )", !!challengeBytes, '', challengeBytes ]);
+            const challengeBytes = await base64urlDecode(challenge).catch(() => []);
+            tests.push([ "challenge can base64url.decode()", challengeBytes.length > 0, '', challengeBytes ]);
 
             const tokenType = ntohs(challengeBytes.slice(0, 2));
             tests.push([ "token_type is VOPRF (1) or Blind RSA (2)", [1,2].includes(tokenType), ` == ${tokenType === 1 ? 'VOPRF (1)' : tokenType === 2 ? 'Blind RSA (2)' : ''}`, htons(tokenType) ]);
@@ -308,7 +310,7 @@
             tests.push([ "issuer_name.length() > 0", issuerNameLength > 0, ` == ${issuerNameLength}`, htons(issuerNameLength)]);
 
             const issuerName = bin2str(challengeBytes.slice(4, 4 + issuerNameLength));
-            tests.push([ "issuer_name matches Token-Key", issuerName === tokenIssuerName, ` == "${issuerName}"`, ]);
+            tests.push([ "issuer_name matches token-key", issuerName === tokenIssuerName, ` == "${issuerName}"`, ]);
 
             const redemptionContextLength = challengeBytes[4 + issuerNameLength];
             tests.push([ "redemption_context length prefix is 0 or 32", [0, 32].includes(redemptionContextLength), ` == ${redemptionContextLength}`, redemptionContextLength]);
