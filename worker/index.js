@@ -24,7 +24,7 @@ async function handleRequest(request) {
         status: 401,
         headers: {
           "Content-Type": `text/html`,
-          "WWW-Authenticate": `PrivateToken challenge="${challenge}", token-key="${publicKey}"`,
+          "WWW-Authenticate": `PrivateToken challenge=${decodeURIComponent(challenge)}, token-key=${decodeURIComponent(publicKey)}`,
         },
       };
   return new Response(
