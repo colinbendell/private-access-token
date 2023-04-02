@@ -258,8 +258,8 @@
 
         function init() {
             const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
-            if (params.challenge) document.getElementById('challenge').value = params.challenge;
-            if (params["token-key"]) document.getElementById('token-key').value = params["token-key"];
+            if (params.challenge) document.getElementById('challenge').value = decodeURIComponent(params.challenge);
+            if (params["token-key"]) document.getElementById('token-key').value = decodeURIComponent(params["token-key"]);
             update();
             document.getElementsByTagName('body')[0].onkeyup = update;
             [...document.getElementsByTagName('select')].forEach(s => s.addEventListener('change', update));
