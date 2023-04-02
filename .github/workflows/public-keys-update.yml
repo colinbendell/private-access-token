@@ -1,7 +1,7 @@
 name: Update Public Keys
 on:
   push:
-    branches: [$default-branch]
+    branches: main
   workflow_dispatch:
   schedule:
     - cron: "0 * * * *"

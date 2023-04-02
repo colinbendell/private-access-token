@@ -279,8 +279,8 @@ async function handleRequest(request) {
           [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
           [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html">IETF Draft</a>]
           [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
-          [<a href="https://private-access-token.colinbendell.dev/verify.html">Debug</a>]
-          [<a href="https://private-access-token.colinbendell.dev">UA Test</a>]
+          [<a href="https://private-access-token.colinbendell.dev/debug.html">Debug</a>]
+          [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
 
   </div>
   <details open id="token_test">

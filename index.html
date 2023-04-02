@@ -140,6 +140,14 @@
             grid-template-columns: repeat(1, 4fr 1fr);
         }
 
+        .grid.code {
+            border: 1px solid #eee;
+            background-color: #f9f9f9;
+            grid-template-columns: repeat(1, 1fr 3fr);
+            grid-column: span 2 / auto;
+            margin-bottom: 1rem;
+        }
+
     </style>
     <script>
         const CLOUDFLARE_DEMO_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAr0UG9LP1zD-ejLPZkZMkXdaBmh8pyNxTox9lJHXFeInRehWETX9c7og0cDLq2lpaAQJ0A_EkEyor124ClboJl64reZ1Jeg1PpJVnns68I0iN3WTBXxm-W5KB1lMo_77ev6FYDzGvT2ZFYt930tpRHm74WXCAcJdnM9steI59RDpsYF3U2vEpbUCqQKeMuzcgngHJuEVVAxkjUbo3d9Luc-6MtHKYgxc83lRHIhY5oVA_lQVQgWawvEnvmrZFc_kQeMk4K0xHDcj6drFHqH9bKXC-5CrrD5pTHJIOvZN1uLHBl1mSFjX_knJp9aLGfxA0M6wmyJD_PTugu1dzQCRTZQIDAQAB";
@@ -258,8 +266,8 @@
             [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
             [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html">IETF Draft</a>]
             [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
-            [<a href="https://private-access-token.colinbendell.dev/verify.html">Debug</a>]
-            [<a href="https://private-access-token.colinbendell.dev">UA Test</a>]
+            [<a href="https://private-access-token.colinbendell.dev/debug.html">Debug</a>]
+            [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
       </div>
     <div class="grid">
         <p>Create a valid <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-06.html#section-2.1">PrivateToken</a>

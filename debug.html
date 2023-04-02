@@ -257,6 +257,9 @@
         }
 
         function init() {
+            const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
+            if (params.challenge) document.getElementById('challenge').value = params.challenge;
+            if (params["token-key"]) document.getElementById('token-key').value = params["token-key"];
             update();
             document.getElementsByTagName('body')[0].onkeyup = update;
             [...document.getElementsByTagName('select')].forEach(s => s.addEventListener('change', update));
@@ -265,46 +268,59 @@
         }
 
         async function calcToken() {
-            const token = getElement("token")?.replaceAll(/^"|"$/g, "");
+            const token = getElement("token-key")?.replaceAll(/^"|"$/g, "");
             const tokenIssuerName = [...publicKeys.entries()].find(([k, v]) => v === token)[0] || "";
             const tokenBytes = await Promise.resolve(base64urlDecode(token)).catch(() => null)
 
+            const tests = [];
+            tests.push([ "token-key matches", !!tokenIssuerName, ` == "${tokenIssuerName}"`, JSON.stringify(tokenBytes).replaceAll(",", ", ") ]);
+            tests.push([
+                `token-key is "quoted"`,
+                /^[^="]+$/.test(token) || /^"[^"=]+=*"$|^[^="]+$/.test(token),
+                /=/.test(token) ? ' (required with base64url() `=` padding)' : '',
+            ]);
+
+
             let challenge = getElement("challenge");
 
-            const tests = [];
-            tests.push([ "Token-Key", !!tokenIssuerName, ` == "${tokenIssuerName}"`, JSON.stringify(tokenBytes).replaceAll(",", ", ") ]);
             tests.push([
-                "Challenge is quoted",
+                `challenge is "quoted"`,
                 /^[^="]+$/.test(challenge) || /^"[^"=]+=*"$|^[^="]+$/.test(challenge),
                 /=/.test(challenge) ? ' (required with base64url() `=` padding)' : '',
             ]);
 
-            tests.push([ "Challenge is base64url()", /^["A-Za-z0-9=_-]+$/.test(challenge), '', challenge ]);
-
             challenge = challenge.replaceAll(/^"|"$/g, "");
+
+            tests.push([
+                "challenge.length % 4",
+                challenge.length % 4 == 0,
+                ` == ${challenge.length % 4}`,
+            ]);
+            tests.push([ "challenge is base64url() formatted", /^[A-Za-z0-9=_-]+$/.test(challenge), '', challenge ]);
+
             const challengeBytes = await Promise.resolve(base64urlDecode(challenge)).catch(() => null);
-            tests.push([ "base64url.decode(challenge)", !!challengeBytes, '', challengeBytes ]);
+            tests.push([ "base64url.decode( challenge )", !!challengeBytes, '', challengeBytes ]);
 
             const tokenType = ntohs(challengeBytes.slice(0, 2));
-            tests.push([ "Token Type is VOPRF or Blind RSA", [1,2].includes(tokenType), ` == ${tokenType === 1 ? 'VOPRF' : tokenType === 2 ? 'Blind RSA' : ''}`, htons(tokenType) ]);
+            tests.push([ "token_type is VOPRF (1) or Blind RSA (2)", [1,2].includes(tokenType), ` == ${tokenType === 1 ? 'VOPRF (1)' : tokenType === 2 ? 'Blind RSA (2)' : ''}`, htons(tokenType) ]);
 
             const issuerNameLength = ntohs(challengeBytes.slice(2, 4));
-            tests.push([ "Issuer Name has length", issuerNameLength > 0, ` == ${issuerNameLength}`, htons(issuerNameLength)]);
+            tests.push([ "issuer_name.length() > 0", issuerNameLength > 0, ` == ${issuerNameLength}`, htons(issuerNameLength)]);
 
             const issuerName = bin2str(challengeBytes.slice(4, 4 + issuerNameLength));
-            tests.push([ "Issuer Name matches Token-Key", issuerName === tokenIssuerName, ` == "${issuerName}"`, ]);
+            tests.push([ "issuer_name matches Token-Key", issuerName === tokenIssuerName, ` == "${issuerName}"`, ]);
 
             const redemptionContextLength = challengeBytes[4 + issuerNameLength];
-            tests.push([ "Redemption Context has length 0 or 32", [0, 32].includes(redemptionContextLength), ` == ${redemptionContextLength}`, redemptionContextLength]);
+            tests.push([ "redemption_context length prefix is 0 or 32", [0, 32].includes(redemptionContextLength), ` == ${redemptionContextLength}`, redemptionContextLength]);
 
             const redemptionContext = challengeBytes.slice(4 + issuerNameLength + 1, 4 + issuerNameLength + 1 + redemptionContextLength);
-            tests.push([ "Redemption Context has correct length", redemptionContext.length === redemptionContextLength, ` == ${redemptionContext.length}`, redemptionContext ]);
+            tests.push([ "redemption_context.valid()", redemptionContext.length === redemptionContextLength, ` == "${redemptionContext.map(v => v.toString(16).padStart(2, '0')).join('')}"`, redemptionContext]);
 
             const originInfoLength = ntohs(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength, 4 + issuerNameLength + 1 + redemptionContextLength + 2));
-            tests.push([ "Origin Info has length", originInfoLength >= 0, ` == ${originInfoLength}`, htons(originInfoLength) ]);
+            tests.push([ "origin_info length prefix", originInfoLength >= 0, ` == ${originInfoLength}`, htons(originInfoLength) ]);
 
             const originInfo = bin2str(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength + 2, 4 + issuerNameLength + 1 + redemptionContextLength + 2 + originInfoLength));
-            tests.push([ "Origin Info has correct length", originInfo.length === originInfoLength, ` == ${originInfo}`, stringToBinary(originInfo) ]);
+            tests.push([ "origin_info.valid()", originInfo.length === originInfoLength, ` == "${originInfo}"`, stringToBinary(originInfo) ]);
 
             let {version, brand} = navigator.userAgentData?.brands[0] || {};
             if (!brand && !version) {
@@ -335,24 +351,18 @@
             [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
             [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html">IETF Draft</a>]
             [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
-            [<a href="https://private-access-token.colinbendell.dev/verify.html">Debug</a>]
-            [<a href="https://private-access-token.colinbendell.dev">UA Test</a>]
+            [<a href="https://private-access-token.colinbendell.dev/debug.html">Debug</a>]
+            [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
       </div>
     <div class="grid code">
         <code style="grid-column: span 2 / auto; margin: 0; border: 0;">WWW-Authenticate: PrivateToken</code>
         <code style="padding-left: 2rem; margin: 0; border: 0;">challenge=</code>
         <input id="challenge" type="text" value="AAIAHmRlbW8tcGF0Lmlzc3Vlci5jbG91ZGZsYXJlLmNvbQAAAA==">
         <code style="padding-left: 2rem; margin: 0; border: 0;">token-key=</code>
-        <input id="token" type="text" value="MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAr0UG9LP1zD-ejLPZkZMkXdaBmh8pyNxTox9lJHXFeInRehWETX9c7og0cDLq2lpaAQJ0A_EkEyor124ClboJl64reZ1Jeg1PpJVnns68I0iN3WTBXxm-W5KB1lMo_77ev6FYDzGvT2ZFYt930tpRHm74WXCAcJdnM9steI59RDpsYF3U2vEpbUCqQKeMuzcgngHJuEVVAxkjUbo3d9Luc-6MtHKYgxc83lRHIhY5oVA_lQVQgWawvEnvmrZFc_kQeMk4K0xHDcj6drFHqH9bKXC-5CrrD5pTHJIOvZN1uLHBl1mSFjX_knJp9aLGfxA0M6wmyJD_PTugu1dzQCRTZQIDAQAB">
+        <input id="token-key" type="text" value="MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAr0UG9LP1zD-ejLPZkZMkXdaBmh8pyNxTox9lJHXFeInRehWETX9c7og0cDLq2lpaAQJ0A_EkEyor124ClboJl64reZ1Jeg1PpJVnns68I0iN3WTBXxm-W5KB1lMo_77ev6FYDzGvT2ZFYt930tpRHm74WXCAcJdnM9steI59RDpsYF3U2vEpbUCqQKeMuzcgngHJuEVVAxkjUbo3d9Luc-6MtHKYgxc83lRHIhY5oVA_lQVQgWawvEnvmrZFc_kQeMk4K0xHDcj6drFHqH9bKXC-5CrrD5pTHJIOvZN1uLHBl1mSFjX_knJp9aLGfxA0M6wmyJD_PTugu1dzQCRTZQIDAQAB">
     </div>
 
     <div id="tests">
-        <details id="token_type_test">
-            <summary>
-                <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1">token_type</a> == 0x0002
-            </summary>
-            <code id="token_type"></code>
-        </details>
     </div>
 </main>
 </body>
