@@ -278,10 +278,14 @@ async function handleRequest(request) {
           [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
           [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
           [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html">IETF Draft</a>]
+          [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
+          [<a href="https://private-access-token.colinbendell.dev/verify.html">Debug</a>]
+          [<a href="https://private-access-token.colinbendell.dev">UA Test</a>]
+
   </div>
   <details open id="token_test">
     <summary>
-        Authorization: <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#name-token-redemption">PrivateToken</a> token=</summary>
+        Authorization: <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#name-token-redemption">PrivateToken</a> token=</summary>
     <input id="token" type="text" value="${auth || ''}">
   </details>
   <details open id="token_valid_test">
@@ -298,25 +302,25 @@ async function handleRequest(request) {
   </details>
   <details id="nonce_test">
       <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.2">nonce</a> .length()==256
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.2">nonce</a> .length()==256
       </summary>
       <code id="nonce"></code>
   </details>
   <details id="challenge_digest_test">
       <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.3">challenge_digest</a> == sha256(challenge)
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.3">challenge_digest</a> == sha256(challenge)
       </summary>
       <code id="challenge_digest"></code>
   </details>
   <details id="token_key_id_test">
       <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.4">token_key_id</a> .length()==32
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.4">token_key_id</a> .length()==32
       </summary>
       <code id="token_key_id"></code>
   </details>
   <details id="authenticator_test">
       <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html#section-2.2-4.4">authenticator</a> .length()==256
+          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.4">authenticator</a> .length()==256
       </summary>
       <code id="authenticator"></code>
   </details>

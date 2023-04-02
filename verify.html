@@ -306,15 +306,21 @@
             const originInfo = bin2str(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength + 2, 4 + issuerNameLength + 1 + redemptionContextLength + 2 + originInfoLength));
             tests.push([ "Origin Info has correct length", originInfo.length === originInfoLength, ` == ${originInfo}`, stringToBinary(originInfo) ]);
 
+            let {version, brand} = navigator.userAgentData?.brands[0] || {};
+            if (!brand && !version) {
+                [,version, brand] = /Version\/((?:1[6-9]|[2-9])[.0-9]+) .*(Safari Mobile|Safari)/.exec(navigator.userAgent);
+            }
+            const ua = `${brand} ${version}`;
             tests.push([
                 "Browser supports PAT (Safari 16+)",
-                /like Mac OS X\) AppleWebKit\/[0-9.]+ \(KHTML, like Gecko\) Version\/(1[6-9]|[2-9])[.0-9]+ .*Safari\/[0-9.]+/.test(navigator.userAgent)
+                /AppleWebKit\/[0-9.]+ \(KHTML, like Gecko\) Version\/(1[6-9]|[2-9])[.0-9]+ .*Safari\/[0-9.]+/.test(navigator.userAgent),
+                ` == ${ua}`
             ]);
 
             let output = "";
             for (const [name, result, value, longValue] of tests) {
                 const code = longValue ? `<code>${JSON.stringify(longValue)?.replaceAll(',', ', ').replaceAll('"', '') || ""}</code>` : "";
-                output += `<details class="${result ? 'pass' : 'fail'}"><summary><span>${result ? ' PASS' : ' FAIL'} ${name}</span>${value || ""}</summary>${code}</details>`;
+                output += `<details class="${result ? 'pass' : 'fail'}"><summary><span> ${name}</span>${value || ""}</summary>${code}</details>`;
             }
             document.getElementById('tests').innerHTML = output;
         }
@@ -327,8 +333,11 @@
     <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
             [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
             [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
-            [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-05.html">IETF Draft</a>]
-    </div>
+            [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html">IETF Draft</a>]
+            [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
+            [<a href="https://private-access-token.colinbendell.dev/verify.html">Debug</a>]
+            [<a href="https://private-access-token.colinbendell.dev">UA Test</a>]
+      </div>
     <div class="grid code">
         <code style="grid-column: span 2 / auto; margin: 0; border: 0;">WWW-Authenticate: PrivateToken</code>
         <code style="padding-left: 2rem; margin: 0; border: 0;">challenge=</code>
