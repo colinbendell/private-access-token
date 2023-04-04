@@ -17,8 +17,8 @@ async function handleRequest(request) {
   const tokenParam = query?.split("token=")[1]?.split("&")[0];
   const tokenHeader = request.headers.get("Authorization")?.split("PrivateToken token=")[1];
 
-  const auth = tokenHeader || tokenParam;
-  const respInit = auth
+  const token = tokenHeader || tokenParam;
+  const respInit = token
     ? { headers: { "Content-Type": `text/html` } }
     : {
         status: 401,
@@ -29,304 +29,422 @@ async function handleRequest(request) {
       };
   return new Response(
     `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset='utf-8'>
-  <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-  <title>${auth ? "PASS:" : "FAIL:"} Private Acccess Token Test</title>
-  <meta name='viewport' content='width=device-width, initial-scale=1'>
-  <style>
-      /* Box sizing rules */
-      *,
-      *::before,
-      *::after {
-          box-sizing: border-box;
-      }
+    <html lang="en">
+    <head>
+        <meta charset='utf-8'>
+        <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+        <title>Private Acccess Token Test</title>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+        <style>
+            /* Box sizing rules */
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+            }
 
-      /* Remove default margin */
-      body,
-      h1,
-      h2,
-      h3,
-      h4,
-      p,
-      figure,
-      blockquote,
-      dl,
-      dd {
-          margin: 0;
-          padding: 0;
-          font-family: -apple-system, system-ui, sans-serif;
-      }
+            /* Remove default margin */
+            body,
+            h1,
+            h2,
+            h3,
+            h4,
+            p,
+            figure,
+            blockquote,
+            dl,
+            dd {
+                margin: 0;
+                padding: 0;
+                font-family: -apple-system, system-ui, sans-serif;
+            }
 
-      /* Remove list styles on ul, ol elements with a list role, which suggests default styling will be removed */
-      ul[role="list"],
-      ol[role="list"] {
-          list-style: none;
-      }
+            /* Remove list styles on ul, ol elements with a list role, which suggests default styling will be removed */
+            ul[role="list"],
+            ol[role="list"] {
+                list-style: none;
+            }
 
-      /* Set core root defaults */
-      html:focus-within {
-          scroll-behavior: smooth;
-      }
+            /* Set core root defaults */
+            html:focus-within {
+                scroll-behavior: smooth;
+            }
 
-      /* Set core body defaults */
-      body {
-          min-height: 100vh;
-          text-rendering: optimizeSpeed;
-          line-height: 1.5;
-      }
+            /* Set core body defaults */
+            body {
+                min-height: 100vh;
+                text-rendering: optimizeSpeed;
+                line-height: 1.5;
+            }
 
-      /* A elements that don't have a class get default styles */
-      a:not([class]) {
-          text-decoration-skip-ink: auto;
-      }
+            /* A elements that don't have a class get default styles */
+            a:not([class]) {
+                text-decoration-skip-ink: auto;
+            }
 
-      /* Make images easier to work with */
-      img,
-      picture {
-          max-width: 100%;
-          display: block;
-      }
+            /* Make images easier to work with */
+            img,
+            picture {
+                max-width: 100%;
+                display: block;
+            }
 
-      /* Inherit fonts for inputs and buttons */
-      input,
-      button,
-      textarea,
-      select {
-          font: inherit;
-      }
+            /* Inherit fonts for inputs and buttons */
+            input,
+            button,
+            textarea,
+            select {
+                font: inherit;
+            }
 
-      html {
-          max-width: 58ch;
-          margin: auto;
-          line-height: 1.75;
-          /*font-size: 1.25em;*/
-      }
-      p,ul,ol {
-          margin-bottom: 2em;
-          color: #1d1d1d;
-          font-family: -apple-system, system-ui, sans-serif;
-      }
-      main {
-          padding: 2rem;
-      }
-      h1 {
-        line-height: 1;
-        padding-bottom: 0.6rem;
-      }
-      select, code, input, details {
-          display: block;
-          width: 100%;
-          margin-bottom: 0.5rem;
-          font-family: 'Roboto Mono', monospace;
-      }
-      a[href]:hover {
-          background-color: #f2f2f2;
-      }
-      a[href] {
-          color: #22e;
-          text-decoration: none;
-      }
+            @media only screen and (min-device-width: 500px) and (-webkit-device-pixel-ratio: 2) {
+                html {
+                    font-size: 1.25rem;
+                }
+            }
+            html {
+                max-width: 58ch;
+                margin: auto;
+                line-height: 1.75;
+                /* font-size: 1.25rem; */
+            }
+            p,ul,ol {
+                margin-bottom: 2em;
+                color: #1d1d1d;
+                font-family: -apple-system, system-ui, sans-serif;
+            }
+            h1 {
+                line-height: 1;
+                padding-bottom: 0.6rem;
+            }
+            a[href]:hover {
+                background-color: #f2f2f2;
+            }
+            a[href] {
+                color: #22e;
+                text-decoration: none;
+            }
 
-      code, input {
-          border: 1px solid #eee;
-          overflow-wrap: anywhere;
-          background-color: #f9f9f9;
-          font-size: 0.75rem;
-      }
-      details {
-        margin-left: 1.75rem;
-      }
-      details summary::-webkit-details-marker {
-          display:none;
-      }
-      details summary::marker {
-          display:none;
-          content:"";
-      }
-      details summary {
-          cursor: pointer;
-      }
-      details > summary:before {
-        margin-left: -1.75rem;
-        color: initial;
-        line-height: 1;
-        font-size: 1.1rem;
-        content: "❌";
-      }
-      details.pass > summary:before {
-        content: "✅";
-      }
-      details.unknown > summary:before {
-        content: "❓";
-      }
-      #token_valid_test:not(.unknown) > code {
-        display: none;
-      }
-      details summary {
-          color: darkgray;
-      }
-  </style>
-  <script>
-      const PUBLIC_KEY = "${publicKey}";
+            select, code {
+                display: block;
+            }
 
-      function getElement(id) {
-          return document.getElementById(id).value;
-      }
+            code {
+                border: 1px solid #eee;
+                overflow-wrap: anywhere;
+                margin: 0;
+            }
+            code + code {
+                margin-top: 1em;
+            }
 
-      function bin2str(value = []) {
-          return value.map(char => String.fromCharCode(char)).join('');
-      }
+            tt, code, pre {
+                background-color: #f9f9f9;
+                font-family: 'Roboto Mono', monospace;
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(1, 2fr 1fr);
+                grid-column-gap: 0.5rem;
+            }
+            .grid input {
+                margin-bottom: auto;
+                line-height: 1rem;
+            }
+            .grid.code {
+                border: 1px solid #eee;
+                background-color: #f9f9f9;
+                grid-template-columns: repeat(1, 1fr 4fr);
+                grid-column: span 2 / auto;
+                margin-bottom: 0.5rem;
+                padding: 0.5rem;
+            }
 
-      function str2bin(data) {
-          return data?.split('')?.map(char => char.charCodeAt(0)) || [];
-      }
+            details {
+                margin-left: 1.75rem;
+            }
+            details summary::-webkit-details-marker {
+                display:none;
+            }
+            details summary::marker {
+                display:none;
+                content:"";
+            }
+            details summary {
+                cursor: pointer;
+            }
+            details:not([open]) > summary:has(+ *):after {
+                content: "᠁";
+                display: block;
+                margin-top: -0.5rem;
+                margin-left: -0.25rem;
+                margin-bottom: -0.5rem;
+            }
+            details > summary:before {
+                margin-left: -1.75rem;
+                color: initial;
+                line-height: 1;
+                font-size: 1.1rem;
+                content: "❌";
+            }
+            details.pass > summary:before {
+                content: "✅";
+            }
+            details.unknown > summary:before {
+                content: "❓";
+            }
+            #token_valid_test:not(.unknown) > code {
+                display: none;
+            }
+            details summary {
+                color: darkgray;
+            }
+            details summary span {
+                color: black;
+            }
+            details code {
+                font-size: 0.75rem;
+            }
 
-      function base64url(data) {
-          return btoa(data).replace(/\\\+/g, '-').replace(/\\\//g, '_')
-      }
-      function base64urlDecode(data) {
-          return atob(decodeURIComponent(data)?.replace(/-/g, '+')?.replace(/_/g, '/'))
-      }
+            #www-authenticate.grid.code {
+                grid-template-columns: repeat(1, 2fr 5fr);
+                display: none;
+            }
+        </style>
+        <script>
+        // host to network long
+        function htonl(n) {
+            return [(n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+        }
 
-      function debugHex(name, value = []) {
-          // hex encode
-          // document.getElementById(name).innerHTML = "[" + value.map(v => v.toString(16).padStart(2, '0')).join(", ") + "]";
+        // host to network short
+        function htons(n) {
+            return [(n >> 8) & 0xff, n & 0xff];
+        }
 
-          // keep decimal encode - because humans
-          document.getElementById(name).innerHTML = JSON.stringify(value).replaceAll(",", ", ");
-      }
+        // network to host long
+        function ntohl(n) {
+            return (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3];
+        }
 
-      function debugBool(name, value) {
-          const status = value === null ? 'unknown' : (value ? 'pass' : 'fail')
-          console.log(name, ":", status)
-          document.getElementById(name + "_test").className = status;
-      }
+        // network to host short
+        function ntohs(n) {
+            return (n[0] << 8) + n[1];
+        }
+        function getElement(id) {
+            return document.getElementById(id).value;
+        }
 
-      function hexToByte(s) {
-          return s?.replaceAll(/[^0-9a-z]/gi, '0')?.match(/.{1,2}/g)?.map(a => parseInt(a, 16));
-      }
+        function bin2str(value = []) {
+            return value.map(char => String.fromCharCode(char)).join('');
+        }
 
-      function b642ab(base64_string){
-          return Uint8Array.from(base64urlDecode(base64_string), c => c.charCodeAt(0));
-      }
+        function str2bin(data) {
+            return data?.split('')?.map(char => char.charCodeAt(0)) || [];
+        }
 
-      function compareArray(a, b) {
-          return a.toString() === b.toString();
-      }
-      async function parseToken() {
-          const token = getElement("token");
-          const binToken = str2bin(base64urlDecode(token)) || [];
+        function base64url(data) {
+            return btoa(data).replaceAll('+', '-').replace('/', '_')
+        }
+        function base64urlDecode(data) {
+            try {
+                return atob(decodeURIComponent(data)?.replace(/-/g, '+')?.replace(/_/g, '/'))
+            }
+            catch {
 
-          const tokenType = binToken.slice(0,2);
-          const nonce = binToken.slice(2,34);
-          const challenge = binToken.slice(34,66);
-          const tokenKeyID = binToken.slice(66,98);
-          const authenticator = binToken.slice(98);
+            }
+            return ""
+        }
 
-          debugHex('token_type', tokenType);
-          debugHex('nonce', nonce);
-          debugHex('challenge_digest', challenge);
-          debugHex('token_key_id', tokenKeyID);
-          debugHex('authenticator', authenticator);
+        function debugHex(name, value = []) {
+            // hex encode
+            // document.getElementById(name).innerHTML = "[" + value.map(v => v.toString(16).padStart(2, '0')).join(", ") + "]";
 
-          const expectedChallenge = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(str2bin(base64urlDecode("${challenge}"))))));
-          debugBool('token', token.length > 0);
-          debugBool('token_type', compareArray(tokenType, [0,2]));
-          debugBool('nonce', nonce.length === 32);
-          debugBool('challenge_digest', compareArray(expectedChallenge, challenge));
-          debugBool('token_key_id', tokenKeyID.length === 32);
-          debugBool('authenticator', authenticator.length === 256);
+            // keep decimal encode - because humans
+            document.getElementById(name).innerHTML = JSON.stringify(value).replaceAll(",", ", ");
+        }
 
-          // sadly WebCrypto support for rsa-pss on Chrome/WebKit is missing. Works on Firefox
-          try {
-              const publicKey = await crypto.subtle.importKey("spki", b642ab(PUBLIC_KEY), { name: "RSA-PSS", hash: "SHA-384" }, false, ["verify"])
-              const data = Uint8Array.from(binToken.slice(0,98));
-              const signature = Uint8Array.from(binToken.slice(98));
-              const valid = await crypto.subtle.verify({name:"RSA-PSS", saltLength: 48},  publicKey, signature, data);
-              debugBool('token_valid', valid);
-          }
-          catch (e) {
-              console.error(e);
-              debugBool('token_valid', null);
-          }
-          if (token.length === 0) {
-              debugBool('token_valid', false);
-          }
-          return token;
-      }
+        function debugBool(name, value) {
+            const status = value === null ? 'unknown' : (value ? 'pass' : 'fail')
+            console.log(name, ":", status)
+            document.getElementById(name + "_test").className = status;
+        }
 
-      function init() {
-          parseToken();
-          [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('change', parseToken));
-          [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('click', parseToken));
-      }
+        function hexToByte(s) {
+            return s?.replaceAll(/[^0-9a-z]/gi, '0')?.match(/.{1,2}/g)?.map(a => parseInt(a, 16));
+        }
 
-      window.addEventListener('load', init);
-  </script>
-</head>
-<body>
-<main>
-  <h1>Public Access Token Test</h1>
-  ${
-    auth
-      ? ""
-      : "<div style='margin: -0.6rem 0 0.6rem 0;'>😵😩 No Public-Access-Token for you.</div>"
-  }
-  <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
-          [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
-          [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
-          [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html">IETF Draft</a>]
-          [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
-          [<a href="https://private-access-token.colinbendell.dev/debug.html">Debug</a>]
-          [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
+        function b642ab(base64_string){
+            return Uint8Array.from(base64urlDecode(base64_string), c => c.charCodeAt(0));
+        }
 
-  </div>
-  <details open id="token_test">
-    <summary>
-        Authorization: <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#name-token-redemption">PrivateToken</a> token=</summary>
-    <input id="token" type="text" value="${auth || ''}">
-  </details>
-  <details open id="token_valid_test">
-      <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#name-token-verification-2">RSA-Verify</a>(token[0-98], publicKey, authenticator)
-      </summary>
-      <code><em>NB: Safari, Chrome and Cloudflare Workers do not support <a href="https://github.com/w3c/webcrypto/issues/307">oid=RSARSS-PSS in WebCrypto.validate()</a></em></code>
-  </details>
-  <details id="token_type_test">
-      <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1">token_type</a> == 0x0002
-      </summary>
-      <code id="token_type"></code>
-  </details>
-  <details id="nonce_test">
-      <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.2">nonce</a> .length()==256
-      </summary>
-      <code id="nonce"></code>
-  </details>
-  <details id="challenge_digest_test">
-      <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.3">challenge_digest</a> == sha256(challenge)
-      </summary>
-      <code id="challenge_digest"></code>
-  </details>
-  <details id="token_key_id_test">
-      <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.4">token_key_id</a> .length()==32
-      </summary>
-      <code id="token_key_id"></code>
-  </details>
-  <details id="authenticator_test">
-      <summary>
-          <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.4">authenticator</a> .length()==256
-      </summary>
-      <code id="authenticator"></code>
-  </details>
-</main>
-</body>
-</html>`,
+        function compareArray(a, b) {
+            return a.toString() === b.toString();
+        }
+        async function parseToken() {
+            let token = getElement("token");
+            const binToken = str2bin(base64urlDecode(token.replaceAll(/^"|"$/g, ""))) || [];
+
+            const tests = [];
+
+            let {version, brand} = navigator.userAgentData?.brands[0] || {};
+            if (!brand && !version) {
+                [,version, brand] = /Version[/]((?:1[6-9]|[2-9])[.0-9]+) .*(Safari Mobile|Safari)/.exec(navigator.userAgent) || [];
+            }
+            const ua = brand + " " + version;
+            tests.push([
+                "Browser supports PAT (Safari 16+)",
+                /AppleWebKit[/][0-9.]+ [(]KHTML, like Gecko[)] Version[/](1[6-9]|[2-9])[.0-9]+ .*Safari[/][0-9.]+/.test(navigator.userAgent),
+                " == " + ua
+            ]);
+
+            tests.push([
+                "PrivateToken token= present",
+                binToken.length > 0,
+                '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#name-token-redemption" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
+                binToken
+            ]);
+            document.title = (binToken.length > 0 ? "PASS:" : "FAIL:") + " Private Access Token Test";
+
+            tests.push([
+                'token is "quoted"',
+                /^[^="]+$|^"[^"=]+=*"$|^[^="]+$/.test(token),
+                /=/.test(token) ? " (required with base64url() '=' padding)" : '',
+            ]);
+
+            const tokenType = ntohs(binToken.slice(0,2));
+            tests.push([
+                'token_type == 0x0002',
+                tokenType === 2,
+                '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
+                htons(tokenType),
+            ]);
+
+            const nonce = binToken.slice(2,34);
+            tests.push([
+                'nonce .length() ==256',
+                nonce.length === 32,
+                '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.2" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
+                nonce
+            ]);
+
+            const challenge = binToken.slice(34,66);
+            const expectedChallengeBytes = str2bin(base64urlDecode(getElement("challenge")));
+            const expectedChallenge = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(expectedChallengeBytes))));
+
+            tests.push([
+                'challenge_digest == sha256(challenge)',
+                compareArray(expectedChallenge, challenge),
+                '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.3" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
+                challenge,
+            ]);
+
+            const tokenKeyID = binToken.slice(66,98);
+            tests.push([
+                'token_key_id .length()==32',
+                tokenKeyID.length === 32,
+                '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.4" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
+                tokenKeyID,
+            ]);
+
+            const authenticator = binToken.slice(98);
+            tests.push([
+                'authenticator .length()==256',
+                authenticator.length === 256,
+                '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.4" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
+                authenticator,
+            ]);
+
+            // sadly WebCrypto support for rsa-pss on Chrome/WebKit is missing. Works on Firefox
+            let valid = null;
+            try {
+                const data = Uint8Array.from(binToken.slice(0,98));
+                const signature = Uint8Array.from(binToken.slice(98));
+
+                // const legacyTokenKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAi7t2SG_6S5PbMQR2JYv4jCtH11wPase-oVbgIe4uYk_ZDeXa84Qrsy8bmaPZ_fO14Qzhy6mW5Vnxy12K0YdZ89sfkbgVAyRsVyU5s-i3m-uXdvG_W9Njas2xE8qx-YAWcc2wa5Z7Q3mS4DhflgiF8zP1qweXF0DRhhIO72R-4lLYBXzdNTK703YL24j7dmjh7hC7QBfKFA6pYeEti-K3IMVEXQwYKiK68LziIZW9_GiYJaEmYT0FMNuqcKD_1oPngnNNiBiNjrbpC9MRI7D1w0R4pQmY44XZVTqL-qTiQPfFtfU7fCgvvssqnemhz4qvYgIzsoD1nYWWaqO56xWJPwIDAQAB"
+                // const legacyPublicKey = await crypto.subtle.importKey("spki", b642ab(legacyTokenKey), { name: "RSA-PSS", hash: "SHA-256" }, false, ["verify"]);
+                // valid = await crypto.subtle.verify({name:"RSA-PSS", saltLength: 32},  legacyPublicKey, signature, data);
+
+                const tokenKey = getElement("token-key");
+                const publicKey = await crypto.subtle.importKey("spki", b642ab(tokenKey), { name: "RSA-PSS", hash: "SHA-384" }, false, ["verify"])
+                valid = await crypto.subtle.verify({name:"RSA-PSS", saltLength: 48},  publicKey, signature, data);
+            }
+            catch (e) {
+                console.error(e);
+            }
+
+            tests.push([
+                "RSA-Verify(token[0-98], publicKey, authenticator)",
+                valid,
+                '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#name-token-verification-2" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
+                '<em>NB: Safari, Chrome and Cloudflare Workers do not support <a href="https://github.com/w3c/webcrypto/issues/307">oid=RSARSS-PSS in WebCrypto.validate()</a></em>',
+                true
+            ]);
+
+            let output = "";
+            for (const [name, result, value, longValue, open] of tests) {
+                const code = longValue ? "<code>" + (JSON.stringify(longValue)?.replaceAll(',', ', ').replaceAll('"', '') || "") + "</code>" : "";
+                const cssClass = (result === null ? 'unknown' : (result ? 'pass' : 'fail'));
+                const detailsOpen = (open ? ' open' : '');
+                output += '<details class="' + cssClass + '"' + detailsOpen + '><summary><span> '+ name + '</span>' + (value ?? "") + '</summary>' + code + '</details>';
+            }
+            document.getElementById('tests').innerHTML = output;
+        }
+
+        function init() {
+            let token = challenge = publicKey = "";
+            const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
+            token = params.token || "${token || ''}";
+            document.getElementById('token').value = decodeURIComponent(token).replaceAll('"', '');
+            challenge = params.challenge || "${challenge || ''}";
+            document.getElementById('challenge').value = decodeURIComponent(challenge).replaceAll('"', '');
+            publicKey = params["token-key"] || "${publicKey || ''}";
+            document.getElementById('token-key').value = decodeURIComponent(publicKey).replaceAll('"', '');
+
+            parseToken();
+            document.getElementsByTagName('body')[0].onkeyup = parseToken;
+            [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('change', parseToken));
+            [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('click', parseToken));
+        }
+
+        window.addEventListener('load', init);
+      </script>
+    </head>
+    <body>
+    <main>
+        <h1>Public Access Token Test</h1>
+        <!--
+            token
+            ? ""
+            : "<div style='margin: -0.6rem 0 0.6rem 0;'>😵😩 No Public-Access-Token for you.</div>"
+         -->
+        <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
+                [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
+                [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
+                [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html">IETF Draft</a>]
+                [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
+                [<a href="https://private-access-token.colinbendell.dev/debug.html">Debug</a>]
+                [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
+
+        </div>
+        <div class="grid code">
+            <code style="grid-column: span 2 / auto; margin: 0; border: 0;">Authorization: PrivateToken</code>
+            <code style="padding-left: 1rem; margin: 0; border: 0;">token=</code>
+            <input id="token" type="text" value="">
+        </div>
+        <div id="www-authenticate" class="grid code">
+            <code style="grid-column: span 2 / auto; margin: 0; border: 0;">WWW-Authenticate: PrivateToken</code>
+            <code style="padding-left: 1rem; margin: 0; border: 0;">challenge=</code>
+            <input id="challenge" type="text" value="">
+            <code style="padding-left: 1rem; margin: 0; border: 0;">token-key=</code>
+            <input id="token-key" type="text" value="">
+        </div>
+
+        <div id="tests"></div>
+    </main>
+    </body>
+    </html>
+    `,
     respInit
   );
 }
