@@ -70,19 +70,19 @@
         }
 
         html {
-            max-width: 38rem;
+            max-width: 58ch;
             margin: auto;
             line-height: 1.75;
-            font-size: 1.25em;
+            /* font-size: 1.25em; */
         }
         p,ul,ol {
             color: #1d1d1d;
             font-family: sans-serif;
         }
         main {
-            max-width: 38rem;
-            width: 38rem;
-            padding: 2rem;
+            /* max-width: 38rem; */
+            /* width: 38rem; */
+            /* padding: 2rem; */
         }
         select, code {
             display: block;
@@ -109,6 +109,9 @@
         a[href] {
             color: #22e;
             text-decoration: none;
+        }
+        summary {
+            white-space: nowrap;
         }
         .grid {
             display: grid;
@@ -145,9 +148,10 @@
         .grid.code {
             border: 1px solid #eee;
             background-color: #f9f9f9;
-            grid-template-columns: repeat(1, 1fr 3fr);
+            grid-template-columns: repeat(1, 2fr 5fr);
             grid-column: span 2 / auto;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
         }
 
         details {
@@ -170,6 +174,14 @@
             font-size: 1.1rem;
             content: "❌ ";
         }
+        details:not([open]) > summary:has(+ *):after {
+            content: "᠁";
+            display: block;
+            margin-top: -0.5rem;
+            margin-left: -0.25rem;
+            margin-bottom: -0.5rem;
+        }
+
         details.pass > summary:before {
             content: "✅ ";
         }
@@ -304,25 +316,25 @@
             tests.push([ "challenge can base64url.decode()", challengeBytes.length > 0, '', challengeBytes ]);
 
             const tokenType = ntohs(challengeBytes.slice(0, 2));
-            tests.push([ "token_type is VOPRF (1) or Blind RSA (2)", [1,2].includes(tokenType), ` == ${tokenType === 1 ? 'VOPRF (1)' : tokenType === 2 ? 'Blind RSA (2)' : ''}`, htons(tokenType) ]);
+            tests.push([ "token_type is VOPRF (1) or Blind RSA (2)", [1,2].includes(tokenType), ` == ${tokenType === 1 ? 'VOPRF (1)' : tokenType === 2 ? 'Blind RSA (2)' : ''}`, htons(tokenType), true ]);
 
             const issuerNameLength = ntohs(challengeBytes.slice(2, 4));
-            tests.push([ "issuer_name length prefix > 0", issuerNameLength > 0, ` == ${issuerNameLength}`, htons(issuerNameLength)]);
+            tests.push([ "issuer_name length prefix > 0", issuerNameLength > 0, ` == ${issuerNameLength}`, htons(issuerNameLength), true]);
 
             const issuerName = bin2str(challengeBytes.slice(4, 4 + issuerNameLength));
-            tests.push([ "issuer_name matches token-key", issuerName === tokenIssuerName, ` == "${issuerName}"`, ]);
+            tests.push([ "issuer_name matches token-key", issuerName === tokenIssuerName, ` == "${issuerName}"`, stringToBinary(issuerName), true]);
 
             const redemptionContextLength = challengeBytes[4 + issuerNameLength];
-            tests.push([ "redemption_context length prefix is 0 or 32", [0, 32].includes(redemptionContextLength), ` == ${redemptionContextLength}`, redemptionContextLength]);
+            tests.push([ "redemption_context length prefix is 0 or 32", [0, 32].includes(redemptionContextLength), ` == ${redemptionContextLength}`, redemptionContextLength, true]);
 
             const redemptionContext = challengeBytes.slice(4 + issuerNameLength + 1, 4 + issuerNameLength + 1 + redemptionContextLength);
-            tests.push([ "redemption_context is valid", redemptionContext.length === redemptionContextLength, ` == "${redemptionContext.map(v => v.toString(16).padStart(2, '0')).join('')}"`, redemptionContext]);
+            tests.push([ "redemption_context is valid", redemptionContext.length === redemptionContextLength, ` == "${redemptionContext.map(v => v.toString(16).padStart(2, '0')).join('')}"`, redemptionContext, true]);
 
             const originInfoLength = ntohs(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength, 4 + issuerNameLength + 1 + redemptionContextLength + 2));
-            tests.push([ "origin_info length prefix", originInfoLength >= 0, ` == ${originInfoLength}`, htons(originInfoLength) ]);
+            tests.push([ "origin_info length prefix", originInfoLength >= 0, ` == ${originInfoLength}`, htons(originInfoLength), true ]);
 
             const originInfo = bin2str(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength + 2, 4 + issuerNameLength + 1 + redemptionContextLength + 2 + originInfoLength));
-            tests.push([ "origin_info is valid", originInfo.length === originInfoLength, ` == "${originInfo}"`, stringToBinary(originInfo) ]);
+            tests.push([ "origin_info is valid", originInfo.length === originInfoLength, ` == "${originInfo}"`, stringToBinary(originInfo), true ]);
 
             let {version, brand} = navigator.userAgentData?.brands[0] || {};
             if (!brand && !version) {
@@ -336,7 +348,7 @@
             ]);
 
             let output = "";
-            for (const [name, result, value, longValue] of tests) {
+            for (const [name, result, value, longValue, open] of tests) {
                 const code = longValue ? `<code>${JSON.stringify(longValue)?.replaceAll(',', ', ').replaceAll('"', '') || ""}</code>` : "";
                 output += `<details class="${result ? 'pass' : 'fail'}"><summary><span> ${name}</span>${value || ""}</summary>${code}</details>`;
             }
@@ -347,7 +359,7 @@
 </head>
 <body>
 <main>
-    <h1>Private Access Token Debugger</h1>
+    <h1>Private Access Token Debug</h1>
     <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
         [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
         [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
@@ -359,9 +371,9 @@
     <form action="/test.html" class="grid">
         <div class="grid code">
             <code style="grid-column: span 2 / auto; margin: 0; border: 0;">WWW-Authenticate: PrivateToken</code>
-            <code style="padding-left: 2rem; margin: 0; border: 0;">challenge=</code>
+            <code style="padding-left: 1rem; margin: 0; border: 0;">challenge=</code>
             <input id="challenge" name="challenge" type="text" value="AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=">
-            <code style="padding-left: 2rem; margin: 0; border: 0;">token-key=</code>
+            <code style="padding-left: 1rem; margin: 0; border: 0;">token-key=</code>
             <input id="token-key" name="token-type" type="text" value="">
         </div>
         <div></div>
