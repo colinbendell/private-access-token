@@ -112,7 +112,7 @@
         }
         .grid {
             display: grid;
-            grid-template-columns: repeat(1, 1fr 1fr);
+            grid-template-columns: repeat(1, 2fr 1fr);
             grid-column-gap: 0.5rem;
         }
         .grid label {
@@ -259,7 +259,7 @@
         function init() {
             const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
             if (params.challenge) document.getElementById('challenge').value = decodeURIComponent(params.challenge);
-            if (params["token-key"]) document.getElementById('token-key').value = decodeURIComponent(params["token-key"]);
+            document.getElementById('token-key').value = decodeURIComponent(params["token-key"] || CLOUDFLARE_PUB_KEY);
             update();
             document.getElementsByTagName('body')[0].onkeyup = update;
             [...document.getElementsByTagName('select')].forEach(s => s.addEventListener('change', update));
@@ -307,7 +307,7 @@
             tests.push([ "token_type is VOPRF (1) or Blind RSA (2)", [1,2].includes(tokenType), ` == ${tokenType === 1 ? 'VOPRF (1)' : tokenType === 2 ? 'Blind RSA (2)' : ''}`, htons(tokenType) ]);
 
             const issuerNameLength = ntohs(challengeBytes.slice(2, 4));
-            tests.push([ "issuer_name.length() > 0", issuerNameLength > 0, ` == ${issuerNameLength}`, htons(issuerNameLength)]);
+            tests.push([ "issuer_name length prefix > 0", issuerNameLength > 0, ` == ${issuerNameLength}`, htons(issuerNameLength)]);
 
             const issuerName = bin2str(challengeBytes.slice(4, 4 + issuerNameLength));
             tests.push([ "issuer_name matches token-key", issuerName === tokenIssuerName, ` == "${issuerName}"`, ]);
@@ -316,13 +316,13 @@
             tests.push([ "redemption_context length prefix is 0 or 32", [0, 32].includes(redemptionContextLength), ` == ${redemptionContextLength}`, redemptionContextLength]);
 
             const redemptionContext = challengeBytes.slice(4 + issuerNameLength + 1, 4 + issuerNameLength + 1 + redemptionContextLength);
-            tests.push([ "redemption_context.valid()", redemptionContext.length === redemptionContextLength, ` == "${redemptionContext.map(v => v.toString(16).padStart(2, '0')).join('')}"`, redemptionContext]);
+            tests.push([ "redemption_context is valid", redemptionContext.length === redemptionContextLength, ` == "${redemptionContext.map(v => v.toString(16).padStart(2, '0')).join('')}"`, redemptionContext]);
 
             const originInfoLength = ntohs(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength, 4 + issuerNameLength + 1 + redemptionContextLength + 2));
             tests.push([ "origin_info length prefix", originInfoLength >= 0, ` == ${originInfoLength}`, htons(originInfoLength) ]);
 
             const originInfo = bin2str(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength + 2, 4 + issuerNameLength + 1 + redemptionContextLength + 2 + originInfoLength));
-            tests.push([ "origin_info.valid()", originInfo.length === originInfoLength, ` == "${originInfo}"`, stringToBinary(originInfo) ]);
+            tests.push([ "origin_info is valid", originInfo.length === originInfoLength, ` == "${originInfo}"`, stringToBinary(originInfo) ]);
 
             let {version, brand} = navigator.userAgentData?.brands[0] || {};
             if (!brand && !version) {
@@ -349,20 +349,24 @@
 <main>
     <h1>Private Access Token Debugger</h1>
     <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
-            [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
-            [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
-            [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html">IETF Draft</a>]
-            [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
-            [<a href="https://private-access-token.colinbendell.dev/debug.html">Debug</a>]
-            [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
-      </div>
-    <div class="grid code">
-        <code style="grid-column: span 2 / auto; margin: 0; border: 0;">WWW-Authenticate: PrivateToken</code>
-        <code style="padding-left: 2rem; margin: 0; border: 0;">challenge=</code>
-        <input id="challenge" type="text" value="AAIAHmRlbW8tcGF0Lmlzc3Vlci5jbG91ZGZsYXJlLmNvbQAAAA==">
-        <code style="padding-left: 2rem; margin: 0; border: 0;">token-key=</code>
-        <input id="token-key" type="text" value="MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAr0UG9LP1zD-ejLPZkZMkXdaBmh8pyNxTox9lJHXFeInRehWETX9c7og0cDLq2lpaAQJ0A_EkEyor124ClboJl64reZ1Jeg1PpJVnns68I0iN3WTBXxm-W5KB1lMo_77ev6FYDzGvT2ZFYt930tpRHm74WXCAcJdnM9steI59RDpsYF3U2vEpbUCqQKeMuzcgngHJuEVVAxkjUbo3d9Luc-6MtHKYgxc83lRHIhY5oVA_lQVQgWawvEnvmrZFc_kQeMk4K0xHDcj6drFHqH9bKXC-5CrrD5pTHJIOvZN1uLHBl1mSFjX_knJp9aLGfxA0M6wmyJD_PTugu1dzQCRTZQIDAQAB">
+        [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
+        [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
+        [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html">IETF Draft</a>]
+        [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
+        [<a href="https://private-access-token.colinbendell.dev/debug.html">Debug</a>]
+        [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
     </div>
+    <form action="/test.html" class="grid">
+        <div class="grid code">
+            <code style="grid-column: span 2 / auto; margin: 0; border: 0;">WWW-Authenticate: PrivateToken</code>
+            <code style="padding-left: 2rem; margin: 0; border: 0;">challenge=</code>
+            <input id="challenge" name="challenge" type="text" value="AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=">
+            <code style="padding-left: 2rem; margin: 0; border: 0;">token-key=</code>
+            <input id="token-key" name="token-type" type="text" value="">
+        </div>
+        <div></div>
+        <button type="submit">Test</button>
+    </form>
 
     <div id="tests">
     </div>
