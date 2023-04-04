@@ -17,7 +17,7 @@ async function handleRequest(request) {
   const tokenParam = query?.split("token=")[1]?.split("&")[0];
   const tokenHeader = request.headers.get("Authorization")?.split("PrivateToken token=")[1];
 
-  const token = tokenHeader || tokenParam;
+  const token = encodeURI(tokenHeader||"") || tokenParam;
   const respInit = token
     ? { headers: { "Content-Type": `text/html` } }
     : {
@@ -329,7 +329,7 @@ async function handleRequest(request) {
             ]);
 
             const challenge = binToken.slice(34,66);
-            const expectedChallengeBytes = str2bin(base64urlDecode(getElement("challenge")));
+            const expectedChallengeBytes = str2bin(base64urlDecode(getElement("challenge").replaceAll('"', '')));
             const expectedChallenge = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(expectedChallengeBytes))));
 
             tests.push([
@@ -365,7 +365,7 @@ async function handleRequest(request) {
                 // const legacyPublicKey = await crypto.subtle.importKey("spki", b642ab(legacyTokenKey), { name: "RSA-PSS", hash: "SHA-256" }, false, ["verify"]);
                 // valid = await crypto.subtle.verify({name:"RSA-PSS", saltLength: 32},  legacyPublicKey, signature, data);
 
-                const tokenKey = getElement("token-key");
+                const tokenKey = getElement("token-key").replaceAll('"', '');
                 const publicKey = await crypto.subtle.importKey("spki", b642ab(tokenKey), { name: "RSA-PSS", hash: "SHA-384" }, false, ["verify"])
                 valid = await crypto.subtle.verify({name:"RSA-PSS", saltLength: 48},  publicKey, signature, data);
             }
@@ -395,11 +395,11 @@ async function handleRequest(request) {
             let token = challenge = publicKey = "";
             const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
             token = params.token || "${token || ''}";
-            document.getElementById('token').value = decodeURIComponent(token).replaceAll('"', '');
+            document.getElementById('token').value = decodeURIComponent(token);
             challenge = params.challenge || "${challenge || ''}";
-            document.getElementById('challenge').value = decodeURIComponent(challenge).replaceAll('"', '');
+            document.getElementById('challenge').value = decodeURIComponent(challenge);
             publicKey = params["token-key"] || "${publicKey || ''}";
-            document.getElementById('token-key').value = decodeURIComponent(publicKey).replaceAll('"', '');
+            document.getElementById('token-key').value = decodeURIComponent(publicKey);
 
             parseToken();
             document.getElementsByTagName('body')[0].onkeyup = parseToken;

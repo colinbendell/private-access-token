@@ -364,8 +364,8 @@
     function init() {
         let token = challenge = publicKey = "";
         const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
-        token = params.token || "${token || ''}";
-        document.getElementById('token').value = decodeURIComponent(token).replaceAll('"', '');
+        token = params.token || "${token) || ''}";
+        document.getElementById('token').value = decodeURIComponent(token);
         challenge = params.challenge || "${challenge || ''}";
         document.getElementById('challenge').value = decodeURIComponent(challenge).replaceAll('"', '');
         publicKey = params["token-key"] || "${publicKey || ''}";
