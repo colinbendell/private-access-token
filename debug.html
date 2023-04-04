@@ -5,8 +5,6 @@
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <title>Private Access Token Generator</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <!-- <script src="testharness.js"></script> -->
-    <!-- <script src="testharnessreport.js"></script> -->
     <style>
         /* Box sizing rules */
         *,
@@ -69,21 +67,25 @@
             font: inherit;
         }
 
+        @media only screen and (min-device-width: 500px) and (-webkit-device-pixel-ratio: 2) {
+            html {
+                font-size: 1.25rem;
+            }
+        }
         html {
             max-width: 58ch;
             margin: auto;
             line-height: 1.75;
-            /* font-size: 1.25em; */
         }
         p,ul,ol {
             color: #1d1d1d;
             font-family: sans-serif;
         }
-        main {
-            /* max-width: 38rem; */
-            /* width: 38rem; */
-            /* padding: 2rem; */
-        }
+        /* main {
+            max-width: 38rem;
+            width: 38rem;
+            padding: 2rem;
+        } */
         select, code {
             display: block;
         }
