@@ -87,7 +87,7 @@ async function handleRequest(request) {
             img,
             picture {
                 max-width: 100%;
-                display: block;
+                display: none;
             }
 
             /* Inherit fonts for inputs and buttons */
