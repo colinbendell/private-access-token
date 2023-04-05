@@ -18,13 +18,14 @@ async function handleRequest(request) {
   const tokenHeader = request.headers.get("Authorization")?.split("PrivateToken token=")[1];
 
   const token = encodeURI(tokenHeader||"") || tokenParam;
+  // ios16 and macOS13 don't actually support quoted challenge + token-key values ...
   const respInit = token
     ? { headers: { "Content-Type": `text/html` } }
     : {
         status: 401,
         headers: {
           "Content-Type": `text/html`,
-          "WWW-Authenticate": `PrivateToken challenge=${decodeURIComponent(challenge)}, token-key=${decodeURIComponent(publicKey)}`,
+          "WWW-Authenticate": `PrivateToken challenge=${decodeURIComponent(challenge).replaceAll('"', '')}, token-key=${decodeURIComponent(publicKey).replaceAll('"', '')}`,
         },
       };
   return new Response(
@@ -290,8 +291,8 @@ async function handleRequest(request) {
             return a.toString() === b.toString();
         }
         async function parseToken() {
-            let token = getElement("token");
-            const binToken = str2bin(base64urlDecode(token.replaceAll(/^"|"$/g, ""))) || [];
+            const token = getElement("token");
+            const tokenBytes = str2bin(base64urlDecode(token.replaceAll(/^"|"$/g, ""))) || [];
 
             const tests = [];
 
@@ -311,11 +312,11 @@ async function handleRequest(request) {
 
             tests.push([
                 "PrivateToken token= present",
-                binToken.length > 0,
+                tokenBytes.length > 0,
                 '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#name-token-redemption" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
-                binToken
+                tokenBytes
             ]);
-            document.title = (binToken.length > 0 ? "PASS:" : "FAIL:") + " Private Access Token Test";
+            document.title = (tokenBytes.length > 0 ? "PASS:" : "FAIL:") + " Private Access Token Test";
 
             tests.push([
                 'token is "quoted"',
@@ -323,7 +324,7 @@ async function handleRequest(request) {
                 /=/.test(token) ? " (required with base64url() '=' padding)" : '',
             ]);
 
-            const tokenType = ntohs(binToken.slice(0,2));
+            const tokenType = ntohs(tokenBytes.slice(0,2));
             tests.push([
                 'token_type == 0x0002',
                 tokenType === 2,
@@ -331,7 +332,7 @@ async function handleRequest(request) {
                 htons(tokenType),
             ]);
 
-            const nonce = binToken.slice(2,34);
+            const nonce = tokenBytes.slice(2,34);
             tests.push([
                 'nonce .length() ==256',
                 nonce.length === 32,
@@ -339,7 +340,7 @@ async function handleRequest(request) {
                 nonce
             ]);
 
-            const challenge = binToken.slice(34,66);
+            const challenge = tokenBytes.slice(34,66);
             const expectedChallengeBytes = str2bin(base64urlDecode(getElement("challenge").replaceAll('"', '')));
             const expectedChallenge = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(expectedChallengeBytes))));
 
@@ -350,7 +351,7 @@ async function handleRequest(request) {
                 challenge,
             ]);
 
-            const tokenKeyID = binToken.slice(66,98);
+            const tokenKeyID = tokenBytes.slice(66,98);
             tests.push([
                 'token_key_id .length()==32',
                 tokenKeyID.length === 32,
@@ -358,7 +359,7 @@ async function handleRequest(request) {
                 tokenKeyID,
             ]);
 
-            const authenticator = binToken.slice(98);
+            const authenticator = tokenBytes.slice(98);
             tests.push([
                 'authenticator .length()==256',
                 authenticator.length === 256,
@@ -369,8 +370,8 @@ async function handleRequest(request) {
             // sadly WebCrypto support for rsa-pss on Chrome/WebKit is missing. Works on Firefox
             let valid = null;
             try {
-                const data = Uint8Array.from(binToken.slice(0,98));
-                const signature = Uint8Array.from(binToken.slice(98));
+                const data = Uint8Array.from(tokenBytes.slice(0,98));
+                const signature = Uint8Array.from(tokenBytes.slice(98));
 
                 // const legacyTokenKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAi7t2SG_6S5PbMQR2JYv4jCtH11wPase-oVbgIe4uYk_ZDeXa84Qrsy8bmaPZ_fO14Qzhy6mW5Vnxy12K0YdZ89sfkbgVAyRsVyU5s-i3m-uXdvG_W9Njas2xE8qx-YAWcc2wa5Z7Q3mS4DhflgiF8zP1qweXF0DRhhIO72R-4lLYBXzdNTK703YL24j7dmjh7hC7QBfKFA6pYeEti-K3IMVEXQwYKiK68LziIZW9_GiYJaEmYT0FMNuqcKD_1oPngnNNiBiNjrbpC9MRI7D1w0R4pQmY44XZVTqL-qTiQPfFtfU7fCgvvssqnemhz4qvYgIzsoD1nYWWaqO56xWJPwIDAQAB"
                 // const legacyPublicKey = await crypto.subtle.importKey("spki", b642ab(legacyTokenKey), { name: "RSA-PSS", hash: "SHA-256" }, false, ["verify"]);
@@ -408,9 +409,9 @@ async function handleRequest(request) {
             token = params.token || "${token || ''}";
             document.getElementById('token').value = decodeURIComponent(token);
             challenge = params.challenge || "${challenge || ''}";
-            document.getElementById('challenge').value = decodeURIComponent(challenge).replaceAll('"', '');
+            document.getElementById('challenge').value = decodeURIComponent(challenge);
             publicKey = params["token-key"] || "${publicKey || ''}";
-            document.getElementById('token-key').value = decodeURIComponent(publicKey).replaceAll('"', '');
+            document.getElementById('token-key').value = decodeURIComponent(publicKey);
 
             parseToken();
             document.getElementsByTagName('body')[0].onkeyup = parseToken;
@@ -450,7 +451,8 @@ async function handleRequest(request) {
         <div id="tests"></div>
     </main>
     </body>
-    </html>`,
+    </html>
+    `,
     respInit
   );
 }
