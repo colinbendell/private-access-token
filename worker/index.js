@@ -87,7 +87,7 @@ async function handleRequest(request) {
             img,
             picture {
                 max-width: 100%;
-                display: none;
+                display: block;
             }
 
             /* Inherit fonts for inputs and buttons */
@@ -217,7 +217,7 @@ async function handleRequest(request) {
                 font-size: 1rem;
             }
             h2.auth-header {
-                display: block;
+                display: none;
             }
         </style>
         <script>
