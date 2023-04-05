@@ -58,7 +58,7 @@ async function build() {
     const prodKey = await getCloudflarePublicKey();
     const demoKey = await getCloudflareDemoPublicKey();
 
-    for(const file of ['index.html', 'worker/index.js']) {
+    for(const file of ['index.html', 'debug.html', 'test.html', 'worker/index.js']) {
         const path = __dirname + '/../' + file;
         const content = fs.readFileSync(path, 'utf8');
         const newContent = content
