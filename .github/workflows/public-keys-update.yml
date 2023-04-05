@@ -19,6 +19,7 @@ concurrency:
 jobs:
   extract:
     name: Extract Cloudflare Public Keys
+    if: ${{ github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
