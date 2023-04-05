@@ -19,7 +19,6 @@ concurrency:
 jobs:
   extract:
     name: Extract Cloudflare Public Keys
-    if: ${{ github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -31,16 +30,20 @@ jobs:
             public-keys/node_modules
           key: ${{ runner.os }}-cache-${{ hashFiles('**/package-lock.json') }}
       - uses: actions/setup-node@v3
+        if: ${{ github.event_name == 'schedule' }}
         with:
           node-version: latest
       - run: npm --prefix public-keys install
+        if: ${{ github.event_name == 'schedule' }}
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
       - name: Extract PublicKey
+        if: ${{ github.event_name == 'schedule' }}
         uses: mujo-code/puppeteer-headful@18.9.0
         with:
           args: npm --prefix public-keys run extract
       - name: Commit to branch
+        if: ${{ github.event_name == 'schedule' }}
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Update Public Keys"
