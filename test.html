@@ -180,6 +180,14 @@
             grid-template-columns: repeat(1, 2fr 5fr);
             display: none;
         }
+        h2 {
+            margin: -0.6rem 0 0.6rem 0;
+            font-weight: 100;
+            font-size: 1rem;
+        }
+        h2.auth-header {
+            display: block;
+        }
     </style>
     <script>
     // host to network long
@@ -260,6 +268,9 @@
         let {version, brand} = navigator.userAgentData?.brands[0] || {};
         if (!brand && !version) {
             [,version, brand] = /Version[/]((?:1[6-9]|[2-9])[.0-9]+) .*(Safari Mobile|Safari)/.exec(navigator.userAgent) || [];
+        }
+        if (!brand && !version) {
+            [,brand, version] = /(Firefox)[/]([0-9]+)/.exec(navigator.userAgent) || [];
         }
         const ua = brand + " " + version;
         tests.push([
@@ -364,7 +375,7 @@
     function init() {
         let token = challenge = publicKey = "";
         const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
-        token = params.token || "${token) || ''}";
+        token = params.token || "${token || ''}";
         document.getElementById('token').value = decodeURIComponent(token);
         challenge = params.challenge || "${challenge || ''}";
         document.getElementById('challenge').value = decodeURIComponent(challenge).replaceAll('"', '');
@@ -383,11 +394,6 @@
 <body>
 <main>
     <h1>Public Access Token Test</h1>
-    <!--
-        token
-        ? ""
-        : "<div style='margin: -0.6rem 0 0.6rem 0;'>😵😩 No Public-Access-Token for you.</div>"
-     -->
     <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
             [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
             [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
@@ -397,6 +403,7 @@
             [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
 
     </div>
+    <h2 class="${token ? 'auth-header' : ''}">😵😩 No Public-Access-Token for you.</h2>
     <div class="grid code">
         <code style="grid-column: span 2 / auto; margin: 0; border: 0;">Authorization: PrivateToken</code>
         <code style="padding-left: 1rem; margin: 0; border: 0;">token=</code>

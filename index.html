@@ -145,7 +145,8 @@
             background-color: #f9f9f9;
             grid-template-columns: repeat(1, 1fr 3fr);
             grid-column: span 2 / auto;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
         }
 
     </style>
@@ -179,8 +180,12 @@
             return value.map(char => String.fromCharCode(char)).join('');
         }
 
-        function base64url(data) {
-            return btoa(data).replace(/\+/g, '-').replace(/\//g, '_')
+        function base64url(data, quote=false) {
+            const value = btoa(data).replace(/\+/g, '-').replace(/\//g, '_');
+            if (quote && /=+$/.test(value)) {
+                return '"' + value + '"';
+            }
+            return value;
         }
 
         function debugHex(name, value = []) {
@@ -232,19 +237,8 @@
         function update() {
             const challenge = getChallenge();
             const tokenKey = publicKeys.get(getElement("issuer_name"));
-            document.getElementById('output').innerHTML = `WWW-Authenticate: PrivateToken
-    challenge=${base64url(challenge)},
-    token-key=${tokenKey}`;
-            for (const form of document.getElementsByTagName("form")) {
-                if (challenge.length !== 37) {
-                    form.innerHTML=`<input type="hidden" name="challenge" value="${base64url(challenge)}"><input type="hidden" name="key" value="${tokenKey}"><button type="submit">Test</button>`;
-                    // form.action = `/test.html?challenge=${base64url(challenge)}&key=${tokenKey}`;
-                }
-                else {
-                    if (form.innerHTML.length != 35)
-                        form.innerHTML = `<button type="submit">Test</button>`;
-                }
-            }
+            document.getElementById('challenge').value = base64url(challenge, true);
+            document.getElementById('token-key').value = tokenKey;
         }
 
         function init() {
@@ -262,20 +256,30 @@
 <main>
     <h1>Private Access Token Generator</h1>
     <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
-            [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
-            [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
-            [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html">IETF Draft</a>]
-            [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
-            [<a href="https://private-access-token.colinbendell.dev/debug.html">Debug</a>]
-            [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
-      </div>
+        [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
+        [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
+        [<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html">IETF Draft</a>]
+        [<a href="https://private-access-token.colinbendell.dev">Generate</a>]
+        [<a href="https://private-access-token.colinbendell.dev/debug.html">Debug</a>]
+        [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
+    </div>
+    <form class="grid">
+        <div class="grid code">
+            <code style="grid-column: span 2 / auto; margin: 0; border: 0;">WWW-Authenticate: PrivateToken</code>
+            <code style="padding-left: 1rem; margin: 0; border: 0;">challenge=</code>
+            <input id="challenge" name="challenge" type="text" value="">
+            <code style="padding-left: 1rem; margin: 0; border: 0;">token-key=</code>
+            <input id="token-key" name="token-key" type="text" value="">
+        </div>
+        <div></div>
+        <div class="grid" style="grid-template-columns: repeat(1, 1fr 1fr)">
+            <button formaction="/test.html" type="submit">Test</button>
+            <button formaction="/debug.html" type="submit">Debug</button>
+        </div>
+    </form>
     <div class="grid">
-        <p>Create a valid <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-06.html#section-2.1">PrivateToken</a>
-            HTTP Authentication challenge for Safari 16 (iOS16 or macOS13).
-        </p>
-        <form action="/test.html"><button type="submit">Test</button></form>
 
-        <label for="token_type">Token Type <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#section-8.1" style="vertical-align: super; font-size: 0.75rem;">ⓘ︎</a></label>
+        <label for="token_type">Token Type <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-09.html#section-8.1" style="vertical-align: super; font-size: 0.75rem;">ⓘ︎</a></label>
         <select id="token_type">
             <option value="1">VOPRF (P-384, SHA-384)</option>
             <option value="2" selected>Blind RSA (SHA-384, 2048-bit)</option>
@@ -302,22 +306,17 @@
             <code id="redemption_context_length_debug"></code>
             <code id="redemption_context_debug"></code>
         </div>
-            <label for="origin_info">Origin (hostname)</label>
-            <input type="text" id="origin_info" placeholder="private-access-token.colinbendell.dev">
+        <label for="origin_info">Origin (hostname)</label>
+        <input type="text" id="origin_info" placeholder="private-access-token.colinbendell.dev">
         <div>
             <code id="origin_info_length_debug"></code>
             <code id="origin_info_debug"></code>
         </div>
-
-        <div style="margin-top:1.5rem">TokenChallenge <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-06.html#section-2.1" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a></div>
+        <div style="margin-top:1.5rem">TokenChallenge <a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.1" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a></div>
         <div style="margin-top:1.5rem">
 <!--            <code id="challenge_debug"></code>-->
             <code id="challenge_base64_debug"></code>
-            <form action="/test.html"><button type="submit">Test</button></form>
         </div>
-        <div></div>
-
-        <pre id="output"></pre>
     </div>
 </main>
 </body>

@@ -9,11 +9,11 @@ async function handleRequest(request) {
   }
 
   const query = request.url.split("?")[1];
-  const challenge = query?.split("challenge=")[1]?.split("&")[0] || CHALLENGE;
+  const challenge = query?.split("challenge=")[1]?.split("&")[0] || encodeURI(CHALLENGE);
   //   const nonce = btoa(crypto.getRandomValues(new Uint16Array(33))).substring(1,43); // 31bytes (even though it should be 32)
   //   const challenge = `${CHALLENGE_PREFIX}${nonce}${CHALLENGE_SUFFIX}`;
 
-  const publicKey = query?.split("key=")[1]?.split("&")[0] || CLOUDFLARE_PUB_KEY;
+  const publicKey = query?.split("key=")[1]?.split("&")[0] || encodeURI(CLOUDFLARE_PUB_KEY);
   const tokenParam = query?.split("token=")[1]?.split("&")[0];
   const tokenHeader = request.headers.get("Authorization")?.split("PrivateToken token=")[1];
 
@@ -210,6 +210,14 @@ async function handleRequest(request) {
                 grid-template-columns: repeat(1, 2fr 5fr);
                 display: none;
             }
+            h2 {
+                margin: -0.6rem 0 0.6rem 0;
+                font-weight: 100;
+                font-size: 1rem;
+            }
+            h2.auth-header {
+                display: block;
+            }
         </style>
         <script>
         // host to network long
@@ -290,6 +298,9 @@ async function handleRequest(request) {
             let {version, brand} = navigator.userAgentData?.brands[0] || {};
             if (!brand && !version) {
                 [,version, brand] = /Version[/]((?:1[6-9]|[2-9])[.0-9]+) .*(Safari Mobile|Safari)/.exec(navigator.userAgent) || [];
+            }
+            if (!brand && !version) {
+                [,brand, version] = /(Firefox)[/]([0-9]+)/.exec(navigator.userAgent) || [];
             }
             const ua = brand + " " + version;
             tests.push([
@@ -397,9 +408,9 @@ async function handleRequest(request) {
             token = params.token || "${token || ''}";
             document.getElementById('token').value = decodeURIComponent(token);
             challenge = params.challenge || "${challenge || ''}";
-            document.getElementById('challenge').value = decodeURIComponent(challenge);
+            document.getElementById('challenge').value = decodeURIComponent(challenge).replaceAll('"', '');
             publicKey = params["token-key"] || "${publicKey || ''}";
-            document.getElementById('token-key').value = decodeURIComponent(publicKey);
+            document.getElementById('token-key').value = decodeURIComponent(publicKey).replaceAll('"', '');
 
             parseToken();
             document.getElementsByTagName('body')[0].onkeyup = parseToken;
@@ -413,11 +424,6 @@ async function handleRequest(request) {
     <body>
     <main>
         <h1>Public Access Token Test</h1>
-        <!--
-            token
-            ? ""
-            : "<div style='margin: -0.6rem 0 0.6rem 0;'>😵😩 No Public-Access-Token for you.</div>"
-         -->
         <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
                 [<a href="https://github.com/colinbendell/private-access-token/blob/main/README.md">Notes</a>]
                 [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
@@ -427,6 +433,7 @@ async function handleRequest(request) {
                 [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
 
         </div>
+        <h2 class="${token ? 'auth-header' : ''}">😵😩 No Public-Access-Token for you.</h2>
         <div class="grid code">
             <code style="grid-column: span 2 / auto; margin: 0; border: 0;">Authorization: PrivateToken</code>
             <code style="padding-left: 1rem; margin: 0; border: 0;">token=</code>
@@ -443,8 +450,7 @@ async function handleRequest(request) {
         <div id="tests"></div>
     </main>
     </body>
-    </html>
-    `,
+    </html>`,
     respInit
   );
 }
