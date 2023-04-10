@@ -270,11 +270,15 @@
 
     async function findPublicKeyByTokenKeyID(token_key_id = []) {
         token_key_id = token_key_id.toString();
-        try {
-            return [...publicKeys.entries()].find(async ([k, v]) => await sha256(b642ab(v)) === token_key_id)[0];
-        }
-        catch {
-            return null;
+        for (const [k, v] of publicKeys.entries()) {
+            try {
+                const key = await sha256(b642ab(v));
+                if (key.toString() === token_key_id) {
+                    return k;
+                }
+            }
+            catch {
+            }
         }
     }
 
