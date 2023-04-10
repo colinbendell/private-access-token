@@ -235,16 +235,17 @@
             return btoa(data).replace(/\+/g, '-').replace(/\//g, '_')
         }
 
-        async function base64urlDecode(data) {
+        function base64urlDecode(data) {
             try {
-                return atob(decodeURIComponent(data)?.replace(/-/g, '+')?.replace(/_/g, '/'))
+                return atob(decodeURIComponent(data)
+                ?.replaceAll('-', '+')
+                ?.replaceAll('_', '/'))
+                ?.split('')
+                ?.map( c => c.charCodeAt(0));
             }
             catch {
-
+                return []
             }
-            return ""
-
-            return atob(data.replace(/-/g, '+').replace(/_/g, '\/')).split('').map( c => c.charCodeAt(0));
         }
 
         function stringToBinary(value) {
@@ -292,7 +293,7 @@
             const token = getElement("token-key")?.replaceAll(/^"|"$/g, "");
             const findToken = async () => [...publicKeys.entries()].find(([k, v]) => v === token)[0];
             const tokenIssuerName = await findToken().catch(() => "") || "";
-            const tokenBytes = await base64urlDecode(token).catch(() => [])
+            const tokenBytes = base64urlDecode(token) || [];
 
             const tests = [];
             tests.push([
@@ -321,7 +322,7 @@
             ]);
             tests.push([ "challenge is formatted as base64url() ", /^[A-Za-z0-9=_-]+$/.test(challenge), '', challenge ]);
 
-            const challengeBytes = await base64urlDecode(challenge).catch(() => []);
+            const challengeBytes = base64urlDecode(challenge) || [];
             tests.push([ "challenge can base64url.decode()", challengeBytes.length > 0, '', challengeBytes ]);
 
             const tokenType = ntohs(challengeBytes.slice(0, 2));
