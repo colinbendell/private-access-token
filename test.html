@@ -130,6 +130,9 @@
             padding: 0.5rem;
         }
 
+        summary {
+            white-space: nowrap;
+        }
         details {
             margin-left: 1.75rem;
         }
@@ -190,6 +193,16 @@
         }
     </style>
     <script>
+    const CLOUDFLARE_DEMO_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAqfdRrhQxhqRy3yRtJSs1Uv-JWXw78tyHyWplECfNS5MVNQ-R7HWcYeZKqy9QBkY-BPBvPbZpCEQsV9XteatGU2Ize519hxFHpH4TuyaFGjL3rKHz7dEMo2ED3INT4Mo36u11VviZYSaiHU7lfs9srepOxvqrSOSwO3DoVJ3J2kq3A4PHw27vjX_MNSmXMqDvjPwzChhlDYf2mgZgjoXt_QXQ1dB9WdYcp1Lcv8a5fOMspyLJNFVuQPjHKN5LbOWm03n7aSBXZBaR0Hw8oaPHPWr8rHzjt25RA7it_FaKFn2N6EqYL16lJzTxCyjYE_KC5VJQq0HAglTNPSYhYbRXxQIDAQAB";
+    const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAyKs0fkdzX-NVyob2xCfNi8DTewBG2MQLWM7UmHBXsz4StmTS_HnC-FKi6_YV531KDz1WxzdSVtZ8eUpg7ISzl7yRfp3Ti8jRVaNUd4fiHuL_QtLnAUr-PPUitTM2homTwHYiSlJxy4x_WSjx64rkWGEAmb58mJaXTueTn8HjecQ4mIafIlquNWL-jUK7o_d5pwdETFwHzOWlgWNLMnjrLth2djLJlGsgBIzudFgf-JdhDdDIuIPju3Q02WCoE1d4VrMzJtRNpnigbQsg6Xy18bcwY7Z8msp11pGkMy1qKBtV3VeD9G_wVRyaSHTen6J9-HBeCIeSe1HOJqhal2TReQIDAQAB";
+    const FASTLY_PUB_KEY = "MIICUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAg8AMIICCgKCAgEAubzND7lvK";
+    const publicKeys = new Map([
+        ['demo-pat.issuer.cloudflare.com', CLOUDFLARE_DEMO_PUB_KEY],
+        ['pat-issuer.cloudflare.com', CLOUDFLARE_PUB_KEY],
+        ['demo-issuer.private-access-tokens.fastly.com', FASTLY_PUB_KEY],
+    ]);
+
+
     // host to network long
     function htonl(n) {
         return [(n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
@@ -209,10 +222,6 @@
     function ntohs(n) {
         return (n[0] << 8) + n[1];
     }
-    function getElement(id) {
-        return document.getElementById(id).value;
-    }
-
     function bin2str(value = []) {
         return value.map(char => String.fromCharCode(char)).join('');
     }
@@ -226,26 +235,12 @@
     }
     function base64urlDecode(data) {
         try {
-            return atob(decodeURIComponent(data)?.replace(/-/g, '+')?.replace(/_/g, '/'))
+            return atob(decodeURIComponent(data)?.replaceAll('-', '+')?.replaceAll('_', '/'))
         }
         catch {
 
         }
         return ""
-    }
-
-    function debugHex(name, value = []) {
-        // hex encode
-        // document.getElementById(name).innerHTML = "[" + value.map(v => v.toString(16).padStart(2, '0')).join(", ") + "]";
-
-        // keep decimal encode - because humans
-        document.getElementById(name).innerHTML = JSON.stringify(value).replaceAll(",", ", ");
-    }
-
-    function debugBool(name, value) {
-        const status = value === null ? 'unknown' : (value ? 'pass' : 'fail')
-        console.log(name, ":", status)
-        document.getElementById(name + "_test").className = status;
     }
 
     function hexToByte(s) {
@@ -256,11 +251,40 @@
         return Uint8Array.from(base64urlDecode(base64_string), c => c.charCodeAt(0));
     }
 
-    function compareArray(a, b) {
-        return a.toString() === b.toString();
+    async function sha256(data = []) {
+        return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)));
     }
+
+    function getElement(id) {
+        return document.getElementById(id).value;
+    }
+
+    function findPublicKeyByTokenKey(token_key) {
+        try {
+            return [...publicKeys.entries()].find(([k, v]) => v === token_key)[0];
+        }
+        catch {
+            return null;
+        }
+    }
+
+    async function findPublicKeyByTokenKeyID(token_key_id = []) {
+        token_key_id = token_key_id.toString();
+        try {
+            return [...publicKeys.entries()].find(async ([k, v]) => await sha256(b642ab(v)) === token_key_id)[0];
+        }
+        catch {
+            return null;
+        }
+    }
+
+
+
     async function parseToken() {
         const token = getElement("token");
+        const challenge = getElement("challenge").replaceAll('"', '');
+        const tokenKey = getElement("token-key").replaceAll('"', '');
+
         const tokenBytes = str2bin(base64urlDecode(token.replaceAll(/^"|"$/g, ""))) || [];
 
         const tests = [];
@@ -309,22 +333,25 @@
             nonce
         ]);
 
-        const challenge = tokenBytes.slice(34,66);
-        const expectedChallengeBytes = str2bin(base64urlDecode(getElement("challenge").replaceAll('"', '')));
-        const expectedChallenge = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(expectedChallengeBytes))));
+        const challengeHash = tokenBytes.slice(34,66);
+        const expectedChallenge = await sha256(b642ab(challenge));
 
         tests.push([
             'challenge_digest == sha256(challenge)',
-            compareArray(expectedChallenge, challenge),
+            expectedChallenge.toString() === challengeHash.toString(),
             '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.3" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
             challenge,
         ]);
 
         const tokenKeyID = tokenBytes.slice(66,98);
+        const expectedTokenKeyID = await sha256(b642ab(tokenKey));
+        const tokenKeyName = await findPublicKeyByTokenKeyID(tokenKeyID);
+        console.log(name);
+
         tests.push([
-            'token_key_id .length()==32',
-            tokenKeyID.length === 32,
-            '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.4" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
+            'token_key_id == sha256(token_key)',
+            expectedTokenKeyID.toString() === tokenKeyID.toString(),
+            '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-auth-scheme-09.html#section-2.2-4.4" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a> ' + tokenKeyName ?? '',
             tokenKeyID,
         ]);
 
@@ -338,27 +365,36 @@
 
         // sadly WebCrypto support for rsa-pss on Chrome/WebKit is missing. Works on Firefox
         let valid = null;
+        let publicKey = null;
+        const data = Uint8Array.from(tokenBytes.slice(0,98));
+        const signature = Uint8Array.from(tokenBytes.slice(98));
+
         try {
-            const data = Uint8Array.from(tokenBytes.slice(0,98));
-            const signature = Uint8Array.from(tokenBytes.slice(98));
-
-            // const legacyTokenKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAi7t2SG_6S5PbMQR2JYv4jCtH11wPase-oVbgIe4uYk_ZDeXa84Qrsy8bmaPZ_fO14Qzhy6mW5Vnxy12K0YdZ89sfkbgVAyRsVyU5s-i3m-uXdvG_W9Njas2xE8qx-YAWcc2wa5Z7Q3mS4DhflgiF8zP1qweXF0DRhhIO72R-4lLYBXzdNTK703YL24j7dmjh7hC7QBfKFA6pYeEti-K3IMVEXQwYKiK68LziIZW9_GiYJaEmYT0FMNuqcKD_1oPngnNNiBiNjrbpC9MRI7D1w0R4pQmY44XZVTqL-qTiQPfFtfU7fCgvvssqnemhz4qvYgIzsoD1nYWWaqO56xWJPwIDAQAB"
-            // const legacyPublicKey = await crypto.subtle.importKey("spki", b642ab(legacyTokenKey), { name: "RSA-PSS", hash: "SHA-256" }, false, ["verify"]);
-            // valid = await crypto.subtle.verify({name:"RSA-PSS", saltLength: 32},  legacyPublicKey, signature, data);
-
-            const tokenKey = getElement("token-key").replaceAll('"', '');
-            const publicKey = await crypto.subtle.importKey("spki", b642ab(tokenKey), { name: "RSA-PSS", hash: "SHA-384" }, false, ["verify"])
-            valid = await crypto.subtle.verify({name:"RSA-PSS", saltLength: 48},  publicKey, signature, data);
+            publicKey = await crypto.subtle.importKey("spki", b642ab(tokenKey), { name: "RSA-PSS", hash: "SHA-384" }, false, ["verify"])
         }
         catch (e) {
             console.error(e);
+            const legacyTokenKey = "MIIBIjANBgkqhkiG9w0BAQEFA" + tokenKey.slice(-367); //convenient hack to remove the parameters
+
+            console.error("Falling back to legacy rsaEncoded without parameters");
+            try {
+                publicKey = await crypto.subtle.importKey("spki", b642ab(legacyTokenKey), { name: "RSA-PSS", hash: "SHA-384" }, false, ["verify"]);
+            }
+            catch (e) {
+                console.error(e);
+            }
         }
+
+        if (publicKey) {
+            valid = await crypto.subtle.verify({name:"RSA-PSS", saltLength: 48},  publicKey, signature, data);
+        }
+
 
         tests.push([
             "RSA-Verify(token[0-98], publicKey, authenticator)",
             valid,
             '<a href="https://www.ietf.org/archive/id/draft-ietf-privacypass-protocol-06.html#name-token-verification-2" style="vertical-align: super; font-size: 0.75rem;">ⓘ</a>',
-            '<em>NB: Safari, Chrome and Cloudflare Workers do not support <a href="https://github.com/w3c/webcrypto/issues/307">oid=RSARSS-PSS in WebCrypto.validate()</a></em>',
+            '<em>NB: Safari, Chrome and Cloudflare Workers do not support <a href="https://github.com/w3c/webcrypto/issues/307">RSARSS-PSS oid with parameters in WebCrypto</a></em>',
             true
         ]);
 
@@ -375,11 +411,12 @@
     function init() {
         let token = challenge = publicKey = "";
         const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
-        token = params.token || "${token || ''}";
+        const cookies = new Proxy({}, { get: (cookies, prop) => document.cookie.split(prop+"=")[1]?.split(/; */)[0], });
+        token = params.token || cookies.token || "${token || ''}";
         document.getElementById('token').value = decodeURIComponent(token);
-        challenge = params.challenge || "${challenge || ''}";
+        challenge = params.challenge || cookies.challenge || "${challenge || ''}";
         document.getElementById('challenge').value = decodeURIComponent(challenge);
-        publicKey = params["token-key"] || "${publicKey || ''}";
+        publicKey = params["token-key"] || cookies["token-key"] || "${publicKey || ''}";
         document.getElementById('token-key').value = decodeURIComponent(publicKey);
 
         parseToken();
