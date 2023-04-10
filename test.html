@@ -402,6 +402,8 @@
             true
         ]);
 
+        document.getElementById("banner").className = valid ? "auth-header" : "";
+
         let output = "";
         for (const [name, result, value, longValue, open] of tests) {
             const code = longValue ? "<code>" + (JSON.stringify(longValue)?.replaceAll(',', ', ').replaceAll('"', '') || "") + "</code>" : "";
@@ -416,11 +418,11 @@
         let token = challenge = publicKey = "";
         const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
         const cookies = new Proxy({}, { get: (cookies, prop) => document.cookie.split(prop+"=")[1]?.split(/; */)[0], });
-        token = params.token || cookies.token || "${token || ''}";
+        token = params.token || cookies.token || "";
         document.getElementById('token').value = decodeURIComponent(token);
-        challenge = params.challenge || cookies.challenge || "${challenge || ''}";
+        challenge = params.challenge || cookies.challenge || "";
         document.getElementById('challenge').value = decodeURIComponent(challenge);
-        publicKey = params["token-key"] || cookies["token-key"] || "${publicKey || ''}";
+        publicKey = params["token-key"] || cookies["token-key"] || "";
         document.getElementById('token-key').value = decodeURIComponent(publicKey);
 
         parseToken();
@@ -444,7 +446,7 @@
             [<a href="https://private-access-token.colinbendell.dev/test.html">UA Test</a>]
 
     </div>
-    <h2 class="${token ? 'auth-header' : ''}">😵😩 No Public-Access-Token for you.</h2>
+    <h2 id="banner" class="">😵😩 No Public-Access-Token for you.</h2>
     <div class="grid code">
         <code style="grid-column: span 2 / auto; margin: 0; border: 0;">Authorization: PrivateToken</code>
         <code style="padding-left: 1rem; margin: 0; border: 0;">token=</code>
