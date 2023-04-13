@@ -43,7 +43,7 @@ async function getFastlyDemoPublicKey() {
           'accept-language': 'en-US,en;q=0.9,pl;q=0.8',
           'content-type': 'application/x-www-form-urlencoded',
           'origin': 'https://patdemo-o.edgecompute.app',
-          'referer': 'https://patdemo-o.edgecompute.app/?session=79787',
+          'referer': 'https://patdemo-o.edgecompute.app/',
           'sec-fetch-dest': 'document',
           'sec-fetch-mode': 'navigate',
           'sec-fetch-site': 'same-origin',
@@ -113,7 +113,7 @@ async function build() {
     const cfDemoKey = await getCloudflareDemoPublicKey();
     const fastlyDemoKey = await getFastlyDemoPublicKey();
 
-    for(const file of ['index.html', 'debug.html', 'test.html', 'worker/index.js']) {
+    for(const file of ['pat.js', 'worker/index.js']) {
         const path = __dirname + '/../' + file;
         let content = await fs.readFile(path, {encoding: 'utf8'});
         if (cfProdKey) content = content.replaceAll(/CLOUDFLARE_PUB_KEY = .*;/g, `CLOUDFLARE_PUB_KEY = "${cfProdKey}";`);

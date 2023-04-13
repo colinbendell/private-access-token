@@ -197,154 +197,75 @@
         }
 
     </style>
-    <script>
-        const CLOUDFLARE_DEMO_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEArAWV9A9dJqryLQLs5eo6XlVRaif7JUYUGCc-_qHbmif6NqkJ5uUUywI17W199747UzW-70YWTh1WBt6KaaI4fy1hwWOHtR3ugtLpYA3CBQYRGbupeCa9hLHI03ed6AtlXbh-pcOweewyvZekdab5HzJldLI6rlMwMlrxgiWmm7PhrDuVkgygLVP2W7BX061WWoCUk8UQ9q2EEVMMDIgavBnGu3yIc7h2o2m-6qgH98_SeFls2HbJNph7VELWdVSeGJDxvSeYEu0X-7jTtC81fjDioSrgyw7Zf_G_LB92H9_6DrZ2YBoMx4UBbsY8aSM8dmfLip3qUMaHtq2jlqgOCwIDAQAB";
-        const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAv-oHaLcoCLb_QMhvNUPVQiKa5mfhJedXY47NUCAyKHMLJfK0yUzyourEW4bOUty8zLvRcc4QY77kqdePpQgJsrdCQ9d40yS3zwbOCPGzMaLAeFQhvfqwDnUmm0mE5bpp324tGOC_mNJ_HVwpPgMW1t88xguGacC3DkHWfIvsHyaYNuF-ZaBAkZ6Dr5JJNXpnRmq8PmHY9Z9xOf3KJ33Ue9cc32jKTcsULI28_sU4RKrFpJRbp17pWKGeX1T3oVqO6k_AHKFOrIou1ZmFEZqJAzBM1VU6LC5LThPr5TcLK5CJUPMOooAEKuNpP3xGnn_bQvTrE-LPo9NjR-vTUHO_cQIDAQAB";
-        const FASTLY_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA3u2Eqv0aOFEyI9Q42gqtgG2eo5Dgm7H8GUTJGdxOI7L8-10Jr1miUeTofM8d2ddSMTiJPNhsoniy3q2l2omwH_KXgEYuCUgUBykrMcse4m7mG2QijluejXwooHN9KtErBi_jlOlC1MRmuD1aYWI_egv78A6zw1wvUJOAQ3twQpCRWkzt9Q7eiAGMaPD_c2Te3oeOPTIuhpKaqKjVaRtNnng-3eRC5uIE8mGu-41iZM2efdcqO68lE1s4z8hLNM_0ZDzm3zMdLwpQYq1Bp0WXXrLYTQWDDu2MTR_aNTJ44wJdYutuK-FeRHQGIxUDTvA5PDq-M3ZuUHk_gAAHzYu12wIDAQAB";
-        const publicKeys = new Map([
-            ['demo-pat.issuer.cloudflare.com', CLOUDFLARE_DEMO_PUB_KEY],
-            ['pat-issuer.cloudflare.com', CLOUDFLARE_PUB_KEY],
-            ['demo-issuer.private-access-tokens.fastly.com', FASTLY_PUB_KEY],
-        ]);
+    <script type="module">
+        import {Challenge, PublicKey} from "./pat.js";
+        import {base64urlDecode, networkToHostShort, byteArrayToString, hexEncode} from "./utils.js";
 
-        // host to network long
-        function htonl(n) {
-            return [(n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
-        }
-
-        // host to network short
-        function htons(n) {
-            return [(n >> 8) & 0xff, n & 0xff];
-        }
-
-        // network to host long
-        function ntohl(n) {
-            return (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3];
-        }
-
-        // network to host short
-        function ntohs(n) {
-            return (n[0] << 8) + n[1];
-        }
-
-        function bin2str(value = []) {
-            return value.map(char => String.fromCharCode(char)).join('');
-        }
-
-        function base64url(data) {
-            return btoa(data).replace(/\+/g, '-').replace(/\//g, '_')
-        }
-
-        function base64urlDecode(data) {
-            try {
-                return atob(decodeURIComponent(data)
-                ?.replaceAll('-', '+')
-                ?.replaceAll('_', '/'))
-                ?.split('')
-                ?.map( c => c.charCodeAt(0));
-            }
-            catch {
-                return []
-            }
-        }
-
-        function stringToBinary(value) {
-            return [...new TextEncoder().encode(value ?? '')]
-        }
+        const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
+        const cookies = new Proxy({}, { get: (cookies, prop) => document.cookie.split(prop+"=")[1]?.split(/; */)[0], });
 
         function getElement(id) {
             return document.getElementById(id).value;
         }
 
-
-        function debugHex(name, value = []) {
-            // hex encode
-            // document.getElementById(name).innerHTML = "[" + value.map(v => v.toString(16).padStart(2, '0')).join(", ") + "]";
-
-            // keep decimal encode - because humans
-            document.getElementById(name).innerHTML = JSON.stringify(value).replaceAll(",", ", ");
-        }
-
-        function generateRedemption() {
-            const value = Array(32).fill(0).map(() => Math.round(Math.random()*255).toString(16).padStart(2, '0')).join('');
-            document.getElementById("redemption_context").value = value;
-        }
-
-        function hexToByte(s) {
-            return s?.replaceAll(/[^0-9a-z]/gi, '0')?.match(/.{1,2}/g)?.map(a => parseInt(a, 16));
-        }
-
-        function update() {
-            calcToken();
-        }
-
-        function init() {
-            const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
-            if (params.challenge) document.getElementById('challenge').value = decodeURIComponent(params.challenge);
-            document.getElementById('token-key').value = decodeURIComponent(params["token-key"] || CLOUDFLARE_PUB_KEY);
-            update();
-            document.getElementsByTagName('body')[0].onkeyup = update;
-            [...document.getElementsByTagName('select')].forEach(s => s.addEventListener('change', update));
-            [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('change', update));
-            [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('click', update));
-        }
-
-        async function calcToken() {
-            const token = getElement("token-key")?.replaceAll(/^"|"$/g, "");
-            const findToken = async () => [...publicKeys.entries()].find(([k, v]) => v === token)[0];
-            const tokenIssuerName = await findToken().catch(() => "") || "";
-            const tokenBytes = base64urlDecode(token) || [];
+        async function update() {
+            const publicKeyRaw = getElement("token-key");
+            const publicKey = await PublicKey.from(publicKeyRaw);
 
             const tests = [];
             tests.push([
-                `token-key is "quoted"`,
-                /^[^="]+$|^"[^"=]+=*"$|^[^="]+$/.test(token),
-                /=/.test(token) ? ' (required with base64url() `=` padding)' : '',
+                `token-key field is "quoted"`,
+                /^[^="]+$|^"[^"=]+=*"$|^[^="]+$/.test(publicKeyRaw),
+                /=/.test(publicKeyRaw) ? ' (required with base64url() `=` padding)' : '',
             ]);
-            tests.push([ "token-key can base64url.decode()", tokenBytes.length > 0, '', tokenBytes ]);
-            tests.push([ "token-key matches", !!tokenIssuerName, ` == "${tokenIssuerName}"` ]);
+            tests.push([ "token-key can base64url.decode()", publicKey?.toByteArray()?.length > 0, '', publicKey?.toByteArray() ]);
+            tests.push([ "token-key is known issuer", !!publicKey.issuerName, ` == "${publicKey.issuerName}"` ]);
 
 
-            let challenge = getElement("challenge");
+            let challengeRaw = getElement("challenge");
 
             tests.push([
-                `challenge is "quoted"`,
-                /^[^="]+$/.test(challenge) || /^"[^"=]+=*"$|^[^="]+$/.test(challenge),
-                /=/.test(challenge) ? ' (required with base64url() `=` padding)' : '',
+                `challenge field is "quoted"`,
+                /^[^="]+$/.test(challengeRaw) || /^"[^"=]+=*"$|^[^="]+$/.test(challengeRaw),
+                /=/.test(challengeRaw) ? ' (required with base64url() `=` padding)' : '',
             ]);
 
-            challenge = challenge.replaceAll(/^"|"$/g, "");
+            challengeRaw = challengeRaw.replaceAll(/^"|"$/g, "");
 
             tests.push([
                 "challenge.length % 4",
-                challenge.length % 4 == 0,
-                ` == ${challenge.length % 4}`,
+                challengeRaw.length % 4 == 0,
+                ` == ${challengeRaw.length % 4}`, challengeRaw
             ]);
-            tests.push([ "challenge is formatted as base64url() ", /^[A-Za-z0-9=_-]+$/.test(challenge), '', challenge ]);
 
-            const challengeBytes = base64urlDecode(challenge) || [];
+            const challengeBytes = base64urlDecode(challengeRaw) || [];
             tests.push([ "challenge can base64url.decode()", challengeBytes.length > 0, '', challengeBytes ]);
 
-            const tokenType = ntohs(challengeBytes.slice(0, 2));
-            tests.push([ "token_type is VOPRF (1) or Blind RSA (2)", [1,2].includes(tokenType), ` == ${tokenType === 1 ? 'VOPRF (1)' : tokenType === 2 ? 'Blind RSA (2)' : ''}`, htons(tokenType), true ]);
+            const tokenTypeBytes = challengeBytes.slice(0, 2);
+            const tokenType = networkToHostShort(tokenTypeBytes);
+            tests.push([ "token_type is VOPRF (1) or Blind RSA (2)", [1,2].includes(tokenType), ` == ${tokenType === 1 ? 'VOPRF (1)' : tokenType === 2 ? 'Blind RSA (2)' : ''}`, tokenTypeBytes, true ]);
 
-            const issuerNameLength = ntohs(challengeBytes.slice(2, 4));
-            tests.push([ "issuer_name length prefix > 0", issuerNameLength > 0, ` == ${issuerNameLength}`, htons(issuerNameLength), true]);
+            const issuerNameLengthBytes = challengeBytes.slice(2, 4);
+            const issuerNameLength = networkToHostShort(issuerNameLengthBytes);
+            tests.push([ "issuer_name length prefix > 0", issuerNameLength > 0, ` == ${issuerNameLength}`, issuerNameLengthBytes, true]);
 
-            const issuerName = bin2str(challengeBytes.slice(4, 4 + issuerNameLength));
-            tests.push([ "issuer_name matches token-key", issuerName === tokenIssuerName, ` == "${issuerName}"`, stringToBinary(issuerName), true]);
+            const issuerNameBytes = challengeBytes.slice(4, 4 + issuerNameLength);
+            const issuerName = byteArrayToString(issuerNameBytes);
+            tests.push([ "issuer_name matches token-key", issuerName === publicKey.issuerName, ` == "${issuerName}"`, issuerNameBytes, true]);
 
             const redemptionContextLength = challengeBytes[4 + issuerNameLength];
             tests.push([ "redemption_context length prefix is 0 or 32", [0, 32].includes(redemptionContextLength), ` == ${redemptionContextLength}`, redemptionContextLength, true]);
 
             const redemptionContext = challengeBytes.slice(4 + issuerNameLength + 1, 4 + issuerNameLength + 1 + redemptionContextLength);
-            tests.push([ "redemption_context is valid", redemptionContext.length === redemptionContextLength, ` == "${redemptionContext.map(v => v.toString(16).padStart(2, '0')).join('')}"`, redemptionContext, true]);
+            tests.push([ "redemption_context is valid", redemptionContext.length === redemptionContextLength, ` == "${hexEncode(redemptionContext)}"`, redemptionContext, true]);
 
-            const originInfoLength = ntohs(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength, 4 + issuerNameLength + 1 + redemptionContextLength + 2));
-            tests.push([ "origin_info length prefix", originInfoLength >= 0, ` == ${originInfoLength}`, htons(originInfoLength), true ]);
+            const originInfoLengthBuytes = challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength, 4 + issuerNameLength + 1 + redemptionContextLength + 2);
+            const originInfoLength = networkToHostShort(originInfoLengthBuytes);
+            tests.push([ "origin_info length prefix", originInfoLength >= 0, ` == ${originInfoLength}`, originInfoLengthBuytes, true ]);
 
-            const originInfo = bin2str(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength + 2, 4 + issuerNameLength + 1 + redemptionContextLength + 2 + originInfoLength));
-            tests.push([ "origin_info is valid", originInfo.length === originInfoLength, ` == "${originInfo}"`, stringToBinary(originInfo), true ]);
+            const originInfoBytes = challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength + 2, 4 + issuerNameLength + 1 + redemptionContextLength + 2 + originInfoLength);
+            const originInfo = byteArrayToString(originInfoBytes);
+            tests.push([ "origin_info is valid", originInfo.length === originInfoLength, ` == "${originInfo}"`, originInfoBytes, true ]);
 
             let {version, brand} = navigator.userAgentData?.brands[0] || {};
             if (!brand && !version) {
@@ -364,6 +285,23 @@
             }
             document.getElementById('tests').innerHTML = output;
         }
+
+        async function init() {
+            const defaultChallenge = Challenge.DEFAULT;
+
+            const challengeRaw = params.challenge || defaultChallenge.toString();
+            document.getElementById('challenge').value = decodeURIComponent(challengeRaw);
+
+            const tokenKeyRaw = params["token-key"] || (await defaultChallenge.tokenKey()).sPKI;
+            document.getElementById('token-key').value = decodeURIComponent(tokenKeyRaw);
+
+            update();
+            document.getElementsByTagName('body')[0].onkeyup = update;
+            [...document.getElementsByTagName('select')].forEach(s => s.addEventListener('change', update));
+            [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('change', update));
+            [...document.getElementsByTagName('input')].forEach(s => s.addEventListener('click', update));
+        }
+
         window.addEventListener('load', init);
     </script>
 </head>
