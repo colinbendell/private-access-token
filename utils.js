@@ -14,30 +14,13 @@ export function n2hl(n) { return DataBuffer.bytesToNumber(n); }
 export function networkToHostShort(n) { return DataBuffer.bytesToNumber(n); }
 export function n2hs(n) { return DataBuffer.bytesToNumber(n); }
 
-export function bigIntToByteArray(n = 0n, length) { return DataBuffer.numberToBytes(n, length); }
-export function byteArrayToBigInt(octets = []) { return DataBuffer.bytesToNumber(octets); }
-
 /**
  * I2OSP function
  * @param {Number} value - Number to be encoded to byte array in network byte order.
  * @param {Number} length - Length of byte array
  * @return {Uint8Array} - Encoded number.
  */
-function i2osp(value = 0, length = 2) { return DataBuffer.numberToBytes(value, length); }
-
-export function base64Encode(data) { return Base64.encode(data); }
-
-export function base64urlEncode(data, quote = false) { return Base64.urlEncode(data, quote); }
-
-export function base64urlDecode(data) { return Base64.decode(data); }
-
-export function hexDecode(s) { return Hex.decode(s); }
-
-export function hexEncode(data = []) { return Hex.encode(data); }
-
-export function stringToByteArray(data) { return DataBuffer.stringToBytes(data); }
-
-export function byteArrayToString(value = []) { return DataBuffer.bytesToString(value); }
+export function i2osp(value = 0, length = 2) { return DataBuffer.numberToBytes(value, length); }
 
 export async function sha256(data = []) {
     if (Array.isArray(data)) {
@@ -48,16 +31,11 @@ export async function sha256(data = []) {
 
 export class Hex {
     static decode(value = '') {
-        if (typeof value === 'string') {
-            value = value?.replaceAll(/[^0-9a-z]/gi, '0')?.match(/.{1,2}/g) || [];
-        }
-        value = Array.from(value);
-
         const result = Array(value.length / 2);
         for (let i = 0; i < value.length / 2; i++) {
             result[i] = parseInt(value.slice(i * 2, i * 2 + 2), 16) || 0;
         }
-        return [];
+        return result;
     }
 
     static encode(data = []) {
@@ -137,12 +115,8 @@ export class DataBuffer {
     */
     readInt(size = 1) {
         const value = this.readBytes(size);
-        if (size === 4) return networkToHostLong(value);
-        if (size === 2) return networkToHostShort(value);
         if (size === 1) return value[0];
-
-        // what do we do here?
-        return value;
+        return DataBuffer.bytesToNumber(value);
     }
 
     readInt8() {
@@ -166,7 +140,7 @@ export class DataBuffer {
     }
 
     writeInt(value = 0, size = 2) {
-        this.buffer.push(...bigIntToByteArray(value, size));
+        this.buffer.push(...DataBuffer.numberToBytes(value, size));
     }
 
     writeBytes(bytes = []) {

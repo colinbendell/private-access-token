@@ -1,4 +1,4 @@
-import { Base64, base64urlDecode, base64Encode, hostToNetworkShort, hostToNetworkLong, bigIntToByteArray, stringToByteArray, DataBuffer, CBOR} from './utils.js';
+import { Base64, DataBuffer, CBOR} from './utils.js';
 
 import { p384 as ec, hashToCurve} from '@noble/curves/p384';
 import { sha384, sha512 } from '@noble/hashes/sha512';
@@ -50,7 +50,7 @@ export class ECPoint {
      * @returns {string} The point as a Base64 string.
      */
     toString() {
-        return base64Encode(this.toBytes());
+        return Base64.encode(this.toBytes());
     }
 
     toJSON() {
@@ -99,7 +99,7 @@ function hashToGroup(message, dst="TrustToken VOPRF Experiment V2 HashToGroup\0"
  */
 // function hashToScalar(msg, count, dst = "HashToScalar-OPRFV1-\x01-P384-SHA384\0") {
 function hashToScalar(msg, count, dst = "TrustToken VOPRF Experiment V2 HashToScalar\0") {
-    msg = Uint8Array.from(stringToByteArray(msg));
+    msg = Uint8Array.from(DataBuffer.stringToBytes(msg));
     return hash_to_field(msg, count, {DST: dst, p: ORDER_P384, m: 1, k: 192, expand: 'xmd', hash: sha512});
 }
 
@@ -161,15 +161,18 @@ export class PrivateStateTokenPublicKey {
      * @returns {Uint8Array} Returns the public key as bytes.
      */
     toBytes() {
+        const buffer = new DataBuffer();
+        buffer.writeInt(this.id, 4);
+        buffer.writeBytes(this.value.toBytes());
 
-        return [].concat(hostToNetworkLong(this.id), [...this.value.toBytes()]);
+        return buffer.toBytes();
     }
 
     /**
      * @returns {string} Returns the public key as a Base64 string suitable for use in key commitments.
      */
     toString() {
-        return base64Encode(this.toBytes());
+        return Base64.encode(this.toBytes());
     }
 }
 
@@ -288,7 +291,7 @@ export class IssueRequest {
      * @result {IssueRequest} Returns the decoded `IssueRequest`.
      */
     static from(s) {
-        const decodedBytes = base64urlDecode(s);
+        const decodedBytes = Base64.decode(s);
         const bytes = new DataBuffer(decodedBytes);
 
         const count = bytes.readInt(2);
@@ -311,7 +314,7 @@ export class IssueRequest {
         return bytes.buffer;
     }
 
-    toString() { return base64Encode(this.toBytes()); }
+    toString() { return Base64.encode(this.toBytes()); }
 
     toJSON() { return this.toBytes(); }
 
@@ -337,7 +340,7 @@ class SignedNonce {
         return Array.from(this.#point.toRawBytes(false));
     }
 
-    toString() { return base64Encode(this.toBytes()); }
+    toString() { return Base64.encode(this.toBytes()); }
 
     toJSON() { return this.toBytes(); }
 
@@ -377,18 +380,18 @@ export class IssueResponse {
      * @returns {Uint8Array} The issue response as bytes.
      */
     toBytes() {
-        const buf = bigIntToByteArray(this.issued, 2);
-        buf.push(...bigIntToByteArray(this.keyID, 4));
+        const buf = new DataBuffer();
+        buf.writeInt(this.issued, 2);
+        buf.writeInt(this.keyID, 4);
         for (const nonce of this.signed) {
-            buf.push(...nonce.toBytes());
+            buf.writeBytes(nonce.toBytes());
         }
-        buf.push(...bigIntToByteArray(this.proof.length, 2));
-
-        buf.push(...this.proof);
-        return buf;
+        buf.writeInt(this.proof.length, 2);
+        buf.writeBytes(this.proof);
+        return buf.toBytes();
     }
 
-    toString() { return base64Encode(this.toBytes()); }
+    toString() { return Base64.encode(this.toBytes()); }
 
     [Symbol.for('nodejs.util.inspect.custom')]() { return this.toString(); }
 }
@@ -436,7 +439,7 @@ export class RedeemRequest {
      * @param {string} s The Base64 string to decode.
      */
     static from(s) {
-        const decodedBytes = base64urlDecode(s);
+        const decodedBytes = Base64.decode(s);
         const bytes = new DataBuffer(decodedBytes);
 
         const tokenLen = bytes.readInt(2);
@@ -464,7 +467,7 @@ export class RedeemRequest {
         return buf.toBytes();
     }
 
-    toString() { return base64Encode(this.toBytes()); }
+    toString() { return Base64.encode(this.toBytes()); }
 
     [Symbol.for('nodejs.util.inspect.custom')]() { return this.toString(); }
 }
@@ -485,7 +488,7 @@ export class RedeemResponse {
 
     toBytes() { return this.record; }
 
-    toString() { return base64Encode(this.record); }
+    toString() { return Base64.encode(this.record); }
 
     [Symbol.for('nodejs.util.inspect.custom')]() { return this.toString(); }
 }
@@ -583,10 +586,11 @@ export class PrivateStateTokenIssuer {
 
         // Batch DLEQ
         for (let i = 0; i < count; i++) {
-            const buf = stringToByteArray("DLEQ BATCH\0");
-            buf.push(...batch);
-            buf.push(...hostToNetworkShort(i));
-            const exponent = hashToScalar(buf, 1)[0][0];
+            const buf = new DataBuffer();
+            buf.writeString("DLEQ BATCH\0");
+            buf.writeBytes(batch);
+            buf.writeInt(i, 2);
+            const exponent = hashToScalar(buf.toBytes(), 1)[0][0];
             exponentList.push(exponent);
         }
 
@@ -621,19 +625,21 @@ export class PrivateStateTokenIssuer {
         const k0 = ec.ProjectivePoint.BASE.multiply(r);
         const k1 = btBatch.multiply(r);
 
-        const buf = stringToByteArray("DLEQ\0");
-        buf.push(...keyPair.publicKey.value.toBytes());
-        buf.push(...btBatch.toRawBytes(false));
-        buf.push(...zBatch.toRawBytes(false));
-        buf.push(...k0.toRawBytes(false));
-        buf.push(...k1.toRawBytes(false));
+        const buf = new DataBuffer();
+        buf.writeString("DLEQ\0");
+        buf.writeBytes(keyPair.publicKey.value.toBytes());
+        buf.writeBytes(btBatch.toRawBytes(false));
+        buf.writeBytes(zBatch.toRawBytes(false));
+        buf.writeBytes(k0.toRawBytes(false));
+        buf.writeBytes(k1.toRawBytes(false));
 
-        const c = hashToScalar(buf, 1)[0][0];
+        const c = hashToScalar(buf.toBytes(), 1)[0][0];
         const u = (r + c * ec.utils.normPrivateKeyToScalar(keyPair.secretKey.value)) % ORDER_P384;
 
         const result = [].concat(
-            bigIntToByteArray(c, ORDER_P384_LEN),
-            bigIntToByteArray(u, ORDER_P384_LEN));
+            DataBuffer.numberToBytes(c, ORDER_P384_LEN),
+            DataBuffer.numberToBytes(u, ORDER_P384_LEN)
+        );
         return result;
     }
     /**

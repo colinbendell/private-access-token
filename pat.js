@@ -1,4 +1,4 @@
-import {Base64, byteArrayToString, hostToNetworkShort, networkToHostShort, stringToByteArray, sha256, DataBuffer} from "./utils.js";
+import {Base64, sha256, DataBuffer} from "./utils.js";
 
 export class Challenge {
     static DEFAULT = Challenge.from("AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=");
@@ -28,7 +28,7 @@ export class Challenge {
     #redemptionContext = [];
 
     set redemptionContext(value) {
-        let redemptionContext = stringToByteArray(value);
+        let redemptionContext = DataBuffer.stringToBytes(value);
 
         if (redemptionContext.length > 0) {
             // Pad to 32 bytes
@@ -163,6 +163,7 @@ export class Token {
     static from(data) {
         const tokenBytes = Base64.decode(data);
         const dataBuffer = new DataBuffer(tokenBytes);
+
         const tokenType = dataBuffer.readInt(2);
         const nonce = dataBuffer.readBytes(32);
         const challengeHash = dataBuffer.readBytes(32);
@@ -180,6 +181,10 @@ export class Token {
         dataBuffer.writeBytes(this.tokenKeyID);
         dataBuffer.writeBytes(this.authenticator);
         return dataBuffer.toBytes();
+    }
+
+    toBytes() {
+        return this.toByteArray();
     }
 
     toString() {
@@ -206,7 +211,7 @@ export class Token {
     async verifyAuthenticator(challengeTokenKey) {
         const publicKey = await challengeTokenKey?.cryptoKey();
         if (publicKey) {
-            const data = Uint8Array.from([].concat(hostToNetworkShort(this.tokenType), this.nonce, this.challengeHash, this.tokenKeyID));
+            const data = Uint8Array.from([].concat(DataBuffer.numberToBytes(this.tokenType, 2), this.nonce, this.challengeHash, this.tokenKeyID));
             const signature = Uint8Array.from(this.authenticator);
 
             try {

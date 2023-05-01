@@ -194,7 +194,7 @@
     </style>
     <script type="module">
         import {Challenge, PublicKey, Token} from "./pat.js";
-        import {base64urlDecode, networkToHostShort} from "./utils.js";
+        import {Base64} from "./utils.js";
 
         const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
         const cookies = new Proxy({}, { get: (cookies, prop) => document.cookie.split(prop+"=")[1]?.split(/; */)[0], });
@@ -205,15 +205,13 @@
 
         async function parseToken() {
             const tokenRaw = getElement("token");
-            const tokenBytes = base64urlDecode(tokenRaw);
+            const tokenBytes = Base64.decode(tokenRaw);
             const token = await Token.from(tokenRaw);
 
             const challengeRaw = getElement("challenge");
             const challenge = Challenge.from(challengeRaw);
             const publicKeyRaw = getElement("token-key");
             const publicKey = await PublicKey.from(publicKeyRaw);
-
-            // const tokenBytes = str2bin(base64urlDecode(token.replaceAll(/^"|"$/g, ""))) || [];
 
             const tests = [];
 
