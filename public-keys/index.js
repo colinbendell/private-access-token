@@ -1,41 +1,48 @@
-const puppeteer = require('puppeteer');
-const https = require('https');
-const http2 = require('http2');
-const fs = require('fs').promises;
+import { launch } from 'puppeteer';
+import { get } from 'https';
+import { connect } from 'http2';
+import { promises as fs } from 'fs';
+import * as url from 'url';
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
+
+import { sha256, Base64 } from '../utils.js';
+import { Challenge } from '../private-access-token.js';
 
 async function getCloudflarePublicKey() {
-    const browser = await puppeteer.launch({
+    const browser = await launch({
         args: ['--no-sandbox'],
         executablePath: process.env.PUPPETEER_EXEC_PATH, // set by docker container
-        headless: true
+        headless: "true"
     });
 
     let key;
-    let url;
+    let issuer;
     const page = await browser.newPage();
     page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1')
     page.on('response', res => {
         const headers = res.headers();
         if (headers['www-authenticate']?.match(/PrivateToken/)) {
-            key = headers['www-authenticate'].split(/token-key=/)[1]?.split(/,/)[0];
-            url = res.url();
+            const authenticate = headers['www-authenticate'];
+            key = authenticate.split(/token-key=/)[1]?.split(/,/)[0];
+            const challenge = Challenge.from(authenticate.split(/challenge=/)[1]?.split(/,/)[0]);
+            issuer = challenge.issuerName;
         }
     });
     const go = await page.goto('https://private-access-token.colinbendell.dev/recaptcha.html', {waitUntil: 'networkidle0'});
     await browser.close()
 
     if (key) {
-        console.log(url, key);
-        await fs.writeFile(__dirname + '/../pat-issuer.cloudflare.com.txt', key, {encoding: 'utf8'});
+        console.log(issuer, key);
+        await fs.writeFile(__dirname + `/../${issuer}.txt`, key, {encoding: 'utf8'});
     }
-    return key;
+    return {issuer, key};
 }
 
 async function getFastlyDemoPublicKey() {
     const url = 'https://patdemo-o.edgecompute.app/';
 
     const headers = await new Promise((resolve, reject) => {
-        const client = http2.connect('https://patdemo-o.edgecompute.app');
+        const client = connect('https://patdemo-o.edgecompute.app');
         const req = client.request({
           ':method': 'POST',
           ':path': '/',
@@ -72,22 +79,26 @@ async function getFastlyDemoPublicKey() {
     });
 
     let key;
+    let issuer;
     if (headers['www-authenticate']?.match(/PrivateToken/)) {
-        key = headers['www-authenticate'].split(/token-key=/)[1]?.split(/,/)[0];
+        const authenticate = headers['www-authenticate'];
+        key = authenticate.split(/token-key=/)[1]?.split(/,/)[0];
+        const challenge = Challenge.from(authenticate.split(/challenge=/)[1]?.split(/,/)[0]);
+        issuer = challenge.issuerName;
     }
 
     if (key) {
-        console.log(url, key);
-        await fs.writeFile(__dirname + '/../demo-issuer.private-access-tokens.fastly.com.txt', key, {encoding: 'utf8'});
+        console.log(issuer, key);
+        await fs.writeFile(__dirname + `/../${issuer}.txt`, key, {encoding: 'utf8'});
     }
-    return key;
+    return {issuer, key};
 }
 
 async function getCloudflareDemoPublicKey() {
-    let url = "https://demo-pat.issuer.cloudflare.com/"
+    let issuer = "demo-pat.issuer.cloudflare.com"
     let key;
     const body = await new Promise((resolve, reject) => {
-        https.get('https://demo-pat.issuer.cloudflare.com/.well-known/token-issuer-directory', (res) => {
+        get('https://demo-pat.issuer.cloudflare.com/.well-known/token-issuer-directory', (res) => {
         res.setEncoding('utf8');
         let body = '';
         res.on('data', chunk => body += chunk);
@@ -101,24 +112,55 @@ async function getCloudflareDemoPublicKey() {
       key = keys[0]["token-key"];
     }
     if (key) {
-        console.log(url, key);
-        await fs.writeFile(__dirname + '/../demo-pat.issuer.cloudflare.com.txt', key, {encoding: 'utf8'});
+        console.log(issuer, key);
+        await fs.writeFile(__dirname + `/../${issuer}.txt`, key, {encoding: 'utf8'});
     }
 
-    return key;
+    return {issuer, key};
 }
 
 async function build() {
-    const cfProdKey = await getCloudflarePublicKey();
-    const cfDemoKey = await getCloudflareDemoPublicKey();
-    const fastlyDemoKey = await getFastlyDemoPublicKey();
+    let issuers = await Promise.all([
+        getCloudflarePublicKey(),
+        getCloudflareDemoPublicKey(),
+        getFastlyDemoPublicKey()
+    ]);
 
-    for(const file of ['pat.js', 'worker/index.js']) {
+    issuers = issuers.filter(i => !!i.key)
+    const issuerSet = new Set();
+    for (const issuer of issuers) {
+        issuer.keyID = Base64.encode(await sha256(Base64.decode(issuer.key)));
+        issuerSet.add(issuer.issuer);
+    }
+
+    const path = __dirname + '/../private-access-token-issuers.json';
+
+    // back fill missing just in case an error happened
+    const prevIssuers = JSON.parse(await fs.readFile(path, {encoding: 'utf8'}).catch(() => '[]')) || [];
+    for (const issuer of prevIssuers) {
+        if (!issuerSet.has(issuer.issuer)) {
+            issuers.push(issuer);
+        }
+    }
+
+    await fs.writeFile(path, JSON.stringify(issuers, null, 2), {encoding: 'utf8'});
+
+    const cfProdKey = issuers.find(i => i.issuer === 'pat-issuer.cloudflare.com')?.key;
+    const cfProdKeyID = issuers.find(i => i.issuer === 'pat-issuer.cloudflare.com')?.keyID;
+    const cfDemoKey = issuers.find(i => i.issuer === 'demo-pat.issuer.cloudflare.com')?.key;
+    const cfDemoKeyID = issuers.find(i => i.issuer === 'demo-pat.issuer.cloudflare.com')?.keyID;
+    const fastlyDemoKey = issuers.find(i => i.issuer === 'demo-issuer.private-access-tokens.fastly.com')?.key;
+    const fastlyDemoKeyID = issuers.find(i => i.issuer === 'demo-issuer.private-access-tokens.fastly.com')?.keyID;
+
+    for(const file of ['private-access-token.js', 'worker/index.js']) {
         const path = __dirname + '/../' + file;
         let content = await fs.readFile(path, {encoding: 'utf8'});
         if (cfProdKey) content = content.replaceAll(/CLOUDFLARE_PUB_KEY = .*;/g, `CLOUDFLARE_PUB_KEY = "${cfProdKey}";`);
+        if (cfProdKey) content = content.replaceAll(/CLOUDFLARE_PUB_KEY_ID = .*;/g, `CLOUDFLARE_PUB_KEY_ID = "${cfProdKeyID}";`);
         if (cfDemoKey) content = content.replaceAll(/CLOUDFLARE_DEMO_PUB_KEY = .*;/g, `CLOUDFLARE_DEMO_PUB_KEY = "${cfDemoKey}";`);
+        if (cfDemoKey) content = content.replaceAll(/CLOUDFLARE_DEMO_PUB_KEY_ID = .*;/g, `CLOUDFLARE_DEMO_PUB_KEY_ID = "${cfDemoKeyID}";`);
         if (fastlyDemoKey) content = content.replaceAll(/FASTLY_PUB_KEY = .*;/g, `FASTLY_PUB_KEY = "${fastlyDemoKey}";`);
+        if (fastlyDemoKeyID) content = content.replaceAll(/FASTLY_PUB_KEY_ID = .*;/g, `FASTLY_PUB_KEY_ID = "${fastlyDemoKeyID}";`);
         await fs.writeFile(path, content, {encoding: 'utf8'});
     }
 }

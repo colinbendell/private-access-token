@@ -1,6 +1,6 @@
 import { should, describe } from 'micro-should';
 import * as assert from 'assert';
-import { IssueRequest, PrivateStateTokenKeyPair, PrivateStateTokenIssuer, RedeemRequest} from '../privateStateToken.js';
+import { IssueRequest, PrivateStateTokenKeyPair, PrivateStateTokenIssuer, RedeemRequest} from '../private-state-token.js';
 
 describe('Private-State-Tokens', async () => {
     should('IssueRequest.from()', async () => {

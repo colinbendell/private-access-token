@@ -1,6 +1,6 @@
 import { should, describe } from 'micro-should';
 import * as assert from 'assert';
-import { PublicKey, Challenge, Token } from '../pat.js';
+import { PublicKey, Challenge, Token } from '../private-access-token.js';
 
 describe('Private-Access-Tokens', async () => {
     should('PublicKey.from()', async () => {

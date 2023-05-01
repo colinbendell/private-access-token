@@ -198,7 +198,7 @@
 
     </style>
     <script type="module">
-        import {Challenge, PublicKey} from "./pat.js";
+        import {Challenge, PublicKey} from "./private-access-token.js";
         import {Base64, DataBuffer, Hex} from "./utils.js";
 
         const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });

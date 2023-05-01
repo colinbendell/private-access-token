@@ -8,6 +8,7 @@
   },
   "author": "Colin Bendell <colin@bendell.ca>",
   "license": "MIT",
+  "type": "module",
   "dependencies": {
     "puppeteer": "^19"
   }

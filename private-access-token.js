@@ -42,8 +42,8 @@ export class Challenge {
         return this.#redemptionContext || [];
     }
 
-    async tokenKey() {
-        return await PublicKey.from(this.issuerName);
+    tokenKey() {
+        return PublicKey.from(this.issuerName);
     }
 
     toByteArray() {
@@ -66,12 +66,15 @@ export class Challenge {
 
 export class PublicKey {
     static #CLOUDFLARE_DEMO_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAtST104YJy_s9Qugu4pwyLnamhUcEveiw9Lvkp9lm4qDMEnn1SguQu2ovy0pNAa4wVCeN5OPftpCQT8qbwFGgcnUzNTgwBT6SVRJU-ZM7ky4iBBqJ77siiYvaWue2-tOJMU68yt64W20EcS548RAiaZVL0aMFEWZpP81axUSj9knnCs3WoIlcerCGfesxSfov0ZMTRbtO2PUcLnzi0iTWO1NCb1gVHXFe_cV8UiB-uxCaETmpEbkXfvdLMXeJcYVKpr1kb_Mu4Q1TCf0GY0OvXzrDSy0HimuJMy6BdmvZgYzsfP6u0z9VF_PNxOlFPr8Uq5lLyGUcBsaOtDAcm2LEvwIDAQAB";
+    static #CLOUDFLARE_DEMO_PUB_KEY_ID = "1XKRLqfqj2Ko7vNvRnVmsI5feQ2JiTiDjf9MNS6iaGk=";
     static #CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAmSYx82S-vjLRtQnwDoTUWfs-F-Hi-DRaYWzsCX96xyDJBsiM44vH3e84_i0ylmG4wHPdbDqOs-9hxtq2yC-5Ays-nZPHMmj-BATD7eCP8tff3gbELIvHB6suJ0Ov8j598aYWGzlna7KdXhdjuo7vVMUK7_2hoSO327Ph7hwZYODpPq8hQD9-EsghYZ5k13WxlZzx2DyqqVWBfUoJukkmuZwGW_nA2_uYwUwmOBoFmNSQh1FJD0MRRTrQrjvopK7mhVZL6y8Lt2cNdLdqEe4hxb_DiKlAzIpZIFpcG-VTmlREKGxQJEde4bCwTo6imlDb72prF9QxT6-cyS3FKFhdLwIDAQAB";
+    static #CLOUDFLARE_PUB_KEY_ID = "YGxwjWIWHdmidCezltPXnOAwu/H7uuKfaERZm/w9BEU=";
     static #FASTLY_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA3u2Eqv0aOFEyI9Q42gqtgG2eo5Dgm7H8GUTJGdxOI7L8-10Jr1miUeTofM8d2ddSMTiJPNhsoniy3q2l2omwH_KXgEYuCUgUBykrMcse4m7mG2QijluejXwooHN9KtErBi_jlOlC1MRmuD1aYWI_egv78A6zw1wvUJOAQ3twQpCRWkzt9Q7eiAGMaPD_c2Te3oeOPTIuhpKaqKjVaRtNnng-3eRC5uIE8mGu-41iZM2efdcqO68lE1s4z8hLNM_0ZDzm3zMdLwpQYq1Bp0WXXrLYTQWDDu2MTR_aNTJ44wJdYutuK-FeRHQGIxUDTvA5PDq-M3ZuUHk_gAAHzYu12wIDAQAB";
+    static #FASTLY_PUB_KEY_ID = "252MlXJMAflvJYZiNQfUjk1SdnNQcDKvtEr/8vrxL5o=";
 
-    static CLOUDFLARE_DEMO = new PublicKey('demo-pat.issuer.cloudflare.com', PublicKey.#CLOUDFLARE_DEMO_PUB_KEY);
-    static CLOUDFLARE = new PublicKey('pat-issuer.cloudflare.com', PublicKey.#CLOUDFLARE_PUB_KEY);
-    static FASTLY = new PublicKey('demo-issuer.private-access-tokens.fastly.com', PublicKey.#FASTLY_PUB_KEY);
+    static CLOUDFLARE_DEMO = new PublicKey('demo-pat.issuer.cloudflare.com', PublicKey.#CLOUDFLARE_DEMO_PUB_KEY, PublicKey.#CLOUDFLARE_DEMO_PUB_KEY_ID);
+    static CLOUDFLARE = new PublicKey('pat-issuer.cloudflare.com', PublicKey.#CLOUDFLARE_PUB_KEY, PublicKey.#CLOUDFLARE_PUB_KEY_ID);
+    static FASTLY = new PublicKey('demo-issuer.private-access-tokens.fastly.com', PublicKey.#FASTLY_PUB_KEY, PublicKey.#FASTLY_PUB_KEY_ID);
 
     static #PUBLIC_KEYS = new Map([
         [PublicKey.CLOUDFLARE_DEMO.issuerName, PublicKey.CLOUDFLARE_DEMO],
@@ -79,7 +82,7 @@ export class PublicKey {
         [PublicKey.FASTLY.issuerName, PublicKey.FASTLY],
     ]);
 
-    static async from(key) {
+    static from(key) {
         if (key instanceof PublicKey) return key;
 
         const issuerName = key;
@@ -96,20 +99,21 @@ export class PublicKey {
 
         const tokenKeyID = key.toString();
         for (const [k, v] of PublicKey.#PUBLIC_KEYS.entries()) {
-            if ((await v.tokenKeyID()).toString() === tokenKeyID) {
+            if ((v.keyID).toString() === tokenKeyID) {
                 return v;
             }
         }
         return new PublicKey('', key);
     }
 
-    constructor(issuerName, sPKI) {
+    constructor(issuerName, sPKI, keyID) {
         this.issuerName = issuerName;
         this.sPKI = sPKI;
+        this.keyID = keyID ? Base64.decode(keyID) : null;
     }
 
     sPKI;
-
+    keyID;
     get legacySPKI() {
         const legacySPKI = "MIIBIjANBgkqhkiG9w0BAQEFA" + this.sPKI.slice(-367);
         if (legacySPKI === this.sPKI) return null;
@@ -147,7 +151,6 @@ export class PublicKey {
 
 }
 
-// esm module of token class
 export class Token {
     static VOPRF = 0x0001;
     static BLIND_RSA = 0x0002;
@@ -191,8 +194,8 @@ export class Token {
         return Base64.urlEncode(this.toByteArray());
     }
 
-    async tokenKey() {
-        return await PublicKey.from(this.tokenKeyID);
+    tokenKey() {
+        return PublicKey.from(this.tokenKeyID);
     }
 
     verifyTokenType() {
@@ -203,9 +206,9 @@ export class Token {
         return this.challengeHash?.length > 0 && this.challengeHash.toString() === (await sha256(challenge.toByteArray())).toString();
     }
 
-    async verifyTokenKeyID(challengeTokenKey) {
-        const publicKey = await PublicKey.from(challengeTokenKey);
-        return this.tokenKeyID.toString() === (await publicKey.tokenKeyID()).toString();
+    verifyTokenKeyID(challengeTokenKey) {
+        const publicKey = PublicKey.from(challengeTokenKey);
+        return this.tokenKeyID.toString() === publicKey.keyID.toString();
     }
 
     async verifyAuthenticator(challengeTokenKey) {
@@ -227,7 +230,7 @@ export class Token {
     async verify(challenge, challengeTokenKey) {
         return this.verifyTokenType()
             && await this.verifyChallengeHash(challenge)
-            && await this.verifyTokenKeyID(challengeTokenKey)
+            && this.verifyTokenKeyID(challengeTokenKey)
             && await this.verifyAuthenticator(challengeTokenKey);
     }
 }
