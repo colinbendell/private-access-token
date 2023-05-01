@@ -53,6 +53,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            worker/node_modules
+          key: ${{ runner.os }}-cache-${{ hashFiles('**/package-lock.json') }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: latest
+      - run: npm --prefix worker install
       - name: Update Cloudflare
         uses: cloudflare/wrangler-action@2.0.0
         with:
