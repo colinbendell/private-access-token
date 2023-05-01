@@ -57,11 +57,13 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
+            node_modules
             worker/node_modules
           key: ${{ runner.os }}-cache-${{ hashFiles('**/package-lock.json') }}
       - uses: actions/setup-node@v3
         with:
           node-version: latest
+      - run: npm install
       - run: npm --prefix worker install
       - name: Update Cloudflare
         uses: cloudflare/wrangler-action@2.0.0

@@ -1,182 +1,213 @@
 
 <html>
   <head>
-    <meta http-equiv="origin-trial" content="AqJdO9k1bwBPAPms8acBjJFv8J7FnqbSVThgXL3i9xAC2ehc3iOdH+6ka3ZhD/U1GfynrPXKPTcGT/QsvqXeTw0AAABTeyJvcmlnaW4iOiJodHRwczovL3RydXN0dG9rZW4uZGV2OjQ0MyIsImZlYXR1cmUiOiJUcnVzdFRva2VucyIsImV4cGlyeSI6MTYxMzUwMDYwNn0=">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Private State Token Demo</title>
-    <style>
-      .main {
-          width: 60%;
-      }
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset='utf-8'>
+        <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+        <title>Private State Token v3</title>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+        <style>
+            /* Box sizing rules */
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+            }
 
-      table {
-        border-collapse: separate;
-        border-spacing: 0 10px;
-      }
-      td {
-        text-align: center;
-        padding: 5px;
-      }
-      input {
-          width: 100%;
-      }
-      #response {
-          overflow-wrap: anywhere;
-      }
-      @media screen and (max-width: 800px) {
-          .main {
-              width: 100%;
-          }
-      }
-    </style>
-  </head>
-  <body>
-    <script>
-      var issuer = location.origin;
-      var x = 0;
-      async function issueTokens() {
-        var publicValue = document.getElementById('public').value;
-        var privateValue = document.getElementById('private').value;
-        const r = await fetch("/pst/i", { privateToken: {type: 'private-state-token', version: 1, operation: 'token-request', issuer: issuer}});
-        const text = await r.text();
-        document.getElementById('response').innerHTML = text;
+            /* Remove default margin */
+            body,
+            h1,
+            h2,
+            h3,
+            h4,
+            p,
+            figure,
+            blockquote,
+            dl,
+            dd {
+                margin: 0;
+                padding: 0;
+                font-family: -apple-system, system-ui, sans-serif;
+            }
 
-        return false;
-      }
+            /* Remove list styles on ul, ol elements with a list role, which suggests default styling will be removed */
+            ul[role="list"],
+            ol[role="list"] {
+                list-style: none;
+            }
 
-      async function redeemToken(refresh) {
-        var policy = "none";
-        if (refresh) {
-          policy = "refresh";
-        }
-        try {
-            const r = await fetch("/pst/r", { privateToken: {type: 'private-state-token', version: 1, operation: 'token-redemption', issuer: issuer, refreshPolicy: policy}});
+            /* Set core root defaults */
+            html:focus-within {
+                scroll-behavior: smooth;
+            }
+
+            /* Set core body defaults */
+            body {
+                min-height: 100vh;
+                text-rendering: optimizeSpeed;
+                line-height: 1.5;
+            }
+
+            /* A elements that don't have a class get default styles */
+            a:not([class]) {
+                text-decoration-skip-ink: auto;
+            }
+
+            /* Make images easier to work with */
+            img,
+            picture {
+                max-width: 100%;
+                display: block;
+            }
+
+            /* Inherit fonts for inputs and buttons */
+            input,
+            button,
+            textarea,
+            select {
+                font: inherit;
+            }
+
+            @media only screen and (min-device-width: 500px) and (-webkit-device-pixel-ratio: 2) {
+                html {
+                    font-size: 1.25rem;
+                }
+            }
+            html {
+                max-width: 58ch;
+                margin: auto;
+                line-height: 1.75;
+                /* font-size: 1.25rem; */
+            }
+            p,ul,ol {
+                margin-bottom: 2em;
+                color: #1d1d1d;
+                font-family: -apple-system, system-ui, sans-serif;
+            }
+            h1 {
+                line-height: 1;
+                padding-bottom: 0.6rem;
+            }
+            a[href]:hover {
+                background-color: #f2f2f2;
+            }
+            a[href] {
+                color: #22e;
+                text-decoration: none;
+            }
+
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(1, 2fr 1fr);
+                grid-column-gap: 0.5rem;
+            }
+            .grid input {
+                margin-bottom: auto;
+                line-height: 1rem;
+            }
+            .grid.code {
+                border: 1px solid #eee;
+                background-color: #f9f9f9;
+                grid-template-columns: repeat(1, 1fr 4fr);
+                grid-column: span 2 / auto;
+                margin-bottom: 0.5rem;
+                padding: 0.5rem;
+            }
+
+            h2 {
+                margin: -0.6rem 0 0.6rem 0;
+                font-weight: 100;
+                font-size: 1rem;
+            }
+        </style>
+        <script>
+          const issuer = location.origin;
+          var x = 0;
+          async function issueTokens() {
+            var publicValue = document.getElementById('public').value;
+            const r = await fetch(`/pst/i?id=${publicValue}`, { privateToken: {type: 'private-state-token', version: 1, operation: 'token-request', issuer: issuer}});
             const text = await r.text();
             document.getElementById('response').innerHTML = text;
-        }
-        catch(e) {
-            document.getElementById('response').innerText = e.message;
-        }
-        return false;
-      }
 
-      async function sendRR(refresh) {
-        try {
-            const r = await fetch("/pst/echo", { privateToken: {type: 'private-state-token', version: 1, operation: 'send-redemption-record', issuers:[issuer]}});
-            const text = await r.text();
-            const body = text.split(';')[1].split('"')[1];
-            document.getElementById('response').innerText = atob(body);
-        }
-        catch(e) {
-            document.getElementById('response').innerText = e.message;
-        }
-        return false;
-      }
-    </script>
-    <center>
-      <h1>Private State Token Demo Issuer</h1>
-      <div class="main">
-	<div style="text-align:left;">
-	  You can also use this issuer by making Private State Token requests against "https://trusttoken.dev/tt/(k,i,r)":<br/>
-	  <br/>
-	  Key Commitments:<br/>
-	  <code>
-	    <a href="https://trusttoken.dev/tt/k">https://trusttoken.dev/tt/k</a>
-	  </code>
-	  <br/>
-	  <br/>
-	  Issuance (select a value for the public and private parameters):<br/>
-	  <code>
-	    fetch("https://trusttoken.dev/tt/i?public={0,1,2}&private={0,1}", {privateToken: {...}}).then(...);
-	  </code>
-	  <br/>
-	  <br/>
-	  Redemption:<br/>
-	  <code>
-	    fetch("https://trusttoken.dev/tt/r", {privateToken: {...}}).then(...);
-	  </code>
-	  <br/>
-	  <br/>
-	  Send Redemption Record:<br/>
-	  <code>
-	    fetch(..., {privateToken: {...}}).then(...);<br/><br/>
-	  </code>
-	</div>
+            return false;
+          }
+
+          async function redeemToken(refresh) {
+            var policy = "none";
+            if (refresh) {
+              policy = "refresh";
+            }
+            try {
+                const r = await fetch("/pst/r", {
+                  privateToken: {
+                    type: 'private-state-token',
+                    version: 1,
+                    operation: 'token-redemption',
+                    issuer: issuer,
+                    refreshPolicy: policy
+                  }
+                });
+                const text = await r.text();
+                document.getElementById('response').innerHTML = text;
+            }
+            catch(e) {
+                document.getElementById('response').innerText = e.message;
+            }
+            return false;
+          }
+
+          async function sendRR(refresh) {
+            try {
+                const r = await fetch("/pst/echo", { privateToken: {type: 'private-state-token', version: 1, operation: 'send-redemption-record', issuers:[issuer]}});
+                const text = await r.text();
+                const body = text.split(';')[1].split('"')[1];
+                document.getElementById('response').innerText = atob(body);
+            }
+            catch(e) {
+                document.getElementById('response').innerText = e.message;
+            }
+            return false;
+          }
+        </script>
+  </head>
+  <body>
+    <main>
+      <h1>Public State Token v3 Test</h1>
+      <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
+              [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
+              [<a href="https://wicg.github.io/trust-token-api/l">W3C: PST</a>]
+              [<a href="https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-21.html">IETF: VOPRF (21)</a>]
       </div>
-      <br/>
-      <table>
-        <form onsubmit="return issueTokens();">
-          <tr>
-            <td>
-              <label for="public">Public Metadata:</label>
-            </td>
-            <td>
-              <select id="public" name="public">
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-              </select>
-              </td>
-          </tr>
-          <tr>
-            <td>
-              <label for="private">Private Metadata:</label>
-            </td>
-            <td>
-              <select id="private" name="private">
-                <option value="0">0</option>
-                <option value="1">1</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <center>
-                <input type="submit" value="Issue">
-              </center>
-            </td>
-          </tr>
-        </form>
-        <tr></tr>
-        <form onsubmit="return redeemToken(false);">
-          <tr>
-            <td colspan="2">
-              <center>
-                <input type="submit" value="Redeem">
-              </center>
-            </td>
-          </tr>
-        </form>
-        <form onsubmit="return redeemToken(true);">
-          <tr>
-            <td colspan="2">
-              <center>
-                <input type="submit" value="Redeem (Refresh)">
-              </center>
-            </td>
-          </tr>
-        </form>
-        <form onsubmit="return sendRR(true);">
-          <tr>
-            <td colspan="2">
-              <center>
-                <input type="submit" value="Send Redemption Record">
-              </center>
-            </td>
-          </tr>
-        </form>
-      </table>
-      <table>
-        <tr>
-          <td>
-            Response:
-          </td>
-          <td>
-            <div id="response"></div>
-          </td>
-        </tr>
-      </table>
-      <br/>
-    </center>
+
+
+      <div class="grid">You can also use this issuer by making Private State Token requests against:</div>
+      <ul>
+        <li><a href="/pst/k">/pst/k</a> - Key Commitments</li>
+        <li><a href="/pst/i">/pst/i</a> - Issuance</li>
+        <li><a href="/pst/r">/pst/r</a> - Redemption</li>
+      </ul>
+      <div class="grid">
+        <div>Public Key:</div>
+        <div></div>
+
+        <select id="public" name="public">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+        </select>
+        <input type="button" value="Issue" onclick="issueTokens()">
+
+        <div></div>
+        <input type="button" value="Redeem" onclick="redeemToken(false)">
+        <div></div>
+        <input type="button" value="Redeem (Refresh)" onclick="redeemToken(true)">
+        <div></div>
+        <input type="button" value="Forward RR" onclick="sendRR(true)">
+      </div>
+      <div id="response"></div>
+    </main>
   </body>
 </html>
