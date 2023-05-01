@@ -231,6 +231,14 @@
                 " == " + ua
             ]);
 
+            const lastToken = parseInt(cookies["lastchallenge"]) > 1681394250396 ? new Date(cookies["lastchallenge"]) : null;
+            // const lastToken = new Date(parseInt("1681394250396"));
+            tests.push([
+                "Last token challenge > 60s",
+                lastToken ? lastToken?.getTime() + 60000 - 2000 < Date.now() : null,
+                " == " + (lastToken ? Math.round((Date.now() - lastToken?.getTime()) / 1000) + "s" : "N/A")
+            ]);
+
             tests.push([
                 "PrivateToken token= present",
                 tokenBytes.length > 0,
