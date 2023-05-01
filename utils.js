@@ -1,5 +1,3 @@
-import * as crypto from 'crypto';
-
 // host to network long
 export function hostToNetworkLong(n) { return DataBuffer.numberToBytes(n, 4); }
 export function h2nl(n) { return DataBuffer.numberToBytes(n, 4); }
