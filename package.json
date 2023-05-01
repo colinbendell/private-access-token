@@ -1,0 +1,24 @@
+{
+  "name": "private-access-token",
+  "version": "1.0.0",
+  "description": "Private Acccess Token library",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/colinbendell/private-access-token.git"
+  },
+  "author": "colin@bendell.ca",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/colinbendell/private-access-token/issues"
+  },
+  "homepage": "https://github.com/colinbendell/private-access-token#readme",
+  "dependencies": {
+    "@noble/curves": "^1.0.0",
+    "@noble/hashes": "^1.0.0"
+  }
+}

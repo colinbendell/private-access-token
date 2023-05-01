@@ -1,0 +1,739 @@
+import { base64urlDecode, base64Encode, hostToNetworkShort, hostToNetworkLong, bigIntToByteArray, stringToByteArray, DataBuffer, CBOR} from './utils.js';
+
+import { p384 as ec, hashToCurve} from '@noble/curves/p384';
+import { sha384, sha512 } from '@noble/hashes/sha512';
+import { hash_to_field } from '@noble/curves/abstract/hash-to-curve';
+
+const Point = ec.ProjectivePoint;
+
+const MODULUS_P384 = ec.CURVE.p;
+const ORDER_P384 = ec.CURVE.n;
+
+const ORDER_P384_LEN = 384 / 8;
+const TRUST_TOKEN_NONCE_LEN = 64;
+const WPT_HOST = "https://localhost:8444";
+const DEFAULT_REDEMPTION_RECORD = Buffer.from("dummy redemption record", "utf-8");
+
+/**
+ * An elliptic curve point used in elliptic curve operations over the curve P-384.
+ *
+ * Scalar multiplication can be written as `s*p` or `p*s`, where `s` is a
+ * `Scalar` and `p` is an `ECPoint`. An `ECPoint` is encoded as an X9.62
+ * uncompressed point.
+ *
+ * @param {Buffer} value An X9.62 encoded elliptic curve point.
+ * @param {PointJacobi} point The `PointJacobi` representation of the point.
+ */
+class ECPoint {
+    /**
+     * @param {Uint8Array} value The byte string to read values from.
+     */
+    constructor(value) {
+        // super(value)
+        this.#value = value;
+        this.#point = ec.ProjectivePoint.fromHex(Uint8Array.from(this.#value));
+    }
+
+    static get length() { return 1 + 2 * ORDER_P384_LEN; }
+
+    #value;
+    #point;
+
+    /**
+     * @returns {Buffer} The point as an X9.62 uncompressed byte string.
+     */
+    toBytes() {
+        return this.#value;
+    }
+
+    /**
+     * @returns {string} The point as a Base64 string.
+     */
+    toString() {
+        return base64Encode(this.toBytes());
+    }
+
+    toJSON() {
+        return this.toBytes();
+    }
+
+    toPoint() {
+        return this.#point;
+    }
+
+    [Symbol.for('nodejs.util.inspect.custom')]() {
+        return this.toString();
+    }
+}
+
+/**
+ * > Deterministically maps an array of bytes x to an element of Group.
+ * > The map must ensure that, for any adversary receiving R = HashToGroup(x),
+ * > it is computationally difficult to reverse the mapping. This function is
+ * > optionally parameterized by a domain separation tag (DST); see Section 4.
+ * > Security properties of this function are described in #I-D.irtf-cfrg-hash-to-curve
+ *
+ * > Use hash_to_curve with suite P384_XMD:SHA-384_SSWU_RO_ #I-D.irtf-cfrg-hash-to-curve
+ * > and DST = "HashToGroup-" || contextString.
+ *
+ * Converts a string to one or more elements of the finite field F of P-384.
+ * @param {string} message The message to convert.
+ * @returns {Array<ECPoint>} A list of the form `(u_0, ..., u_(count - 1))` where
+ *        `u_i = (e_0, ..., e_(m - 1))` and m is the extension degree of F.
+ *        For P-384, m is equal to 1.
+ */
+function hashToGroup(message, dst="TrustToken VOPRF Experiment V2 HashToGroup\0") {
+    return hashToCurve(Uint8Array.from(message), {DST: dst, p: MODULUS_P384, m: 1, k: 192, expand: 'xmd', hash: sha512});
+}
+
+/**
+ * Converts a string to one or more scalars.
+ * This is similar to `hash_to_field` except that the modulus used is `ORDER_P384` instead of `MODULUS_P384`.
+ *
+* @param {string} message The message to convert.
+ * @param {number} count The number of field elements to generate.
+ * @param {string} dst The domain separation tag.
+ * @returns {Array<ECPoint>} A list of the form `(u_0, ..., u_(count - 1))` where
+ *        `u_i = (e_0, ..., e_(m - 1))` and m is the extension degree of F.
+ *        For P-384, m is equal to 1.
+ */
+// function hashToScalar(msg, count, dst = "HashToScalar-OPRFV1-\x01-P384-SHA384\0") {
+function hashToScalar(msg, count, dst = "TrustToken VOPRF Experiment V2 HashToScalar\0") {
+    msg = Uint8Array.from(stringToByteArray(msg));
+    return hash_to_field(msg, count, {DST: dst, p: ORDER_P384, m: 1, k: 192, expand: 'xmd', hash: sha512});
+}
+
+/**
+ * A public key for a trust token issuer.
+ * The value of a secret key is a scalar. The secret key is used to sign
+ * blinded tokens from the client.
+ */
+class PrivateStateTokenSecretKey {
+    /**
+     * @param {number} id The ID of the secret key.
+     * @param {number} value The value of the secret key.
+     */
+    constructor(id, value) {
+        this.id = id;
+        this.value = value;
+    }
+
+    /**
+     * @returns {Buffer} Returns the value of the secret key as bytes.
+     */
+    toBytes() {
+        return Array.from(this.value);
+    }
+
+    /**
+     *
+     * @returns {string} Returns the value of the secret key as a Base64 string.
+     */
+    toString() {
+        return base64Encode(this.toBytes());
+    }
+}
+
+/**
+ * A public key for a trust token issuer.
+ * The value of a public key is an elliptic curve point. A public key is
+ * generated from a secret key.
+ */
+class PrivateStateTokenPublicKey {
+    /**
+     * @param {number} id The ID of the secret key.
+     * @param {ECPoint} value The value of the secret key.
+     */
+    constructor(id, value) {
+        this.id = id;
+        this.value = value;
+    }
+
+    /**
+     * Returns the public key as bytes.
+     * The structure takes the form:
+     * ```
+     * struct {
+     *    uint32 id;
+     *    ECPoint pub;
+     * } TrustTokenPublicKey;
+     * ```
+     * @returns {Uint8Array} Returns the public key as bytes.
+     */
+    toBytes() {
+        return [].concat(hostToNetworkLong(this.id), [...this.value.toBytes()]);
+    }
+
+    /**
+     * @returns {string} Returns the public key as a Base64 string suitable for use in key commitments.
+     */
+    toString() {
+        return base64Encode(this.toBytes());
+    }
+}
+
+/**
+ * A key pair for a trust token issuer.
+ */
+class PrivateStateTokenKeyPair {
+    /**
+     * @param {number} id The ID associated with the key pair.
+     * @param {PrivateStateTokenPublicKey} publicKey The public component of the key pair.
+     * @param {PrivateStateTokenSecretKey} secretKey The secret component of the key pair.
+     * @returns {PrivateStateTokenKeyPair} The key pair.
+     */
+    constructor(id, publicKey, secretKey) {
+        this.id = id;
+        this.publicKey = publicKey;
+        this.secretKey = secretKey;
+    }
+
+    /**
+     * Generates a key pair for a trust token issuer.
+     * For testing purposes, the secret value is fixed. The public value is the
+     * product of the secret value and the generator of P-384.
+     *
+     * @param {number} id The ID associated with the key pair.
+     * @returns {PrivateStateTokenKeyPair} The key pair.
+     */
+    static generate(id = 0) {
+        // priv cannot be 0
+        // const priv = ec.utils.randomPrivateKey();
+        const priv = ORDER_P384 - 1n;
+        // Changes to the public key must be reflected in the key commitment
+        const pub = ec.getPublicKey(priv, false);
+        const publicKey = new PrivateStateTokenPublicKey(id, new ECPoint(pub));
+        const secretKey = new PrivateStateTokenSecretKey(id, priv);
+        return new PrivateStateTokenKeyPair(id, publicKey, secretKey);
+
+    }
+}
+
+/**
+ * A key commitment for the trust token issuer.
+ * A key commitment defines the trust token protocol version and public key
+ * information that the issuer will use for trust token operations.
+ * @param {string} protocol_version The issuer protocol version.
+ * @param {number} id The ID of the key commitment.
+ * @param {number} batchsize The batch size for token issuance.
+ * @param {Array<PrivateStateTokenPublicKey>} publicKeys The public keys for the issuer.
+ * @param {string} host The server origin that maps to this key commitment.
+ * @returns {KeyCommitment} The key commitment.
+ */
+class KeyCommitment {
+    constructor(protocol_version, id, batchsize, publicKeys, host) {
+        this.protocol_version = protocol_version;
+        this.id = id;
+        this.batchsize = batchsize;
+        this.publicKeys = publicKeys;
+        this.host = host;
+    }
+
+    toJSON() {
+        const keyCommitment = {
+            "protocol_version": this.protocol_version,
+            "id": this.id,
+            "batchsize": this.batchsize,
+            "keys": {}
+        };
+        for (const key of this.publicKeys) {
+            keyCommitment["keys"][key.id] = {
+                "Y": key.toString(),
+                // epoch timestamp in microseconds
+                // Friday, December 31, 9999 11:59:59 PM GMT
+                "expiry": "253402300799000000",
+            };
+        }
+        return {
+            [this.host]: {
+                [this.protocol_version]: keyCommitment
+            }
+        };
+    }
+
+    toString() {
+        return JSON.stringify(this.toJSON());
+    }
+}
+
+/**
+ * A trust token issuance request.
+ */
+export class IssueRequest {
+    /**
+     * @param {number} count The number of token nonces in the request.
+     * @param {Array<ECPoint>} nonces A list of elliptic curve points to be used as token nonces.
+     */
+    constructor(nonces) {
+        this.nonces = nonces;
+    }
+
+    get count() {
+        return this.nonces.length;
+    }
+
+    /**
+     * Creates an `IssueRequest` from a Base64 string.
+     *
+     * The decoded byte string must have the form:
+     * ```
+     * struct {
+     *   uint16 count;
+     *   ECPoint nonces[count];
+     * } IssueRequest;
+     * ```
+     * @param {string} s The Base64 string to decode.
+     * @result {IssueRequest} Returns the decoded `IssueRequest`.
+     */
+    static from(s) {
+        const decodedBytes = base64urlDecode(s);
+        const bytes = new DataBuffer(decodedBytes);
+
+        const count = bytes.readInt(2);
+        const nonces = [];
+        while (nonces.length < count) {
+            const value = bytes.readBytes(ECPoint.length);
+            const ecPoint = value?.length === ECPoint.length ? new ECPoint(value) : null;
+            nonces.push(ecPoint);
+        }
+
+        return new IssueRequest(nonces.filter(n => n !== null));
+    }
+
+    toBytes() {
+        const bytes = new DataBuffer();
+        bytes.writeInt(this.count, 2);
+        for (const nonce of this.nonces) {
+            bytes.writeBytes(nonce.toBytes());
+        }
+        return bytes.buffer;
+    }
+
+    toString() { return base64Encode(this.toBytes()); }
+
+    toJSON() { return this.toBytes(); }
+
+    [Symbol.for('nodejs.util.inspect.custom')]() { return this.toString(); }
+}
+
+/**
+ * A trust token issuance request.
+ */
+class SignedNonce {
+    /**
+     * @param {ECPoint} value The elliptic curve point representing the signed token.
+     */
+    constructor(point) {
+        this.#point = point;
+    }
+
+    #point;
+
+    toPoint() { return this.#point; }
+
+    toBytes() {
+        return Array.from(this.#point.toRawBytes(false));
+    }
+
+    toString() { return base64Encode(this.toBytes()); }
+
+    toJSON() { return this.toBytes(); }
+
+    [Symbol.for('nodejs.util.inspect.custom')]() { return this.toString(); }
+}
+
+/**
+ * A trust token public key.
+ */
+export class IssueResponse {
+    /**
+     *
+     * @param {number} issued: The number of tokens issued.
+     * @param {number} keyID: The ID of the key used for signing.
+     * @param {Array<SignedNonce} signed: The list of signed nonces.
+     * @param {Uint8Array} proof: The DLEQ proof.
+     */
+    constructor(keyID, signed, proof) {
+        this.keyID = keyID;
+        this.signed = signed;
+        this.proof = proof;
+    }
+
+    get issued() { return this.signed.length; }
+
+    /**
+     * Returns the issue response as bytes.
+     * The structure has the form:
+     * ```
+     * struct {
+     *   uint16 issued;
+     *   uint32 key_id = keyID;
+     *   SignedNonce signed[issued];
+     *   opaque proof<1..2^16-1>; // Length-prefixed form of DLEQProof.
+     * } IssueResponse;
+     *
+     * @returns {Uint8Array} The issue response as bytes.
+     */
+    toBytes() {
+        const buf = bigIntToByteArray(this.issued, 2);
+        buf.push(...bigIntToByteArray(this.keyID, 4));
+        for (const nonce of this.signed) {
+            buf.push(...nonce.toBytes());
+        }
+        buf.push(...bigIntToByteArray(this.proof.length, 2));
+
+        buf.push(...this.proof);
+        return buf;
+    }
+
+    toString() { return base64Encode(this.toBytes()); }
+
+    [Symbol.for('nodejs.util.inspect.custom')]() { return this.toString(); }
+}
+
+/**
+ * A trust token redemption request.
+ */
+export class RedeemRequest {
+    get contextString() { return "" }
+
+    /**
+     * @param {number} keyID The ID of the key used to sign the trust token.
+     * @param {Uint8Array} nonce The nonce part of the token.
+     * @param {ECPoint} point The elliptic curve point part of the token.
+     * @param {Uint8Array} clientData Client data associated with the request.
+     */
+    constructor(keyID, nonce, point, clientData) {
+        this.keyID = keyID;
+        this.nonce = nonce;
+        this.point = point;
+        this.clientData = clientData;
+    }
+
+    decodeClientData() {
+        CBOR.decode(this.clientData);
+    }
+
+    /**
+     * Creates a `RedeemRequest` from a Base64 string.
+     *
+     * The decoded byte string must have the form:
+     * ```
+     * struct {
+     *   uint32 key_id;
+     *   opaque nonce<nonce_size>;
+     *   ECPoint W;
+     * } Token;
+     *
+     * struct {
+     *   opaque token<1..2^16-1>; // Bytestring containing a serialized Token struct.
+     *   opaque client_data<1..2^16-1>;
+     * } RedeemRequest;
+     *
+     * ```
+     * @param {string} s The Base64 string to decode.
+     */
+    static from(s) {
+        const decodedBytes = base64urlDecode(s);
+        const bytes = new DataBuffer(decodedBytes);
+
+        const tokenLen = bytes.readInt(2);
+        const keyID = bytes.readInt(4);
+
+        const nonce = bytes.readBytes(TRUST_TOKEN_NONCE_LEN);
+
+        const value = bytes.readBytes(ECPoint.length)
+        const point = new ECPoint(value);
+
+        const clientDataLen = bytes.readInt(2);
+        const clientData = bytes.readBytes(clientDataLen);
+        // const redemptionTime = bytes.readInt(4);
+
+        return new RedeemRequest(keyID, nonce, point, clientData);
+    }
+
+    toBytes() {
+        const buf = bigIntToByteArray(this.keyID, 4);
+        buf.push(...this.nonce);
+        buf.push(...this.point.toBytes());
+        buf.push(...bigIntToByteArray(this.clientData.length, 2));
+        buf.push(...this.clientData);
+        buf.unshift(...bigIntToByteArray(buf.length, 2));
+        return buf;
+    }
+
+    toString() { return base64Encode(this.toBytes()); }
+
+    [Symbol.for('nodejs.util.inspect.custom')]() { return this.toString(); }
+}
+
+/**
+ * The response to a trust token redemption request.
+ * The client should treat the entire response as the redemption record.
+ * By default, for testing purposes, this class returns a fixed byte string as the
+ * redemption record.
+ */
+export class RedeemResponse {
+    /**
+     * @param {Uint8Array} record The redemption record.
+     */
+    constructor(record = DEFAULT_REDEMPTION_RECORD) {
+        this.record = record;
+    }
+
+    toBytes() { return this.record; }
+
+    toString() { return base64Encode(this.record); }
+
+    [Symbol.for('nodejs.util.inspect.custom')]() { return this.toString(); }
+}
+
+/**
+ * A trust token issuer implementation.
+ *
+ * For simplicity the issuer has a single key pair.
+ */
+export class PrivateStateTokenIssuer {
+
+    static get KEY_COMMITMENT_ID() { return 1; }
+    static get PROTOCOL_VERSION() { return "PrivateStateTokenV3VOPRF"; }
+
+    /**
+     * @param {PrivateStateTokenKeyPair} keyPair A key pair to use for trust token operations.
+     * @param {number} maxBatchSize The max batch size for trust tokens.
+     * @param {string} host The server origin for this issuer.
+     */
+    constructor(keyPair, maxBatchSize, host) {
+        this.keyPair = keyPair;
+        this.maxBatchSize = maxBatchSize;
+        this.host = host;
+        this.keyCommitment = new KeyCommitment(
+            PrivateStateTokenIssuer.PROTOCOL_VERSION,
+            PrivateStateTokenIssuer.KEY_COMMITMENT_ID,
+            this.maxBatchSize,
+            [this.keyPair.publicKey],
+            this.host
+        );
+    }
+
+    /**
+     * Creates a trust token issuer. A key pair is generated and used to
+     * initialize the issuer.
+     *
+     * @returns {PrivateStateTokenIssuer} The trust token issuer.
+     */
+
+    static generate(host = WPT_HOST, maxBatchSize = 10) {
+        const keyPair = PrivateStateTokenKeyPair.generate();
+        const issuer = new PrivateStateTokenIssuer(keyPair, maxBatchSize, host);
+        return issuer;
+    }
+
+    /**
+     * Parses an issuance request and returns a response with a valid DLEQ proof.
+     *
+     * The issuance request is based on the BlindEvaluate function:
+     * ```
+     * Input:
+     *
+     *   Scalar skS
+     *   Element pkS
+     *   Element blindedElement
+     *
+     * Output:
+     *
+     *   Element evaluatedElement
+     *   Proof proof
+     *
+     * Parameters:
+     *
+     *   Group G
+     *
+     * def BlindEvaluate(skS, pkS, blindedElement):
+     *   evaluatedElement = skS * blindedElement
+     *   blindedElements = [blindedElement]     // list of length 1
+     *   evaluatedElements = [evaluatedElement] // list of length 1
+     *   proof = GenerateProof(skS, G.Generator(), pkS,
+     *                         blindedElements, evaluatedElements)
+     *   return evaluatedElement, proof
+     * ```
+     *
+     * @param {number} keyId The key ID to use for this issuance.
+     * @param {IssueRequest} request The issuance request.
+     * @returns {IssueResponse} The issuance response.
+     */
+    issue(keyId, request) {
+        // console.debug(`Issuance request:`, request);
+        const secretKey = this.keyPair.secretKey;
+        const count = request.nonces.length;
+        const exponentList = [];
+        const signedNonces = [];
+
+        const batch = Array.from(this.keyPair.publicKey.value.toBytes());
+        for (const blindedToken of request.nonces) {
+            // const blindedToken = request.nonces[i];
+            const z = blindedToken.toPoint().multiply(ec.utils.normPrivateKeyToScalar(secretKey.value));
+            signedNonces.push(new SignedNonce(z));
+
+            batch.push(...blindedToken.toBytes());
+            batch.push(...z.toRawBytes(false));
+        }
+
+        // Batch DLEQ
+        for (let i = 0; i < count; i++) {
+            const buf = stringToByteArray("DLEQ BATCH\0");
+            buf.push(...batch);
+            buf.push(...hostToNetworkShort(i));
+            const exponent = hashToScalar(buf, 1)[0][0];
+            exponentList.push(exponent);
+        }
+
+        let blindedTokenBatch = ec.ProjectivePoint.ZERO;
+        for (let i = 0; i < count; i++) {
+            const blindedToken = request.nonces[i];
+            const exponent = exponentList[i];
+            blindedTokenBatch = blindedTokenBatch.add(blindedToken.toPoint().multiply(exponent));
+        }
+
+        let zBatch = ec.ProjectivePoint.ZERO;
+        for (let i = 0; i < count; i++) {
+            const z = signedNonces[i];
+            const e = exponentList[i];
+            zBatch = zBatch.add(z.toPoint().multiply(e));
+        }
+        const proof = this.#generateDLEQProof(this.keyPair, blindedTokenBatch, zBatch);
+
+        return new IssueResponse(keyId, signedNonces, proof);
+    }
+
+    /**
+     * Parses an issuance request and returns a response with a valid DLEQ proof.
+     *
+     * @param {PrivateStateTokenKeyPair} key_pair The issuer's key pair.
+     * @param {Point} btBatch The batched form of the blinded tokens.
+     * @param {Point} zBatch The batched form of the signed tokens.
+     */
+    #generateDLEQProof(keyPair, btBatch, zBatch) {
+        // Fix the random number r
+        const r = ORDER_P384 - 1n;
+        const k0 = ec.ProjectivePoint.BASE.multiply(r);
+        const k1 = btBatch.multiply(r);
+
+        const buf = stringToByteArray("DLEQ\0");
+        buf.push(...keyPair.publicKey.value.toBytes());
+        buf.push(...btBatch.toRawBytes(false));
+        buf.push(...zBatch.toRawBytes(false));
+        buf.push(...k0.toRawBytes(false));
+        buf.push(...k1.toRawBytes(false));
+
+        const c = hashToScalar(buf, 1)[0][0];
+        const u = (r + c * ec.utils.normPrivateKeyToScalar(keyPair.secretKey.value)) % ORDER_P384;
+
+        const result = [].concat(
+            bigIntToByteArray(c, ORDER_P384_LEN),
+            bigIntToByteArray(u, ORDER_P384_LEN));
+        return result;
+    }
+    /**
+     * Parses an issuance request and returns a response with a valid DLEQ proof.
+     *
+     * This method ignores the input request and simply returns a redemption
+     * response with a fixed byte string as the redemption record.
+     *
+     * Input:
+     *
+     *   Scalar skS
+     *   PrivateInput input
+     *
+     * Output:
+     *
+     *   opaque output[Nh]
+     *
+     * Parameters:
+     *
+     *   Group G
+     *
+     * Errors: InvalidInputError
+     *
+     * def Evaluate(skS, input):
+     *   inputElement = G.HashToGroup(input)
+     *   if inputElement == G.Identity():
+     *     raise InvalidInputError
+     *   evaluatedElement = skS * inputElement
+     *   issuedElement = G.SerializeElement(evaluatedElement)
+     *
+     *   hashInput = I2OSP(len(input), 2) || input ||
+     *               I2OSP(len(issuedElement), 2) || issuedElement ||
+     *               "Finalize"
+     *   return Hash(hashInput)
+     *
+     * > Deterministically maps an array of bytes x to an element of Group.
+     * > The map must ensure that, for any adversary receiving R = HashToGroup(x),
+     * > it is computationally difficult to reverse the mapping. This function is
+     * > optionally parameterized by a domain separation tag (DST); see Section 4.
+     * > Security properties of this function are described in #I-D.irtf-cfrg-hash-to-curve
+     *
+     * > Use hash_to_curve with suite P384_XMD:SHA-384_SSWU_RO_ #I-D.irtf-cfrg-hash-to-curve
+     * > and DST = "HashToGroup-" || contextString.
+     *
+     * @param {RedeemRequest} request The redemption request.
+     * @returns {RedeemResponse} The redemption response.
+     */
+    redeem(request) {
+        // console.debug(`Redeem request:`, request);
+        // const evaluatedElement = hashToCurve(Uint8Array.from(request.nonce), {DST: "HashToGroup-OPRFV1-\x01-P384-SHA384\0"});
+        const evaluatedElement = hashToGroup(request.nonce);
+        const issuedElement = evaluatedElement.multiply(ec.utils.normPrivateKeyToScalar(this.keyPair.secretKey.value));
+
+        if (request.point.toPoint().equals(issuedElement)) {
+            return new RedeemResponse();
+        }
+        return null;
+    }
+}
+
+
+
+/**
+ * Issues a trust token.
+ * @param {PrivateStateTokenIssuer} issuer The trust token issuer.
+ * @param {string} secPrivateStateToken The contents of the `Sec-Private-State-Token` header in the request.
+ * @param {number} keyID The ID of the issuer key to use to sign tokens.
+ * @returns {IssueResponse} The issuance response.
+ */
+function issueTrustToken(issuer, secPrivateStateToken, keyID) {
+    const issueRequest = IssueRequest.from(secPrivateStateToken);
+    console.info(`\nIssue request ${issueRequest.count} tokens`);
+    console.info(`sec-private-state-token:`, issueRequest.toString());
+
+    const issueResponse = issuer.issue(keyID, issueRequest);
+    console.log(`\nIssued ${issueResponse.issued} tokens`);
+    console.log(`sec-private-state-token:`, issueResponse.toString());
+
+    return issueResponse;
+}
+
+/**
+ * Sends a redemption request to an issuer.
+ * @param {PrivateStateTokenIssuer} issuer The trust token issuer.
+ * @param {string} request_data The contents of the `Sec-Private-State-Token` header in the request.
+ * @returns {RedeemResponse} The redemption response.
+ */
+function redeemTrustToken(issuer, secPrivateStateToken) {
+    const redeemRequest = RedeemRequest.from(secPrivateStateToken);
+    console.log(`\nRedemption request`);
+    console.log(`sec-private-state-token:`, redeemRequest.toString());
+
+    const redeemResponse = issuer.redeem(redeemRequest);
+    console.log(`\nRedemption response`);
+    console.log(`sec-private-state-token:`, redeemResponse.toString());
+}
+
+const issuer = PrivateStateTokenIssuer.generate();
+let key_commitment = issuer.keyCommitment;
+console.log(`Key commitment: ${key_commitment.toString()}`);
+
+issueTrustToken(issuer, "AAEEVFIqN9o3HN46V8fr0KBj1GnlGTx2hX+Hej8tUG8AOI49fPHAQsjhbVY7m4P8DEG4dZMlsPYDQVS/kKkcG7aNnkm0yL9kUdskhfBc+/4OgH2ILjTj1zVRkest+62csHUN", 0);
+issueTrustToken(issuer, "AAoE6MVSc5AT8OyFhghz27roBKy9A1X+Tkjjr5OH9Tx/xvJa6Sl42DuS0lq+tR6gmN/iKvkUIGqlv+4m/M/N1Ww312UBn1/ayaklEjQxJp3gWtEp0YBx2PxXGGJIf24+z5AJBMUKrhoQSLzFTLQUsTNQi793uliKmCNt6BTg6XoTYaE3HztgCJ9ixPyRifwPM079sG1kdW+C17C4N3Hjd4U2yyKlaG9P7DuTIuStxoDNav7lfQXdbssN+e+DHR7tucKELgRJcrjoA7nabuTDGzRJ1Co5P0hPeCmX2up+W0KDDGUAsi9Upoj6IZmFV9OZWhdGXvDmRT5smXkKTq8JpQHoN6ZtAmAdC6492cDRfSu94drW5f3p357qoB94xPVqVDRbdmMEOK2IsHCnMotvCoZSRQsOXKwWqXx2JBWoHOO4wDGeEMEr5YJs+CjzOaSJkSznZvBZm/V1Ud7E2oXZkbVHnKFTge3Sv/DoIO46XjkpdgwA9oKaPjJkTx+1LkZahhCZOi/MBDIzt6q+zmkfAMoynQmym5dty0wjNKgrvOPS2CLdw0fiq7t2RmvppEww33XnWTlkrysgldaOyzEVdTrkGY+4RHpjJYlJaVIljEqUyhKXgD7wAU6uOHLyI0jzu/C+AV6prAQJ1qa8Z1OpchATYr/zWYcoQLGVQf+0YJmlCPuGJOT4hNH0y9zLv/5+gQyIdOGkSlP6HgQuVXRCHbt9PFIsb7dXPANtLekxwgdp5xFlX5rW8iihd1QYnwmjSFCEG7b1m5MEBt9MVIneAgqIzT4ADHYP44bPaC5UDLOW+3kAJhKKNuKoxHAglX3CEqArzIvrM4YdEDIy0CGK5q9HCMbjiF5VcC3exGXItL9YuSClCNRTSCXkcIr3/0o1F23og1ZN/kSnBK6BaIOlekz6e20DSeAD60KzcXUUGlK8wI0z/FOPAsYaMcFt0he2t/iSm7nU9UQrDwPtJ3atpip1XaqIg+M2QcSrLYZUF8nF3dtgh70IFBRC8YGFamLVNboXquMGqTYobwSh/GBZcDowgIEHF3ttJoxjHidfRqWhG2LXP029QONky3iic0ANewAP6fQDvMhF3+TeBSVjk3Rn0XmoJ/WTJLhgocXPxOOGMeEPlkxjjNmzOL+M5B8x4+aqCkRNm76Ico4E64nB5JcYKcMdwYJrplfGpXpq9OB1Az7U0SFZLJYhqv58GD53cgJbFnfto6q3qUvA0nVhhzhIM7Dhfv2vqMNqLtfS9PPC3/kR1DxUxJ/2ieXHdIAyMGUIxUPTN5fh4n08", 0);
+
+redeemTrustToken(issuer, "AKUAAAAAtVsA7lhWk9bStGA1fzKP/RvaKgcvVDAq1QvzW43xhYO9AamHe6u5wZIfrydStvtAcu0vNU+HXSdsokoaC02taQSYGczrEyU05BIvR2fl0osHsQvC/uTNq9+PQOBxXe8k3pAnRnV5CTOT4CuiuVO2/1JKtDEJMn4Ww51YOj7yLxkQ00Iv7iV8SmCXMnZ3V7ZyM3j/FfSdbolwS5qYSVM/0ucAT6JwcmVkZWVtaW5nLW9yaWdpbnghaHR0cHM6Ly9zaG9lc2J5Y29saW4uZGV2LmNvbTozMDAwdHJlZGVtcHRpb24tdGltZXN0YW1wGmRKygU=");
