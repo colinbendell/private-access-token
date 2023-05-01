@@ -1,61 +1,29 @@
 // host to network long
-export function hostToNetworkLong(n) {
-    return [(n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
-}
+export function hostToNetworkLong(n) { return DataBuffer.numberToBytes(n, 4); }
+export function h2nl(n) { return DataBuffer.numberToBytes(n, 4); }
 
 // host to network short
-export function hostToNetworkShort(n) {
-    return [(n >> 8) & 0xff, n & 0xff];
-}
+export function hostToNetworkShort(n) { return DataBuffer.numberToBytes(n, 2); }
+export function h2ns(n) { return DataBuffer.numberToBytes(n, 2); }
 
 // network to host long
-export function networkToHostLong(n) {
-    return (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3];
-}
+export function networkToHostLong(n) { return DataBuffer.bytesToNumber(n); }
+export function n2hl(n) { return DataBuffer.bytesToNumber(n); }
 
 // network to host short
-export function networkToHostShort(n) {
-    return (n[0] << 8) + n[1];
-}
+export function networkToHostShort(n) { return DataBuffer.bytesToNumber(n); }
+export function n2hs(n) { return DataBuffer.bytesToNumber(n); }
 
-export function bigIntToByteArray(data = 0n, length) {
-    let hex = BigInt(data).toString(16);
+export function bigIntToByteArray(n = 0n, length) { return DataBuffer.numberToBytes(n, length); }
+export function byteArrayToBigInt(octets = []) { return DataBuffer.bytesToNumber(octets); }
 
-    if (hex.length / 2 < length) { hex = hex.padStart(length * 2, '0'); }
-    if (hex.length % 2) { hex = '0' + hex; }
-
-    const result = Array(Math.max(hex.length / 2, length)).fill(0);
-
-    for (let i = 0; i < hex.length / 2; i++) {
-        result[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-    }
-
-    return result;
-}
-
-export function byteArrayToBigInt(octets = []) {
-    let result = 0n;
-    for (const octet of octets) {
-        result <<= 8n;
-        result += BigInt(octet);
-    }
-    return result;
-}
 /**
  * I2OSP function
  * @param {Number} value - Number to be encoded to byte array in network byte order.
- * @param {Number} len - Length of byte array
+ * @param {Number} length - Length of byte array
  * @return {Uint8Array} - Encoded number.
  */
-function i2osp(value = 0, len = 2) {
-    const r = new Uint8Array(len);
-
-    for (let i = 0; i < len; i++) {
-        const y = 0xff & (value >> (i * 8));
-        r[len - i - 1] = y;
-    }
-    return r;
-}
+function i2osp(value = 0, length = 2) { return DataBuffer.numberToBytes(value, length); }
 
 export function base64Encode(data) { return Base64.encode(data); }
 
@@ -63,33 +31,13 @@ export function base64urlEncode(data, quote = false) { return Base64.urlEncode(d
 
 export function base64urlDecode(data) { return Base64.decode(data); }
 
-export function hexDecode(s) {
-    if (/^[0-9a-fA-F]+$/.test(s)) {
-        try {
-            return s?.replaceAll(/[^0-9a-z]/gi, '0')?.match(/.{1,2}/g)?.map(a => parseInt(a, 16));
-        }
-        catch {
-        }
-    }
-    return [];
-}
+export function hexDecode(s) { return Hex.decode(s); }
 
-export function hexEncode(data = []) {
-    return data.map(v => v.toString(16).padStart(2, '0')).join('');
-}
+export function hexEncode(data = []) { return Hex.encode(data); }
 
-export function stringToByteArray(data) {
-    if (Array.isArray(data)) {
-        return data;
-    }
-    return Array.from(Uint8Array.from(data ?? '', c => c.charCodeAt(0)));
-    // return [...new TextEncoder().encode(data ?? '')]
-    // return data?.split('')?.map( c => c.charCodeAt(0)) ?? [];
-}
+export function stringToByteArray(data) { return DataBuffer.stringToBytes(data); }
 
-export function byteArrayToString(value = []) {
-    return Array.from(value).map(char => String.fromCharCode(char)).join('');
-}
+export function byteArrayToString(value = []) { return DataBuffer.bytesToString(value); }
 
 export async function sha256(data = []) {
     if (Array.isArray(data)) {
@@ -98,10 +46,29 @@ export async function sha256(data = []) {
     return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)));
 }
 
+export class Hex {
+    static decode(value = '') {
+        if (typeof value === 'string') {
+            value = value?.replaceAll(/[^0-9a-z]/gi, '0')?.match(/.{1,2}/g) || [];
+        }
+        value = Array.from(value);
+
+        const result = Array(value.length / 2);
+        for (let i = 0; i < value.length / 2; i++) {
+            result[i] = parseInt(value.slice(i * 2, i * 2 + 2), 16) || 0;
+        }
+        return [];
+    }
+
+    static encode(data = []) {
+        return data.map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+}
+
 export class Base64 {
     static encode(data) {
         if (Array.isArray(data) || ArrayBuffer.isView(data)) {
-            data = byteArrayToString(data);
+            data = DataBuffer.bytesToString(data);
         }
 
         return btoa(data ?? "");
@@ -121,7 +88,7 @@ export class Base64 {
                 ?.replaceAll('_', '/')
                 ?.replaceAll(/^"|"$/g, '');
             const encodedData = atob(data);
-            return stringToByteArray(encodedData);
+            return DataBuffer.stringToBytes(encodedData);
         }
         catch (e) {
             console.error(e);
@@ -144,6 +111,8 @@ export class DataBuffer {
         this.offset = 0;
     }
 
+    toBytes() { return this.buffer; }
+
     /**
     * Reads `size` bytes from the buffer and increments the offset by the same amount.
     *
@@ -154,6 +123,10 @@ export class DataBuffer {
         const value = this.buffer.slice(this.offset, size ? this.offset + size : null);
         this.offset += size;
         return value;
+    }
+
+    readString(size) {
+        return DataBuffer.bytesToString(this.readBytes(size));
     }
 
     /**
@@ -198,6 +171,55 @@ export class DataBuffer {
 
     writeBytes(bytes = []) {
         this.buffer.push(...bytes);
+    }
+
+    writeString(str = '') {
+        this.writeBytes(DataBuffer.stringToBytes(str));
+    }
+
+    static bytesToString(bytes = []) {
+        return Array.from(bytes).map(char => String.fromCharCode(char)).join('');
+    }
+
+    static stringToBytes(data = '') {
+        if (Array.isArray(data)) {
+            return data;
+        }
+        if (data instanceof Uint8Array) {
+            return Array.from(data);
+        }
+        return Array.from(data || '', c => c.charCodeAt(0));
+        // return [...new TextEncoder().encode(data ?? '')]
+        // return data?.split('')?.map( c => c.charCodeAt(0)) ?? [];
+    }
+
+    static numberToBytes(value = 0n, length) {
+
+        // minor optimization to avoid casting to string and back
+        if (length <= 4) {
+            value = Number(value);
+            return [(value >> 24) & 0xff, (value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff].slice(-length);
+        }
+
+        value = BigInt(value);
+        const result = new Array(length);
+        for (let i = 0; i < length; i++) {
+            result[i] = Number(0xffn & (value >> (BigInt(i) * 8n)));
+        }
+        return result.reverse(); // big endian
+    }
+
+    static bytesToNumber(octets = []) {
+        let result = 0n;
+        for (const octet of octets) {
+            result <<= 8n;
+            result += BigInt(octet);
+        }
+
+        if (octets.length <= 8) {
+            result = Number(result);
+        }
+        return result;
     }
 }
 
@@ -284,7 +306,7 @@ export class CBOR {
                 else {
                     result.push(...data.readBytes(length));
                 }
-                return byteArrayToString(result);
+                return DataBuffer.bytesToString(result);
             case 4:
                 const retArray = [];
                 if (length < 0) {

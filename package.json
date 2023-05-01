@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test/index.test.js"
   },
   "repository": {
     "type": "git",
@@ -19,6 +19,7 @@
   "homepage": "https://github.com/colinbendell/private-access-token#readme",
   "dependencies": {
     "@noble/curves": "^1.0.0",
-    "@noble/hashes": "^1.0.0"
+    "@noble/hashes": "^1.0.0",
+    "micro-should": "^0.4.0"
   }
 }

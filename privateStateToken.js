@@ -1,4 +1,4 @@
-import { base64urlDecode, base64Encode, hostToNetworkShort, hostToNetworkLong, bigIntToByteArray, stringToByteArray, DataBuffer, CBOR} from './utils.js';
+import { Base64, base64urlDecode, base64Encode, hostToNetworkShort, hostToNetworkLong, bigIntToByteArray, stringToByteArray, DataBuffer, CBOR} from './utils.js';
 
 import { p384 as ec, hashToCurve} from '@noble/curves/p384';
 import { sha384, sha512 } from '@noble/hashes/sha512';
@@ -11,8 +11,8 @@ const ORDER_P384 = ec.CURVE.n;
 
 const ORDER_P384_LEN = 384 / 8;
 const TRUST_TOKEN_NONCE_LEN = 64;
-const WPT_HOST = "https://localhost:8444";
-const DEFAULT_REDEMPTION_RECORD = Buffer.from("dummy redemption record", "utf-8");
+const DEFAULT_HOST = "https://localhost:8444";
+const DEFAULT_REDEMPTION_RECORD = DataBuffer.stringToBytes("dummy redemption record");
 
 /**
  * An elliptic curve point used in elliptic curve operations over the curve P-384.
@@ -24,7 +24,7 @@ const DEFAULT_REDEMPTION_RECORD = Buffer.from("dummy redemption record", "utf-8"
  * @param {Buffer} value An X9.62 encoded elliptic curve point.
  * @param {PointJacobi} point The `PointJacobi` representation of the point.
  */
-class ECPoint {
+export class ECPoint {
     /**
      * @param {Uint8Array} value The byte string to read values from.
      */
@@ -108,7 +108,7 @@ function hashToScalar(msg, count, dst = "TrustToken VOPRF Experiment V2 HashToSc
  * The value of a secret key is a scalar. The secret key is used to sign
  * blinded tokens from the client.
  */
-class PrivateStateTokenSecretKey {
+export class PrivateStateTokenSecretKey {
     /**
      * @param {number} id The ID of the secret key.
      * @param {number} value The value of the secret key.
@@ -122,7 +122,7 @@ class PrivateStateTokenSecretKey {
      * @returns {Buffer} Returns the value of the secret key as bytes.
      */
     toBytes() {
-        return Array.from(this.value);
+        return this.value;
     }
 
     /**
@@ -130,7 +130,7 @@ class PrivateStateTokenSecretKey {
      * @returns {string} Returns the value of the secret key as a Base64 string.
      */
     toString() {
-        return base64Encode(this.toBytes());
+        return Base64.encode(this.toBytes());
     }
 }
 
@@ -139,7 +139,7 @@ class PrivateStateTokenSecretKey {
  * The value of a public key is an elliptic curve point. A public key is
  * generated from a secret key.
  */
-class PrivateStateTokenPublicKey {
+export class PrivateStateTokenPublicKey {
     /**
      * @param {number} id The ID of the secret key.
      * @param {ECPoint} value The value of the secret key.
@@ -161,6 +161,7 @@ class PrivateStateTokenPublicKey {
      * @returns {Uint8Array} Returns the public key as bytes.
      */
     toBytes() {
+
         return [].concat(hostToNetworkLong(this.id), [...this.value.toBytes()]);
     }
 
@@ -175,7 +176,7 @@ class PrivateStateTokenPublicKey {
 /**
  * A key pair for a trust token issuer.
  */
-class PrivateStateTokenKeyPair {
+export class PrivateStateTokenKeyPair {
     /**
      * @param {number} id The ID associated with the key pair.
      * @param {PrivateStateTokenPublicKey} publicKey The public component of the key pair.
@@ -199,6 +200,7 @@ class PrivateStateTokenKeyPair {
     static generate(id = 0) {
         // priv cannot be 0
         // const priv = ec.utils.randomPrivateKey();
+        // const priv = Uint8Array.from(DataBuffer.numberToBytes(ORDER_P384 - 1n, 48));
         const priv = ORDER_P384 - 1n;
         // Changes to the public key must be reflected in the key commitment
         const pub = ec.getPublicKey(priv, false);
@@ -220,7 +222,7 @@ class PrivateStateTokenKeyPair {
  * @param {string} host The server origin that maps to this key commitment.
  * @returns {KeyCommitment} The key commitment.
  */
-class KeyCommitment {
+export class KeyCommitment {
     constructor(protocol_version, id, batchsize, publicKeys, host) {
         this.protocol_version = protocol_version;
         this.id = id;
@@ -411,7 +413,7 @@ export class RedeemRequest {
     }
 
     decodeClientData() {
-        CBOR.decode(this.clientData);
+        return CBOR.decode(this.clientData);
     }
 
     /**
@@ -439,7 +441,6 @@ export class RedeemRequest {
 
         const tokenLen = bytes.readInt(2);
         const keyID = bytes.readInt(4);
-
         const nonce = bytes.readBytes(TRUST_TOKEN_NONCE_LEN);
 
         const value = bytes.readBytes(ECPoint.length)
@@ -453,13 +454,14 @@ export class RedeemRequest {
     }
 
     toBytes() {
-        const buf = bigIntToByteArray(this.keyID, 4);
-        buf.push(...this.nonce);
-        buf.push(...this.point.toBytes());
-        buf.push(...bigIntToByteArray(this.clientData.length, 2));
-        buf.push(...this.clientData);
-        buf.unshift(...bigIntToByteArray(buf.length, 2));
-        return buf;
+        const buf = new DataBuffer();
+        buf.writeInt(this.nonce.length + this.point.toBytes().length + 4, 2);
+        buf.writeInt(this.keyID, 4);
+        buf.writeBytes(this.nonce);
+        buf.writeBytes(this.point.toBytes());
+        buf.writeInt(this.clientData.length, 2);
+        buf.writeBytes(this.clientData);
+        return buf.toBytes();
     }
 
     toString() { return base64Encode(this.toBytes()); }
@@ -523,8 +525,8 @@ export class PrivateStateTokenIssuer {
      * @returns {PrivateStateTokenIssuer} The trust token issuer.
      */
 
-    static generate(host = WPT_HOST, maxBatchSize = 10) {
-        const keyPair = PrivateStateTokenKeyPair.generate();
+    static generate(host = DEFAULT_HOST, maxBatchSize = 10, id=0) {
+        const keyPair = PrivateStateTokenKeyPair.generate(id);
         const issuer = new PrivateStateTokenIssuer(keyPair, maxBatchSize, host);
         return issuer;
     }
@@ -691,49 +693,3 @@ export class PrivateStateTokenIssuer {
         return null;
     }
 }
-
-
-
-/**
- * Issues a trust token.
- * @param {PrivateStateTokenIssuer} issuer The trust token issuer.
- * @param {string} secPrivateStateToken The contents of the `Sec-Private-State-Token` header in the request.
- * @param {number} keyID The ID of the issuer key to use to sign tokens.
- * @returns {IssueResponse} The issuance response.
- */
-function issueTrustToken(issuer, secPrivateStateToken, keyID) {
-    const issueRequest = IssueRequest.from(secPrivateStateToken);
-    console.info(`\nIssue request ${issueRequest.count} tokens`);
-    console.info(`sec-private-state-token:`, issueRequest.toString());
-
-    const issueResponse = issuer.issue(keyID, issueRequest);
-    console.log(`\nIssued ${issueResponse.issued} tokens`);
-    console.log(`sec-private-state-token:`, issueResponse.toString());
-
-    return issueResponse;
-}
-
-/**
- * Sends a redemption request to an issuer.
- * @param {PrivateStateTokenIssuer} issuer The trust token issuer.
- * @param {string} request_data The contents of the `Sec-Private-State-Token` header in the request.
- * @returns {RedeemResponse} The redemption response.
- */
-function redeemTrustToken(issuer, secPrivateStateToken) {
-    const redeemRequest = RedeemRequest.from(secPrivateStateToken);
-    console.log(`\nRedemption request`);
-    console.log(`sec-private-state-token:`, redeemRequest.toString());
-
-    const redeemResponse = issuer.redeem(redeemRequest);
-    console.log(`\nRedemption response`);
-    console.log(`sec-private-state-token:`, redeemResponse.toString());
-}
-
-const issuer = PrivateStateTokenIssuer.generate();
-let key_commitment = issuer.keyCommitment;
-console.log(`Key commitment: ${key_commitment.toString()}`);
-
-issueTrustToken(issuer, "AAEEVFIqN9o3HN46V8fr0KBj1GnlGTx2hX+Hej8tUG8AOI49fPHAQsjhbVY7m4P8DEG4dZMlsPYDQVS/kKkcG7aNnkm0yL9kUdskhfBc+/4OgH2ILjTj1zVRkest+62csHUN", 0);
-issueTrustToken(issuer, "AAoE6MVSc5AT8OyFhghz27roBKy9A1X+Tkjjr5OH9Tx/xvJa6Sl42DuS0lq+tR6gmN/iKvkUIGqlv+4m/M/N1Ww312UBn1/ayaklEjQxJp3gWtEp0YBx2PxXGGJIf24+z5AJBMUKrhoQSLzFTLQUsTNQi793uliKmCNt6BTg6XoTYaE3HztgCJ9ixPyRifwPM079sG1kdW+C17C4N3Hjd4U2yyKlaG9P7DuTIuStxoDNav7lfQXdbssN+e+DHR7tucKELgRJcrjoA7nabuTDGzRJ1Co5P0hPeCmX2up+W0KDDGUAsi9Upoj6IZmFV9OZWhdGXvDmRT5smXkKTq8JpQHoN6ZtAmAdC6492cDRfSu94drW5f3p357qoB94xPVqVDRbdmMEOK2IsHCnMotvCoZSRQsOXKwWqXx2JBWoHOO4wDGeEMEr5YJs+CjzOaSJkSznZvBZm/V1Ud7E2oXZkbVHnKFTge3Sv/DoIO46XjkpdgwA9oKaPjJkTx+1LkZahhCZOi/MBDIzt6q+zmkfAMoynQmym5dty0wjNKgrvOPS2CLdw0fiq7t2RmvppEww33XnWTlkrysgldaOyzEVdTrkGY+4RHpjJYlJaVIljEqUyhKXgD7wAU6uOHLyI0jzu/C+AV6prAQJ1qa8Z1OpchATYr/zWYcoQLGVQf+0YJmlCPuGJOT4hNH0y9zLv/5+gQyIdOGkSlP6HgQuVXRCHbt9PFIsb7dXPANtLekxwgdp5xFlX5rW8iihd1QYnwmjSFCEG7b1m5MEBt9MVIneAgqIzT4ADHYP44bPaC5UDLOW+3kAJhKKNuKoxHAglX3CEqArzIvrM4YdEDIy0CGK5q9HCMbjiF5VcC3exGXItL9YuSClCNRTSCXkcIr3/0o1F23og1ZN/kSnBK6BaIOlekz6e20DSeAD60KzcXUUGlK8wI0z/FOPAsYaMcFt0he2t/iSm7nU9UQrDwPtJ3atpip1XaqIg+M2QcSrLYZUF8nF3dtgh70IFBRC8YGFamLVNboXquMGqTYobwSh/GBZcDowgIEHF3ttJoxjHidfRqWhG2LXP029QONky3iic0ANewAP6fQDvMhF3+TeBSVjk3Rn0XmoJ/WTJLhgocXPxOOGMeEPlkxjjNmzOL+M5B8x4+aqCkRNm76Ico4E64nB5JcYKcMdwYJrplfGpXpq9OB1Az7U0SFZLJYhqv58GD53cgJbFnfto6q3qUvA0nVhhzhIM7Dhfv2vqMNqLtfS9PPC3/kR1DxUxJ/2ieXHdIAyMGUIxUPTN5fh4n08", 0);
-
-redeemTrustToken(issuer, "AKUAAAAAtVsA7lhWk9bStGA1fzKP/RvaKgcvVDAq1QvzW43xhYO9AamHe6u5wZIfrydStvtAcu0vNU+HXSdsokoaC02taQSYGczrEyU05BIvR2fl0osHsQvC/uTNq9+PQOBxXe8k3pAnRnV5CTOT4CuiuVO2/1JKtDEJMn4Ww51YOj7yLxkQ00Iv7iV8SmCXMnZ3V7ZyM3j/FfSdbolwS5qYSVM/0ucAT6JwcmVkZWVtaW5nLW9yaWdpbnghaHR0cHM6Ly9zaG9lc2J5Y29saW4uZGV2LmNvbTozMDAwdHJlZGVtcHRpb24tdGltZXN0YW1wGmRKygU=");

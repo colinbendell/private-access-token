@@ -1,4 +1,4 @@
-import {base64urlDecode, base64urlEncode, byteArrayToString, hostToNetworkShort, networkToHostShort, stringToByteArray, sha256} from "./utils.js";
+import {Base64, byteArrayToString, hostToNetworkShort, networkToHostShort, stringToByteArray, sha256, DataBuffer} from "./utils.js";
 
 export class Challenge {
     static DEFAULT = Challenge.from("AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=");
@@ -11,40 +11,35 @@ export class Challenge {
     }
 
     static from(data) {
-        const challengeBytes = base64urlDecode(data) || [];
+        const challengeBytes = Base64.decode(data) || [];
+        const dataBuffer = new DataBuffer(challengeBytes);
 
-        const tokenType = networkToHostShort(challengeBytes.slice(0, 2));
-        const issuerNameLength = networkToHostShort(challengeBytes.slice(2, 4));
-        const issuerName = byteArrayToString(challengeBytes.slice(4, 4 + issuerNameLength));
-        const redemptionContextLength = challengeBytes[4 + issuerNameLength];
-        const redemptionContext = challengeBytes.slice(4 + issuerNameLength + 1, 4 + issuerNameLength + 1 + redemptionContextLength);
-        const originInfoLength = networkToHostShort(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength, 4 + issuerNameLength + 1 + redemptionContextLength + 2));
-        const originInfo = byteArrayToString(challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength + 2, 4 + issuerNameLength + 1 + redemptionContextLength + 2 + originInfoLength));
+        const tokenType = dataBuffer.readInt(2);
+        const issuerNameLength = dataBuffer.readInt(2)
+        const issuerName = dataBuffer.readString(issuerNameLength);
+        const redemptionContextLength = dataBuffer.readInt(1);
+        const redemptionContext = dataBuffer.readBytes(redemptionContextLength);
+        const originInfoLength = dataBuffer.readBytes(2);
+        const originInfo = dataBuffer.readString(originInfoLength);
 
         return new Challenge(tokenType, issuerName, redemptionContext, originInfo);
     }
 
+    #redemptionContext = [];
+
     set redemptionContext(value) {
-        if (Array.isArray(value)) {
-            //noop
-        }
-        else if (!Array.isArray(value)) {
-            value = stringToByteArray(value);
-        }
-        else {
-            value = stringToByteArray(value);
-        }
+        let redemptionContext = stringToByteArray(value);
 
-        if (value.length > 0) {
+        if (redemptionContext.length > 0) {
             // Pad to 32 bytes
-            value = Array(32).fill(0).concat(value).slice(-32);
+            redemptionContext = Array(32).fill(0).concat(redemptionContext).slice(-32);
         }
 
-        this._redemptionContext = value;
+        this.#redemptionContext = redemptionContext;
     }
 
     get redemptionContext() {
-        return this._redemptionContext || [];
+        return this.#redemptionContext || [];
     }
 
     async tokenKey() {
@@ -52,18 +47,19 @@ export class Challenge {
     }
 
     toByteArray() {
-        return [].concat(
-            hostToNetworkShort(this.tokenType),
-            hostToNetworkShort(this.issuerName.length),
-            stringToByteArray(this.issuerName),
-            [this.redemptionContext.length],
-            this.redemptionContext,
-            hostToNetworkShort(this.originInfo.length),
-            stringToByteArray(this.originInfo));
+        const dataBuffer = new DataBuffer();
+        dataBuffer.writeInt(this.tokenType, 2);
+        dataBuffer.writeInt(this.issuerName.length, 2);
+        dataBuffer.writeString(this.issuerName);
+        dataBuffer.writeInt(this.redemptionContext.length, 1);
+        dataBuffer.writeBytes(this.redemptionContext);
+        dataBuffer.writeInt(this.originInfo.length, 2);
+        dataBuffer.writeString(this.originInfo);
+        return dataBuffer.toBytes();
     }
 
     toString() {
-        return base64urlEncode(this.toByteArray());
+        return Base64.urlEncode(this.toByteArray());
     }
 
 }
@@ -112,15 +108,7 @@ export class PublicKey {
         this.sPKI = sPKI;
     }
 
-    #sPKI;
-
-    set sPKI(value) {
-        this.#sPKI = value;
-    }
-
-    get sPKI() {
-        return this.#sPKI;
-    }
+    sPKI;
 
     get legacySPKI() {
         const legacySPKI = "MIIBIjANBgkqhkiG9w0BAQEFA" + this.sPKI.slice(-367);
@@ -129,7 +117,7 @@ export class PublicKey {
     }
 
     toByteArray() {
-        return base64urlDecode(this.sPKI);
+        return Base64.decode(this.sPKI);
     }
 
     toString() {
@@ -172,23 +160,30 @@ export class Token {
         this.authenticator = authenticator;
     }
 
-    static async from(data) {
-        const tokenBytes = base64urlDecode(data);
-        const tokenType = networkToHostShort(tokenBytes.slice(0,2));
-        const nonce = tokenBytes.slice(2,34);
-        const challengeHash = tokenBytes.slice(34,66);
-        const tokenKeyID = tokenBytes.slice(66,98);
-        const authenticator = tokenBytes.slice(98);
+    static from(data) {
+        const tokenBytes = Base64.decode(data);
+        const dataBuffer = new DataBuffer(tokenBytes);
+        const tokenType = dataBuffer.readInt(2);
+        const nonce = dataBuffer.readBytes(32);
+        const challengeHash = dataBuffer.readBytes(32);
+        const tokenKeyID = dataBuffer.readBytes(32);
+        const authenticator = dataBuffer.readBytes(256);
 
         return new Token(tokenType, nonce, challengeHash, tokenKeyID, authenticator);
     }
 
     toByteArray() {
-        return [].concat(hostToNetworkShort(this.tokenType), this.nonce, this.challengeHash, this.tokenKeyID, this.authenticator);
+        const dataBuffer = new DataBuffer();
+        dataBuffer.writeInt(this.tokenType, 2);
+        dataBuffer.writeBytes(this.nonce);
+        dataBuffer.writeBytes(this.challengeHash);
+        dataBuffer.writeBytes(this.tokenKeyID);
+        dataBuffer.writeBytes(this.authenticator);
+        return dataBuffer.toBytes();
     }
 
     toString() {
-        return base64urlEncode(this.toByteArray());
+        return Base64.urlEncode(this.toByteArray());
     }
 
     async tokenKey() {
