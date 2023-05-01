@@ -6,11 +6,17 @@
   "main": "index.js",
   "author": "Colin Bendell <colin@bendell.ca>",
   "license": "MIT",
-  "dependencies": {},
+  "type": "module",
+  "dependencies": {
+    "wrangler": "^2.18.0"
+  },
   "scripts": {
-    "format": "prettier --write '**/*.{js,css,json,md}'"
+    "format": "prettier --write '**/*.{js,css,json,md}'",
+    "build": "wrangler publish index.js --dry-run --outdir dist  --latest"
   },
   "devDependencies": {
+    "esbuild": "^0.17.18",
+    "miniflare": "^2.13.0",
     "prettier": "^2"
   }
 }

@@ -1,0 +1,182 @@
+
+<html>
+  <head>
+    <meta http-equiv="origin-trial" content="AqJdO9k1bwBPAPms8acBjJFv8J7FnqbSVThgXL3i9xAC2ehc3iOdH+6ka3ZhD/U1GfynrPXKPTcGT/QsvqXeTw0AAABTeyJvcmlnaW4iOiJodHRwczovL3RydXN0dG9rZW4uZGV2OjQ0MyIsImZlYXR1cmUiOiJUcnVzdFRva2VucyIsImV4cGlyeSI6MTYxMzUwMDYwNn0=">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private State Token Demo</title>
+    <style>
+      .main {
+          width: 60%;
+      }
+
+      table {
+        border-collapse: separate;
+        border-spacing: 0 10px;
+      }
+      td {
+        text-align: center;
+        padding: 5px;
+      }
+      input {
+          width: 100%;
+      }
+      #response {
+          overflow-wrap: anywhere;
+      }
+      @media screen and (max-width: 800px) {
+          .main {
+              width: 100%;
+          }
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      var issuer = location.origin;
+      var x = 0;
+      async function issueTokens() {
+        var publicValue = document.getElementById('public').value;
+        var privateValue = document.getElementById('private').value;
+        const r = await fetch("/pst/i", { privateToken: {type: 'private-state-token', version: 1, operation: 'token-request', issuer: issuer}});
+        const text = await r.text();
+        document.getElementById('response').innerHTML = text;
+
+        return false;
+      }
+
+      async function redeemToken(refresh) {
+        var policy = "none";
+        if (refresh) {
+          policy = "refresh";
+        }
+        try {
+            const r = await fetch("/pst/r", { privateToken: {type: 'private-state-token', version: 1, operation: 'token-redemption', issuer: issuer, refreshPolicy: policy}});
+            const text = await r.text();
+            document.getElementById('response').innerHTML = text;
+        }
+        catch(e) {
+            document.getElementById('response').innerText = e.message;
+        }
+        return false;
+      }
+
+      async function sendRR(refresh) {
+        try {
+            const r = await fetch("/pst/echo", { privateToken: {type: 'private-state-token', version: 1, operation: 'send-redemption-record', issuers:[issuer]}});
+            const text = await r.text();
+            const body = text.split(';')[1].split('"')[1];
+            document.getElementById('response').innerText = atob(body);
+        }
+        catch(e) {
+            document.getElementById('response').innerText = e.message;
+        }
+        return false;
+      }
+    </script>
+    <center>
+      <h1>Private State Token Demo Issuer</h1>
+      <div class="main">
+	<div style="text-align:left;">
+	  You can also use this issuer by making Private State Token requests against "https://trusttoken.dev/tt/(k,i,r)":<br/>
+	  <br/>
+	  Key Commitments:<br/>
+	  <code>
+	    <a href="https://trusttoken.dev/tt/k">https://trusttoken.dev/tt/k</a>
+	  </code>
+	  <br/>
+	  <br/>
+	  Issuance (select a value for the public and private parameters):<br/>
+	  <code>
+	    fetch("https://trusttoken.dev/tt/i?public={0,1,2}&private={0,1}", {privateToken: {...}}).then(...);
+	  </code>
+	  <br/>
+	  <br/>
+	  Redemption:<br/>
+	  <code>
+	    fetch("https://trusttoken.dev/tt/r", {privateToken: {...}}).then(...);
+	  </code>
+	  <br/>
+	  <br/>
+	  Send Redemption Record:<br/>
+	  <code>
+	    fetch(..., {privateToken: {...}}).then(...);<br/><br/>
+	  </code>
+	</div>
+      </div>
+      <br/>
+      <table>
+        <form onsubmit="return issueTokens();">
+          <tr>
+            <td>
+              <label for="public">Public Metadata:</label>
+            </td>
+            <td>
+              <select id="public" name="public">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+              </select>
+              </td>
+          </tr>
+          <tr>
+            <td>
+              <label for="private">Private Metadata:</label>
+            </td>
+            <td>
+              <select id="private" name="private">
+                <option value="0">0</option>
+                <option value="1">1</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <center>
+                <input type="submit" value="Issue">
+              </center>
+            </td>
+          </tr>
+        </form>
+        <tr></tr>
+        <form onsubmit="return redeemToken(false);">
+          <tr>
+            <td colspan="2">
+              <center>
+                <input type="submit" value="Redeem">
+              </center>
+            </td>
+          </tr>
+        </form>
+        <form onsubmit="return redeemToken(true);">
+          <tr>
+            <td colspan="2">
+              <center>
+                <input type="submit" value="Redeem (Refresh)">
+              </center>
+            </td>
+          </tr>
+        </form>
+        <form onsubmit="return sendRR(true);">
+          <tr>
+            <td colspan="2">
+              <center>
+                <input type="submit" value="Send Redemption Record">
+              </center>
+            </td>
+          </tr>
+        </form>
+      </table>
+      <table>
+        <tr>
+          <td>
+            Response:
+          </td>
+          <td>
+            <div id="response"></div>
+          </td>
+        </tr>
+      </table>
+      <br/>
+    </center>
+  </body>
+</html>

@@ -252,7 +252,7 @@ export class CBOR {
             }
         }
 
-        const length = CBOR.#readLength(additionalInformation, data);
+        let length = CBOR.#readLength(additionalInformation, data);
         if (length < 0 && (majorType < 2 || majorType > 6))
             throw "Invalid length";
 

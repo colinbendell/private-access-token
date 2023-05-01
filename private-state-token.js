@@ -1,7 +1,8 @@
 import { Base64, DataBuffer, CBOR} from './utils.js';
 
 import { p384 as ec, hashToCurve} from '@noble/curves/p384';
-import { sha384, sha512 } from '@noble/hashes/sha512';
+// import { sha384, sha512 } from '@noble/hashes/sha512';
+import { sha512 } from '@noble/hashes/sha512';
 import { hash_to_field } from '@noble/curves/abstract/hash-to-curve';
 
 const Point = ec.ProjectivePoint;

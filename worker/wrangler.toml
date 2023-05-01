@@ -1,3 +1,4 @@
 name = "private-access-token"
 main = "index.js"
+node_compat = false
 compatibility_date = "2022-10-08"
