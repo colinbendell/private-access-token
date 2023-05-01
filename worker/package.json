@@ -8,7 +8,9 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "wrangler": "^2.18.0"
+    "wrangler": "^2.18.0",
+    "@noble/curves": "^1.0.0",
+    "@noble/hashes": "^1.0.0"
   },
   "scripts": {
     "format": "prettier --write '**/*.{js,css,json,md}'",
