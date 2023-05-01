@@ -6,7 +6,7 @@ let issuer;
 
 export default {
     async fetch(request, env) {
-        if (!issuer) issuer = PrivateStateTokenIssuer.generate('https://shoesbycolin.dev.com:3000/', 10);
+        if (!issuer) issuer = PrivateStateTokenIssuer.generate(`https://${request.headers.get("host")}/`, 10);
         if (request.url.includes("/pst/k")) {
             const body = issuer.keyCommitment.toString();
             return new Response(body, {
@@ -33,16 +33,16 @@ export default {
             return new Response(`No issuance provided.`);
         }
         else if (request.url.includes("/pst/r")) {
-            const privateStateToken = req.headers["sec-private-state-token"];
-            const cookies = req.headers["cookie"];
+            const privateStateToken = request.headers.get("sec-private-state-token");
+            const cookies = request.headers.get("cookie");
             console.log("cookie: ", cookies);
             console.log("Redeem: ", privateStateToken);
 
             if (privateStateToken) {
                 const request = RedeemRequest.from(privateStateToken);
-                const redeemResponse = issuer.redeem(request);
+                const redeemResponse = issuer.redeem(request, cookies);
 
-                return new Response(`Redeemed 1 tokens.`, {
+                return new Response(`Redeemed 1 tokens. (RR: ${cookies})`, {
                     status: 200,
                     headers: {
                         "Content-Type": "text/plain",
@@ -53,8 +53,8 @@ export default {
             return new Response(`No token provided.`);
         }
         else if (request.url.includes("/pst/echo")) {
-            const redemptionRecord = req.headers["sec-redemption-record"];
-            const cookies = req.headers["cookie"];
+            const redemptionRecord = request.headers.get("sec-redemption-record");
+            const cookies = request.headers.get("cookie");
 
             return new Response(redemptionRecord, {
                 status: 200,

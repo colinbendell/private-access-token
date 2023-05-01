@@ -688,14 +688,14 @@ export class PrivateStateTokenIssuer {
      * @param {RedeemRequest} request The redemption request.
      * @returns {RedeemResponse} The redemption response.
      */
-    redeem(request) {
+    redeem(request, redemptionRecord) {
         // console.debug(`Redeem request:`, request);
         // const evaluatedElement = hashToCurve(Uint8Array.from(request.nonce), {DST: "HashToGroup-OPRFV1-\x01-P384-SHA384\0"});
         const evaluatedElement = hashToGroup(request.nonce);
         const issuedElement = evaluatedElement.multiply(ec.utils.normPrivateKeyToScalar(this.keyPair.secretKey.value));
 
         if (request.point.toPoint().equals(issuedElement)) {
-            return new RedeemResponse();
+            return new RedeemResponse(redemptionRecord);
         }
         return null;
     }

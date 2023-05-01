@@ -207,7 +207,13 @@
         <div></div>
         <input type="button" value="Forward RR" onclick="sendRR(true)">
       </div>
-      <div id="response"></div>
+      <code id="response">&nbsp;</code>
+      <div>For this demo to work, you will need to run chrome with:</div>
+      <pre>
+--enable-blink-features=PrivateStateTokens,PrivateStateTokensAlwaysAllowIssuance
+--enable-features=PrivateStateTokens,PrivacySandboxSettings3
+--additional-private-state-token-key-commitments='{"https://private-access-token.colinbendell.dev/":{"PrivateStateTokenV3VOPRF":{"protocol_version":"PrivateStateTokenV3VOPRF","id":1,"batchsize":10,"keys":{"0":{"Y":"AAAAAASqh8oivosFN46xxx7zIK10bh07Younm5hZ90HgglQqOFUC8l2/VSlsOlReOHJ2CrfJ6CG1adnTkKJhZ0BtbSPWBwviQtdl64MWJc7sSg9HPvWfTjDigX5ihbzihG8V8aA=","expiry":"253402300799000000"}}}}}'
+      </pre`>
     </main>
   </body>
 </html>
