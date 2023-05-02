@@ -3,9 +3,12 @@ import { get } from 'https';
 import { connect } from 'http2';
 import { promises as fs } from 'fs';
 import * as url from 'url';
+
+import * as crypto from 'node:crypto';
+
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
-import { sha256, Base64 } from '../utils.js';
+import { Base64 } from '../utils.js';
 import { Challenge } from '../private-access-token.js';
 
 async function getCloudflarePublicKey() {
@@ -129,7 +132,8 @@ async function build() {
     issuers = issuers.filter(i => !!i.key)
     const issuerSet = new Set();
     for (const issuer of issuers) {
-        issuer.keyID = Base64.encode(await sha256(Base64.decode(issuer.key)));
+        const hash = Array.from(await crypto.subtle.digest('SHA-256', new Uint8Array(Base64.decode(issuer.key))))
+        issuer.keyID = Base64.encode(hash);
         issuerSet.add(issuer.issuer);
     }
 
