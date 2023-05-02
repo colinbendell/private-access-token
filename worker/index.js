@@ -47,6 +47,7 @@ export default {
                     headers: {
                         "Content-Type": "text/plain",
                         'Sec-Private-State-Token': redeemResponse.toString(),
+                        'Sec-Private-State-Token-Lifetime': 60,
                     },
                 });
             }
