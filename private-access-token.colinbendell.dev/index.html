@@ -229,7 +229,7 @@
                 " == " + ua
             ]);
 
-            const lastToken = parseInt(cookies["lastchallenge"]) > 1681394250396 ? new Date(cookies["lastchallenge"]) : null;
+            const lastToken = parseInt(cookies["lastchallenge"]) > 1681394250396 ? new Date(parseInt(cookies["lastchallenge"])) : null;
             // const lastToken = new Date(parseInt("1681394250396"));
             tests.push([
                 "Last token challenge > 60s",
