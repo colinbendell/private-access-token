@@ -35,18 +35,19 @@ export default {
         }
         else if (url.pathname === "/pst/r") {
             const privateStateToken = request.headers.get("sec-private-state-token");
-            const cookies = request.headers.get("cookie") || 'no cookies';
+            const redeemPayload = Object.fromEntries([...request.headers.entries()])
+            redeemPayload.cf = request.cf
 
             if (privateStateToken) {
                 const request = RedeemRequest.from(privateStateToken);
-                const redeemResponse = issuer.redeem(request, cookies);
+                const redeemResponse = issuer.redeem(request, redeemPayload);
 
-                return new Response(`Redeemed 1 tokens. (RR: ${cookies})`, {
+                return new Response(`RR: ${JSON.stringify(redeemPayload, null, 2)})`, {
                     status: 200,
                     headers: {
                         "Content-Type": "text/plain",
                         'Sec-Private-State-Token': redeemResponse.toString(),
-                        'Sec-Private-State-Token-Lifetime': 60,
+                        'Sec-Private-State-Token-Lifetime': 3660,
                         'Access-Control-Allow-Origin': '*',
                     },
                 });
