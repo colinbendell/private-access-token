@@ -16,7 +16,6 @@ export default {
         }
         else if (request.url.includes("/pst/i")) {
             const privateStateToken = request.headers.get("sec-private-state-token");
-            const cookies = request.headers.get("cookie");
 
             if (privateStateToken) {
                 const request = IssueRequest.from(privateStateToken);
@@ -36,12 +35,10 @@ export default {
         else if (request.url.includes("/pst/r")) {
             const privateStateToken = request.headers.get("sec-private-state-token");
             const cookies = request.headers.get("cookie");
-            console.log("cookie: ", cookies);
-            console.log("Redeem: ", privateStateToken);
 
             if (privateStateToken) {
                 const request = RedeemRequest.from(privateStateToken);
-                const redeemResponse = issuer.redeem(request, cookies);
+                const redeemResponse = issuer.redeem(request, cookies || 'no cookies');
 
                 return new Response(`Redeemed 1 tokens. (RR: ${cookies})`, {
                     status: 200,
@@ -57,7 +54,6 @@ export default {
         }
         else if (request.url.includes("/pst/echo")) {
             const redemptionRecord = request.headers.get("sec-redemption-record");
-            const cookies = request.headers.get("cookie");
 
             return new Response(redemptionRecord, {
                 status: 200,
