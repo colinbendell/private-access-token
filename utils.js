@@ -60,6 +60,7 @@ export class Base64 {
     }
 
     static decode(data) {
+        if (!data) return [];
         try {
             data = decodeURIComponent(data)
                 ?.replaceAll('-', '+')

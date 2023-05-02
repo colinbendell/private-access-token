@@ -34,11 +34,11 @@ export default {
         }
         else if (request.url.includes("/pst/r")) {
             const privateStateToken = request.headers.get("sec-private-state-token");
-            const cookies = request.headers.get("cookie");
+            const cookies = request.headers.get("cookie") || 'no cookies';
 
             if (privateStateToken) {
                 const request = RedeemRequest.from(privateStateToken);
-                const redeemResponse = issuer.redeem(request, cookies || 'no cookies');
+                const redeemResponse = issuer.redeem(request, cookies);
 
                 return new Response(`Redeemed 1 tokens. (RR: ${cookies})`, {
                     status: 200,
