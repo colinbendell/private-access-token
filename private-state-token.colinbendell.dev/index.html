@@ -139,7 +139,7 @@
           async function issueTokens() {
             var publicValue = document.getElementById('public').value;
             try {
-                const r = await fetch(`/pst/i?id=${publicValue}`, {
+                const r = await fetch(`https://private-access-token.colinbendell.dev/pst/i?id=${publicValue}`, {
                 privateToken: {
                   type: 'private-state-token',
                   version: 1,
@@ -163,7 +163,7 @@
               policy = "refresh";
             }
             try {
-              const r = await fetch("/pst/r", {
+              const r = await fetch("https://private-access-token.colinbendell.dev/pst/r", {
                 privateToken: {
                   type: 'private-state-token',
                   version: 1,
@@ -231,18 +231,18 @@
     type: 'private-state-token',
     version: 1,
     operation: 'token-request',
-    issuer: 'https://private-access-token.colinbendell.dev',
+    issuer: 'https://private-state-token.colinbendell.dev',
   }
 })</pre>
 <code class="code" id="issue-response">&nbsp;</code>
 <!-- <code class="code" id="hasPrivateToken">&nbsp;</code>
 <pre class="code">document.hasPrivateToken(
-  'https://private-access-token.colinbendell.dev/',
+  'https://private-state-token.colinbendell.dev/',
   'private-state-token'
 );</pre>
         <code class="code pass" id="hasPrivateToken-response">true</code>
 <pre class="code">document.hasRedemptionRecord(
-  'https://private-access-token.colinbendell.dev/',
+  'https://private-state-token.colinbendell.dev/',
   'private-state-token'
 );</pre>
         <code class="code pass" id="hasRedemptionRecord-response">true</code> -->
@@ -261,7 +261,7 @@
     type: 'private-state-token',
     version: 1,
     operation: 'token-redemption',
-    issuer: 'https://private-access-token.colinbendell.dev',
+    issuer: 'https://private-state-token.colinbendell.dev',
     refreshPolicy: policy
   }
 })</pre>
@@ -276,7 +276,7 @@
     type: 'private-state-token',
     version: 1,
     operation: 'send-redemption-record',
-    issuers: ['https://private-access-token.colinbendell.dev'],
+    issuers: ['https://private-state-token.colinbendell.dev'],
   }
 })</pre>
         <code class="code" id="response-rr">&nbsp;</code>
@@ -286,7 +286,7 @@
       <pre>
 --enable-blink-features=PrivateStateTokens,PrivateStateTokensAlwaysAllowIssuance
 --enable-features=PrivateStateTokens,PrivacySandboxSettings3
---additional-private-state-token-key-commitments='{"https://private-access-token.colinbendell.dev/":{"PrivateStateTokenV3VOPRF":{"protocol_version":"PrivateStateTokenV3VOPRF","id":1,"batchsize":10,"keys":{"0":{"Y":"AAAAAASqh8oivosFN46xxx7zIK10bh07Younm5hZ90HgglQqOFUC8l2/VSlsOlReOHJ2CrfJ6CG1adnTkKJhZ0BtbSPWBwviQtdl64MWJc7sSg9HPvWfTjDigX5ihbzihG8V8aA=","expiry":"253402300799000000"}}}}}'
+--additional-private-state-token-key-commitments='{"https://private-state-token.colinbendell.dev/":{"PrivateStateTokenV3VOPRF":{"protocol_version":"PrivateStateTokenV3VOPRF","id":1,"batchsize":10,"keys":{"0":{"Y":"AAAAAASqh8oivosFN46xxx7zIK10bh07Younm5hZ90HgglQqOFUC8l2/VSlsOlReOHJ2CrfJ6CG1adnTkKJhZ0BtbSPWBwviQtdl64MWJc7sSg9HPvWfTjDigX5ihbzihG8V8aA=","expiry":"253402300799000000"}}}}}'
       </pre`>
     </main>
   </body>

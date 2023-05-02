@@ -66,6 +66,10 @@ export default {
                 },
             });
         }
+        else if (url.hostname === 'private-state-token.colinbendell.dev' &&
+                    (url.pathname === "/" || url.pathname === "/index.html")) {
+            return fetch('https://private-access-token.colinbendell.dev/pst.html');
+        }
         else if (url.pathname === "/" || url.pathname === "/index.html") {
 
             const params = new Proxy(new URLSearchParams(request.url.split("?")[1] ?? ""), { get: (searchParams, prop) => searchParams.get(prop), });
