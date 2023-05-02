@@ -27,6 +27,7 @@ export default {
                     headers: {
                         "Content-Type": "text/plain",
                         'Sec-Private-State-Token': issueResponse.toString(),
+                        'Access-Control-Allow-Origin': '*',
                     },
                 });
             }
@@ -48,6 +49,7 @@ export default {
                         "Content-Type": "text/plain",
                         'Sec-Private-State-Token': redeemResponse.toString(),
                         'Sec-Private-State-Token-Lifetime': 60,
+                        'Access-Control-Allow-Origin': '*',
                     },
                 });
             }
@@ -62,6 +64,7 @@ export default {
                 headers: {
                     "Content-Type": "text/plain",
                     'Sec-Private-State-Token': redemptionRecord,
+                    'Access-Control-Allow-Origin': '*',
                 },
             });
         }
