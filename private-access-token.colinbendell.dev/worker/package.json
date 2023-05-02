@@ -14,7 +14,8 @@
   },
   "scripts": {
     "format": "prettier --write '**/*.{js,css,json,md}'",
-    "build": "wrangler publish index.js --dry-run --outdir dist  --latest"
+    "build": "wrangler publish index.js --dry-run --outdir dist  --latest",
+    "publish": "wrangler publish index.js --latest"
   },
   "devDependencies": {
     "esbuild": "^0.17.18",

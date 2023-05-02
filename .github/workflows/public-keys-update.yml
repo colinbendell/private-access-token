@@ -77,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: mkdir build;cp *.html build;cp *.js build
+      - run: mkdir build;cp public-access-token/*.html build;cp src/*.js build;cp public-state-token/index.html build/pst.html
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact

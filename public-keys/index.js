@@ -8,8 +8,8 @@ import * as crypto from 'node:crypto';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
-import { Base64 } from '../utils.js';
-import { Challenge } from '../private-access-token.js';
+import { Base64 } from '../src/utils.js';
+import { Challenge } from '../src/private-access-token.js';
 
 async function getCloudflarePublicKey() {
     const browser = await launch({
@@ -156,7 +156,7 @@ async function build() {
     const fastlyDemoKey = issuers.find(i => i.issuer === 'demo-issuer.private-access-tokens.fastly.com')?.key;
     const fastlyDemoKeyID = issuers.find(i => i.issuer === 'demo-issuer.private-access-tokens.fastly.com')?.keyID;
 
-    for(const file of ['private-access-token.js', 'worker/index.js']) {
+    for(const file of ['src/private-access-token.js', 'private-access-token.colinbendell.dev/worker/index.js']) {
         const path = __dirname + '/../' + file;
         let content = await fs.readFile(path, {encoding: 'utf8'});
         if (cfProdKey) content = content.replaceAll(/CLOUDFLARE_PUB_KEY = .*;/g, `CLOUDFLARE_PUB_KEY = "${cfProdKey}";`);
