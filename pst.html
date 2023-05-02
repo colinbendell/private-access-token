@@ -101,26 +101,24 @@
 
             .grid {
                 display: grid;
-                grid-template-columns: repeat(1, 2fr 1fr);
+                grid-template-columns: repeat(1, 1fr 2fr);
                 grid-column-gap: 0.5rem;
             }
             .grid input {
                 margin-bottom: auto;
                 line-height: 1rem;
             }
-            .grid.code {
+            .code {
                 border: 1px solid #eee;
                 background-color: #f9f9f9;
-                grid-template-columns: repeat(1, 1fr 4fr);
-                grid-column: span 2 / auto;
                 margin-bottom: 0.5rem;
                 padding: 0.5rem;
             }
 
             h2 {
-                margin: -0.6rem 0 0.6rem 0;
-                font-weight: 100;
-                font-size: 1rem;
+                margin: 1rem 0 0.5rem 0;
+                font-weight: 400;
+                font-size: 1.25rem;
             }
         </style>
         <script>
@@ -128,9 +126,21 @@
           var x = 0;
           async function issueTokens() {
             var publicValue = document.getElementById('public').value;
-            const r = await fetch(`/pst/i?id=${publicValue}`, { privateToken: {type: 'private-state-token', version: 1, operation: 'token-request', issuer: issuer}});
-            const text = await r.text();
-            document.getElementById('response').innerHTML = text;
+            try {
+                const r = await fetch(`/pst/i?id=${publicValue}`, {
+                privateToken: {
+                  type: 'private-state-token',
+                  version: 1,
+                  operation: 'token-request',
+                  issuer: issuer
+                }
+              });
+              const text = await r.text();
+              document.getElementById('issue-response').innerText = text;
+            }
+            catch(e) {
+                document.getElementById('issue-response').innerText = e.message;
+            }
 
             return false;
           }
@@ -141,69 +151,117 @@
               policy = "refresh";
             }
             try {
-                const r = await fetch("/pst/r", {
-                  privateToken: {
-                    type: 'private-state-token',
-                    version: 1,
-                    operation: 'token-redemption',
-                    issuer: issuer,
-                    refreshPolicy: policy
-                  }
-                });
-                const text = await r.text();
-                document.getElementById('response').innerHTML = text;
+              const r = await fetch("/pst/r", {
+                privateToken: {
+                  type: 'private-state-token',
+                  version: 1,
+                  operation: 'token-redemption',
+                  issuer: issuer,
+                  refreshPolicy: policy
+                }
+              });
+              const text = await r.text();
+              document.getElementById('redeem-response').innerText = text;
             }
             catch(e) {
-                document.getElementById('response').innerText = e.message;
+                document.getElementById('redeem-response').innerText = e.message;
             }
             return false;
           }
 
           async function sendRR(refresh) {
             try {
-                const r = await fetch("/pst/echo", { privateToken: {type: 'private-state-token', version: 1, operation: 'send-redemption-record', issuers:[issuer]}});
-                const text = await r.text();
-                const body = text.split(';')[1].split('"')[1];
-                document.getElementById('response').innerText = atob(body);
+              const r = await fetch("/pst/echo", {
+                privateToken: {
+                  type: 'private-state-token',
+                  version: 1,
+                  operation: 'send-redemption-record',
+                  issuers:[issuer]
+                }
+              });
+              const text = await r.text();
+              const body = text.split(';')[1].split('"')[1];
+              document.getElementById('response-rr').innerText = atob(body);
             }
             catch(e) {
-                document.getElementById('response').innerText = e.message;
+                document.getElementById('response-rr').innerText = e.message;
             }
             return false;
           }
+          window.addEventListener('load', () => {
+            // document.getElementById('public').value = localStorage.getItem('public');
+          });
         </script>
   </head>
   <body>
     <main>
       <h1>Public State Token v3 Test</h1>
       <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
-              [<a href="https://github.com/colinbendell/private-access-token">Github Source</a>]
-              [<a href="https://wicg.github.io/trust-token-api/l">W3C: PST</a>]
-              [<a href="https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-21.html">IETF: VOPRF (21)</a>]
+              <a href="https://github.com/colinbendell/private-access-token">Github Source</a> ⏐⏐
+              <a href="https://wicg.github.io/trust-token-api/l">W3C: PST (Draft)</a> ⏐⏐
+              <a href="https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-21.html">IETF: VOPRF (21)</a>
       </div>
 
 
-      <div class="grid">You can also use this issuer by making Private State Token requests against:</div>
-      <ul>
-        <li><a href="/pst/k">/pst/k</a> - Key Commitments</li>
-        <li><a href="/pst/i">/pst/i</a> - Issuance</li>
-        <li><a href="/pst/r">/pst/r</a> - Redemption</li>
-      </ul>
       <div class="grid">
-        <div>Public Key:</div>
-        <div></div>
-
-        <select id="public" name="public">
-          <option value="0">0</option>
-          <option value="1">1</option>
-          <option value="2">2</option>
+        <div>
+          <h2>1. Request token(s)</h2>
+          <code id="issue-response">&nbsp;</code>
+        </div>
+        <pre class="code">await fetch('/pst/i', {
+  privateToken: {
+    type: 'private-state-token',
+    version: 1,
+    operation: 'token-request',
+    issuer: issuer,
+  }
+}</pre>
+      <div></div>
+      <div class="grid">
+        <select id="public">
+          <option value="0" selected>Key: 0</option>
+          <option value="1">Key: 1</option>
+          <option value="2">Key: 2</option>
         </select>
         <input type="button" value="Issue" onclick="issueTokens()">
+      </div>
+
+
+      <div>
+        <h2>2. Redeem token</h2>
+        <code id="redeem-response">&nbsp;</code>
+      </div>
+      <pre class="code">await fetch('/pst/r', {
+  privateToken: {
+    type: 'private-state-token',
+    version: 1,
+    operation: 'token-redemption',
+    issuer: issuer,
+    refreshPolicy: policy
+  }
+}</pre>
 
         <div></div>
-        <input type="button" value="Redeem" onclick="redeemToken(false)">
-        <div></div>
-        <input type="button" value="Redeem (Refresh)" onclick="redeemToken(true)">
+        <div class="grid">
+          <select id="refresh">
+            <option value="false"></option>
+            <option value="true">Refresh</option>
+          </select>
+          <input type="button" value="Redeem" onclick="redeemToken(false)">
+        </div>
+
+      <div>
+        <h2>3. Forward RR</h2>
+        <code id="response-rr">&nbsp;</code>
+      </div>
+      <pre class="code">await fetch('/pst/echo', {
+  privateToken: {
+    type: 'private-state-token',
+    version: 1,
+    operation: 'send-redemption-record',
+    issuers: [issuer],
+  }
+}</pre>
         <div></div>
         <input type="button" value="Forward RR" onclick="sendRR(true)">
       </div>
