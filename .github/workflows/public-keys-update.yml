@@ -64,20 +64,20 @@ jobs:
         with:
           node-version: latest
       - run: npm install
-      - run: npm --prefix worker install
+      - run: npm --prefix public-access-token.colinbendell.dev/worker install
       - name: Update Cloudflare
         uses: cloudflare/wrangler-action@2.0.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          workingDirectory: 'worker'
+          workingDirectory: 'public-access-token.colinbendell.dev/worker'
   pages:
     name: Update GH Pages
     needs: extract
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: mkdir build;cp public-access-token/*.html build;cp src/*.js build;cp public-state-token/index.html build/pst.html
+      - run: mkdir build;cp public-access-token.colinbendell.dev/*.html build;cp src/*.js build;cp public-state-token.colinbendell.dev/index.html build/pst.html
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
