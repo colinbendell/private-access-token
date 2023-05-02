@@ -2,16 +2,16 @@
   {
     "issuer": "pat-issuer.cloudflare.com",
     "key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAmSYx82S-vjLRtQnwDoTUWfs-F-Hi-DRaYWzsCX96xyDJBsiM44vH3e84_i0ylmG4wHPdbDqOs-9hxtq2yC-5Ays-nZPHMmj-BATD7eCP8tff3gbELIvHB6suJ0Ov8j598aYWGzlna7KdXhdjuo7vVMUK7_2hoSO327Ph7hwZYODpPq8hQD9-EsghYZ5k13WxlZzx2DyqqVWBfUoJukkmuZwGW_nA2_uYwUwmOBoFmNSQh1FJD0MRRTrQrjvopK7mhVZL6y8Lt2cNdLdqEe4hxb_DiKlAzIpZIFpcG-VTmlREKGxQJEde4bCwTo6imlDb72prF9QxT6-cyS3FKFhdLwIDAQAB",
-    "keyID": ""
+    "keyID": "YGxwjWIWHdmidCezltPXnOAwu/H7uuKfaERZm/w9BEU="
   },
   {
     "issuer": "demo-pat.issuer.cloudflare.com",
     "key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAtST104YJy_s9Qugu4pwyLnamhUcEveiw9Lvkp9lm4qDMEnn1SguQu2ovy0pNAa4wVCeN5OPftpCQT8qbwFGgcnUzNTgwBT6SVRJU-ZM7ky4iBBqJ77siiYvaWue2-tOJMU68yt64W20EcS548RAiaZVL0aMFEWZpP81axUSj9knnCs3WoIlcerCGfesxSfov0ZMTRbtO2PUcLnzi0iTWO1NCb1gVHXFe_cV8UiB-uxCaETmpEbkXfvdLMXeJcYVKpr1kb_Mu4Q1TCf0GY0OvXzrDSy0HimuJMy6BdmvZgYzsfP6u0z9VF_PNxOlFPr8Uq5lLyGUcBsaOtDAcm2LEvwIDAQAB",
-    "keyID": ""
+    "keyID": "1XKRLqfqj2Ko7vNvRnVmsI5feQ2JiTiDjf9MNS6iaGk="
   },
   {
     "issuer": "demo-issuer.private-access-tokens.fastly.com",
     "key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA3u2Eqv0aOFEyI9Q42gqtgG2eo5Dgm7H8GUTJGdxOI7L8-10Jr1miUeTofM8d2ddSMTiJPNhsoniy3q2l2omwH_KXgEYuCUgUBykrMcse4m7mG2QijluejXwooHN9KtErBi_jlOlC1MRmuD1aYWI_egv78A6zw1wvUJOAQ3twQpCRWkzt9Q7eiAGMaPD_c2Te3oeOPTIuhpKaqKjVaRtNnng-3eRC5uIE8mGu-41iZM2efdcqO68lE1s4z8hLNM_0ZDzm3zMdLwpQYq1Bp0WXXrLYTQWDDu2MTR_aNTJ44wJdYutuK-FeRHQGIxUDTvA5PDq-M3ZuUHk_gAAHzYu12wIDAQAB",
-    "keyID": ""
+    "keyID": "252MlXJMAflvJYZiNQfUjk1SdnNQcDKvtEr/8vrxL5o="
   }
 ]

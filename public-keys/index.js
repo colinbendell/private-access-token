@@ -132,7 +132,7 @@ async function build() {
     issuers = issuers.filter(i => !!i.key)
     const issuerSet = new Set();
     for (const issuer of issuers) {
-        const hash = Array.from(await crypto.subtle.digest('SHA-256', new Uint8Array(Base64.decode(issuer.key))))
+        const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(Base64.decode(issuer.key)))))
         issuer.keyID = Base64.encode(hash);
         issuerSet.add(issuer.issuer);
     }
