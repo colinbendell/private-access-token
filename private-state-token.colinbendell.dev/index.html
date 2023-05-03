@@ -124,13 +124,27 @@
                 font-size: 1.25rem;
             }
 
-            .pass::after {
-              content: " ✅";
-              color: green;
+            details summary::-webkit-details-marker {
+                display:none;
             }
-            .fail::after {
-              content: " ❌";
-              color: red;
+            details summary::marker {
+                display:none;
+                content:"";
+            }
+            details summary {
+                cursor: pointer;
+                font-size: 1.25rem;
+            }
+            details > summary:before {
+                /* margin-left: -1.75rem; */
+                color: initial;
+                line-height: 1;
+                font-size: 1.5rem;
+                content: "⚠️";
+                font-family: initial;
+            }
+            details:not([open]) > summary:after {
+                content: "...";
             }
         </style>
         <script>
@@ -210,10 +224,15 @@
       <h1>Public State Token v3 Test</h1>
       <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
               <a href="https://github.com/colinbendell/private-access-token">Github Source</a> ⏐
-              <a href="https://wicg.github.io/trust-token-api/l">W3C: PST (Draft)</a> ⏐
-              <a href="https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-21.html">IETF: VOPRF (21)</a>
+              <a href="https://wicg.github.io/trust-token-api/">W3C: PST (Draft)</a> ⏐ IETF:
+              <a href="https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21">VOPRF (21)</a>
+              <a href="https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-16">Hash-to-Curve (16)</a>
       </div>
-
+      <details><summary>You need Chrome 113+ with beta flags</summary>
+        <pre>--enable-blink-features=PrivateStateTokens,PrivateStateTokensAlwaysAllowIssuance
+--enable-features=PrivateStateTokens
+--additional-private-state-token-key-commitments='{"https://private-state-token.colinbendell.dev/":{"PrivateStateTokenV3VOPRF":{"protocol_version":"PrivateStateTokenV3VOPRF","id":1,"batchsize":10,"keys":{"0":{"Y":"AAAAAASqh8oivosFN46xxx7zIK10bh07Younm5hZ90HgglQqOFUC8l2/VSlsOlReOHJ2CrfJ6CG1adnTkKJhZ0BtbSPWBwviQtdl64MWJc7sSg9HPvWfTjDigX5ihbzihG8V8aA=","expiry":"253402300799000000"}}}}}'</pre>
+      </details>
 
       <div class="grid">
         <h2>Request token(s)</h2>
@@ -282,12 +301,6 @@
         <code class="code" id="response-rr">&nbsp;</code>
 
       </div>
-      <div>For this demo to work, you will need to run chrome with:</div>
-      <pre>
---enable-blink-features=PrivateStateTokens,PrivateStateTokensAlwaysAllowIssuance
---enable-features=PrivateStateTokens,PrivacySandboxSettings3
---additional-private-state-token-key-commitments='{"https://private-state-token.colinbendell.dev/":{"PrivateStateTokenV3VOPRF":{"protocol_version":"PrivateStateTokenV3VOPRF","id":1,"batchsize":10,"keys":{"0":{"Y":"AAAAAASqh8oivosFN46xxx7zIK10bh07Younm5hZ90HgglQqOFUC8l2/VSlsOlReOHJ2CrfJ6CG1adnTkKJhZ0BtbSPWBwviQtdl64MWJc7sSg9HPvWfTjDigX5ihbzihG8V8aA=","expiry":"253402300799000000"}}}}}'
-      </pre`>
     </main>
   </body>
 </html>
