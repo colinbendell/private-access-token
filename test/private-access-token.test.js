@@ -1,25 +1,25 @@
 import { should, describe } from 'micro-should';
 import * as assert from 'assert';
 import { PublicKey, Challenge, Token } from '../src/private-access-token.js';
+import { sha256 } from '../src/utils.js';
 
 describe('Private-Access-Tokens', async () => {
     should('PublicKey.from()', async () => {
         const fastly = PublicKey.FASTLY;
 
-        assert.deepStrictEqual(await PublicKey.from(fastly), fastly);
-        assert.deepStrictEqual(await PublicKey.from(fastly.sPKI), fastly);
-        assert.deepStrictEqual(await PublicKey.from(fastly.issuerName), fastly);
-        assert.deepStrictEqual(await PublicKey.from(await fastly.tokenKeyID()), fastly);
+        assert.deepStrictEqual(PublicKey.from(fastly), fastly);
+        assert.deepStrictEqual(PublicKey.from(fastly.sPKI), fastly);
+        assert.deepStrictEqual(PublicKey.from(fastly.issuerName), fastly);
+        assert.deepStrictEqual(PublicKey.from(await fastly.toTokenKeyID()), fastly);
     });
 
     should('Challenge.from()', async () => {
         const challenge = Challenge.from("AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=");
         assert.deepStrictEqual(challenge.issuerName, "pat-issuer.cloudflare.com");
-        assert.deepStrictEqual(await challenge.tokenKey(), PublicKey.CLOUDFLARE);
+        assert.deepStrictEqual(challenge.getTokenKey(), PublicKey.CLOUDFLARE);
         assert.deepStrictEqual(challenge.redemptionContext, []);
         assert.deepStrictEqual(challenge.originInfo, "");
     });
-
 
     should('Challenge.toString()', async () => {
         let challenge = new Challenge(Token.BLIND_RSA, "pat-issuer.cloudflare.com", "", "");
@@ -41,7 +41,6 @@ describe('Private-Access-Tokens', async () => {
 
     });
 
-
     should('Token.from()', async () => {
         const token = Token.from("AAKX5pNIYklVMbf4MFBRPCrv7lsehPyLIb-JrxRRhBn3iH5KiF5TAqGbeBQ6wy0MSzGrQl-h4QSDP-eRlprUYGADYGxwjWIWHdmidCezltPXnOAwu_H7uuKfaERZm_w9BEVQf5R1vludYDOk_kapvOVJC43mFLJV5ibvDk3jwAgRwqiBUdBJogdhNtCJ8SNULbBhU8Y7k3Q67C76LjVf-byGPDFNilZKVtaGIzJU4qzKnegpICe36SPPih5tikp1h5wZkqa3uEBc_p649YmvdwzpXIVIerDX2G7R_gmWjA_w5dsHia3aQ8brx3t0EdN9D0dBnxBhu9-mGUgQk92SiohAmEFCttl8LKhQBFFfiwNuEfRE-JGil1vHPIGqF1np1ekH1Gll-8Qr0Cxb1cFdVL3oz641-UF35uCe6D4-xlJObcIhfqYc7NONo2-l4V9D_IW6WBJIpxjgRk5uPjWWrNft");
         assert.deepStrictEqual(token.tokenType, Token.BLIND_RSA);
@@ -56,7 +55,9 @@ describe('Private-Access-Tokens', async () => {
         assert.ok(await token.verifyChallengeHash(challenge));
 
         PublicKey.CLOUDFLARE.sPKI = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAmSYx82S-vjLRtQnwDoTUWfs-F-Hi-DRaYWzsCX96xyDJBsiM44vH3e84_i0ylmG4wHPdbDqOs-9hxtq2yC-5Ays-nZPHMmj-BATD7eCP8tff3gbELIvHB6suJ0Ov8j598aYWGzlna7KdXhdjuo7vVMUK7_2hoSO327Ph7hwZYODpPq8hQD9-EsghYZ5k13WxlZzx2DyqqVWBfUoJukkmuZwGW_nA2_uYwUwmOBoFmNSQh1FJD0MRRTrQrjvopK7mhVZL6y8Lt2cNdLdqEe4hxb_DiKlAzIpZIFpcG-VTmlREKGxQJEde4bCwTo6imlDb72prF9QxT6-cyS3FKFhdLwIDAQAB";
-        assert.ok(await token.verifyTokenKeyID(PublicKey.CLOUDFLARE));
+
+        PublicKey.CLOUDFLARE.keyID = await PublicKey.CLOUDFLARE.toTokenKeyID();
+        assert.ok(token.verifyTokenKeyID(PublicKey.CLOUDFLARE));
         assert.ok(await token.verifyAuthenticator(PublicKey.CLOUDFLARE));
         assert.ok(await token.verify(challenge, PublicKey.CLOUDFLARE));
     });

@@ -18,8 +18,8 @@ describe('Private-State-Tokens', async () => {
     should('PrivateStateTokenKeyPair.generate()', async () => {
         const keyPair = PrivateStateTokenKeyPair.generate(7);
         assert.deepEqual(keyPair.id, 7);
-        assert.deepEqual(keyPair.publicKey.toString(), 'AAAABwSqh8oivosFN46xxx7zIK10bh07Younm5hZ90HgglQqOFUC8l2/VSlsOlReOHJ2CrfJ6CG1adnTkKJhZ0BtbSPWBwviQtdl64MWJc7sSg9HPvWfTjDigX5ihbzihG8V8aA=');
-        assert.deepEqual(keyPair.secretKey.toString(), 'Mzk0MDIwMDYxOTYzOTQ0NzkyMTIyNzkwNDAxMDAxNDM2MTM4MDUwNzk3MzkyNzA0NjU0NDY2Njc5NDY5MDUyNzk2Mjc2NTkzOTkxMTMyNjM1NjkzOTg5NTYzMDgxNTIyOTQ5MTM1NTQ0MzM2NTM5NDI2NDI=');
+        assert.deepEqual(keyPair.publicKey.toString(), 'BKqHyiK+iwU3jrHHHvMgrXRuHTtii6ebmFn3QeCCVCo4VQLyXb9VKWw6VF44cnYKt8noIbVp2dOQomFnQG1tI9YHC+JC12XrgxYlzuxKD0c+9Z9OMOKBfmKFvOKEbxXxoA==');
+        assert.deepEqual(keyPair.secretKey.toString(), '////////////////////////////////x2NNgfQ3Ld9YGg2ySLCneuzsGWrMxSly');
     });
 
     should('KeyCommitment', async () => {
