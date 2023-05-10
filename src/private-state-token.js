@@ -112,18 +112,29 @@ function hashToScalar(msg, count, dst = "TrustToken VOPRF Experiment V2 HashToSc
 export class PrivateStateTokenSecretKey {
     /**
      * @param {number} id The ID of the secret key.
-     * @param {number} value The value of the secret key.
+     * @param {number} scalar The value of the secret key.
      */
-    constructor(id, value) {
+    constructor(id, scalar) {
         this.id = id;
-        this.value = value;
+        this.scalar = scalar;
     }
+
+    static from(id, value) {
+        if (typeof value === 'string') {
+            value = Base64.decode(value);
+        }
+        if (value instanceof Uint16Array || Array.isArray(value)) {
+            value = DataBuffer.bytesToNumber(Array.from(value));
+        }
+        return new PrivateStateTokenSecretKey(id, value);
+    }
+
 
     /**
      * @returns {Buffer} Returns the value of the secret key as bytes.
      */
     toBytes() {
-        return this.value;
+        return DataBuffer.numberToBytes(this.scalar, 48);
     }
 
     /**
@@ -143,30 +154,29 @@ export class PrivateStateTokenSecretKey {
 export class PrivateStateTokenPublicKey {
     /**
      * @param {number} id The ID of the secret key.
-     * @param {ECPoint} value The value of the secret key.
+     * @param {number} scalar The value of the secret key.
      */
-    constructor(id, value) {
+    constructor(id, scalar) {
         this.id = id;
-        this.value = value;
+        this.scalar = scalar;
+    }
+
+    static from(id, value) {
+        if (typeof value === 'string') {
+            value = Base64.decode(value);
+        }
+        if (ArrayBuffer.isView(value) || Array.isArray(value)) {
+            value = DataBuffer.bytesToNumber(Array.from(value));
+        }
+        return new PrivateStateTokenPublicKey(id, value);
     }
 
     /**
-     * Returns the public key as bytes.
-     * The structure takes the form:
-     * ```
-     * struct {
-     *    uint32 id;
-     *    ECPoint pub;
-     * } TrustTokenPublicKey;
-     * ```
-     * @returns {Uint8Array} Returns the public key as bytes.
+     *
+     * @returns {Array<number>} Returns the public key as bytes.
      */
     toBytes() {
-        const buffer = new DataBuffer();
-        buffer.writeInt(this.id, 4);
-        buffer.writeBytes(this.value.toBytes());
-
-        return buffer.toBytes();
+        return DataBuffer.numberToBytes(this.scalar, ECPoint.length); // 384 *2 + 1
     }
 
     /**
@@ -188,9 +198,26 @@ export class PrivateStateTokenKeyPair {
      * @returns {PrivateStateTokenKeyPair} The key pair.
      */
     constructor(id, publicKey, secretKey) {
-        this.id = id;
+        this.#id = id;
         this.publicKey = publicKey;
         this.secretKey = secretKey;
+    }
+
+    #id;
+
+    set id(value = 0) {
+        this.#id = value;
+        this.publicKey.id = value;
+        this.secretKey.id = value;
+    }
+
+    get id() {
+        return this.#id;
+    }
+
+    static from(publicKey, secretKey, id=0) {
+
+        return new PrivateStateTokenKeyPair(id, publicKey, secretKey);
     }
 
     /**
@@ -208,10 +235,9 @@ export class PrivateStateTokenKeyPair {
         const priv = ORDER_P384 - 1n;
         // Changes to the public key must be reflected in the key commitment
         const pub = ec.getPublicKey(priv, false);
-        const publicKey = new PrivateStateTokenPublicKey(id, new ECPoint(pub));
-        const secretKey = new PrivateStateTokenSecretKey(id, priv);
+        const publicKey = PrivateStateTokenPublicKey.from(id, pub);
+        const secretKey = PrivateStateTokenSecretKey.from(id, priv);
         return new PrivateStateTokenKeyPair(id, publicKey, secretKey);
-
     }
 }
 
@@ -235,6 +261,18 @@ export class KeyCommitment {
         this.host = host;
     }
 
+    /**
+     * Returns the public key as bytes.
+     * The structure takes the form:
+     * ```
+     * struct {
+     *    uint32 id;
+     *    ECPoint pub;
+     * } TrustTokenPublicKey;
+     * ```
+     * @returns {Uint8Array} Returns the public key as bytes.
+     */
+
     toJSON() {
         const keyCommitment = {
             "protocol_version": this.protocol_version,
@@ -243,8 +281,14 @@ export class KeyCommitment {
             "keys": {}
         };
         for (const key of this.publicKeys) {
-            keyCommitment["keys"][key.id] = {
-                "Y": key.toString(),
+            const buffer = new DataBuffer();
+            buffer.writeInt32(key.id);
+            buffer.writeBytes(key.toBytes());
+
+            const publicKey = Base64.encode(buffer.toBytes());
+
+            keyCommitment.keys[key.id] = {
+                "Y": publicKey,
                 // epoch timestamp in microseconds
                 // Friday, December 31, 9999 11:59:59 PM GMT
                 "expiry": "253402300799000000",
@@ -505,21 +549,34 @@ export class PrivateStateTokenIssuer {
     static get PROTOCOL_VERSION() { return "PrivateStateTokenV3VOPRF"; }
 
     /**
-     * @param {PrivateStateTokenKeyPair} keyPair A key pair to use for trust token operations.
+     * @param {Array<PrivateStateTokenKeyPair} keys A key pair to use for trust token operations.
      * @param {number} maxBatchSize The max batch size for trust tokens.
      * @param {string} host The server origin for this issuer.
      */
-    constructor(keyPair, maxBatchSize, host) {
-        this.keyPair = keyPair;
+    constructor(keys, maxBatchSize, host) {
+        if (!Array.isArray(keys)) keys = [keys];
+
+        this.#keys = new Map(keys.map(k => [k.id, k]));
         this.maxBatchSize = maxBatchSize;
         this.host = host;
         this.keyCommitment = new KeyCommitment(
             PrivateStateTokenIssuer.PROTOCOL_VERSION,
             PrivateStateTokenIssuer.KEY_COMMITMENT_ID,
             this.maxBatchSize,
-            [this.keyPair.publicKey],
+            this.publicKeys,
             this.host
         );
+    }
+
+    #keys;
+
+    get publicKeys() {
+        return [...this.#keys.values()].map(k => k.publicKey);
+    }
+
+    addKey(key) {
+        this.#keys.set(key.id, key);
+        this.keyCommitment.publicKeys.push(key.publicKey);
     }
 
     /**
@@ -569,20 +626,21 @@ export class PrivateStateTokenIssuer {
      * @returns {IssueResponse} The issuance response.
      */
     issue(keyId, request) {
+        const keyPair = this.#keys.get(keyId);
         // console.debug(`Issuance request:`, request);
-        const secretKey = this.keyPair.secretKey;
+        const secretKey = keyPair.secretKey;
         const count = request.nonces.length;
         const exponentList = [];
         const signedNonces = [];
 
-        const batch = Array.from(this.keyPair.publicKey.value.toBytes());
+        let batch = Array.from(keyPair.publicKey.toBytes());
         for (const blindedToken of request.nonces) {
             // const blindedToken = request.nonces[i];
-            const z = blindedToken.toPoint().multiply(ec.utils.normPrivateKeyToScalar(secretKey.value));
+            const z = blindedToken.toPoint().multiply(secretKey.scalar);
             signedNonces.push(new SignedNonce(z));
 
-            batch.push(...blindedToken.toBytes());
-            batch.push(...z.toRawBytes(false));
+            batch = batch.concat(blindedToken.toBytes());
+            batch = batch.concat(Array.from(z.toRawBytes(false)));
         }
 
         // Batch DLEQ
@@ -608,7 +666,7 @@ export class PrivateStateTokenIssuer {
             const e = exponentList[i];
             zBatch = zBatch.add(z.toPoint().multiply(e));
         }
-        const proof = this.#generateDLEQProof(this.keyPair, blindedTokenBatch, zBatch);
+        const proof = PrivateStateTokenIssuer.#generateDLEQProof(keyPair, blindedTokenBatch, zBatch);
 
         return new IssueResponse(keyId, signedNonces, proof);
     }
@@ -620,7 +678,7 @@ export class PrivateStateTokenIssuer {
      * @param {Point} btBatch The batched form of the blinded tokens.
      * @param {Point} zBatch The batched form of the signed tokens.
      */
-    #generateDLEQProof(keyPair, btBatch, zBatch) {
+    static #generateDLEQProof(keyPair, btBatch, zBatch) {
         // Fix the random number r
         const r = ORDER_P384 - 1n;
         const k0 = ec.ProjectivePoint.BASE.multiply(r);
@@ -628,14 +686,14 @@ export class PrivateStateTokenIssuer {
 
         const buf = new DataBuffer();
         buf.writeString("DLEQ\0");
-        buf.writeBytes(keyPair.publicKey.value.toBytes());
+        buf.writeBytes(keyPair.publicKey.toBytes());
         buf.writeBytes(btBatch.toRawBytes(false));
         buf.writeBytes(zBatch.toRawBytes(false));
         buf.writeBytes(k0.toRawBytes(false));
         buf.writeBytes(k1.toRawBytes(false));
 
         const c = hashToScalar(buf.toBytes(), 1)[0][0];
-        const u = (r + c * ec.utils.normPrivateKeyToScalar(keyPair.secretKey.value)) % ORDER_P384;
+        const u = (r + c * keyPair.secretKey.scalar) % ORDER_P384;
 
         const result = [].concat(
             DataBuffer.numberToBytes(c, ORDER_P384_LEN),
@@ -692,7 +750,7 @@ export class PrivateStateTokenIssuer {
         // console.debug(`Redeem request:`, request);
         // const evaluatedElement = hashToCurve(Uint8Array.from(request.nonce), {DST: "HashToGroup-OPRFV1-\x01-P384-SHA384\0"});
         const evaluatedElement = hashToGroup(request.nonce);
-        const issuedElement = evaluatedElement.multiply(ec.utils.normPrivateKeyToScalar(this.keyPair.secretKey.value));
+        const issuedElement = evaluatedElement.multiply(this.#keys.get(request.keyID)?.secretKey?.scalar);
 
         if (request.point.toPoint().equals(issuedElement)) {
             return new RedeemResponse(redemptionRecord);

@@ -141,11 +141,32 @@ export class DataBuffer {
     }
 
     writeInt(value = 0, size = 2) {
-        this.buffer.push(...DataBuffer.numberToBytes(value, size));
+        this.buffer = this.buffer.concat(DataBuffer.numberToBytes(value, size));
     }
 
-    writeBytes(bytes = []) {
-        this.buffer.push(...bytes);
+    writeInt8(value = 0) {
+        this.writeInt(value, 1);
+    }
+    writeInt16(value = 0) {
+        this.writeInt(value, 1);
+    }
+    writeInt32(value = 0) {
+        this.writeInt(value, 4);
+    }
+    writeInt64(value = 0) {
+        this.writeInt(value, 8);
+    }
+
+    writeBytes(data = []) {
+        if (data instanceof Uint8Array) {
+            data = Array.from(data);
+        }
+        else if (!Array.isArray(data)) {
+            data = [data];
+        }
+
+
+        this.buffer = this.buffer.concat(data);
     }
 
     writeString(str = '') {
@@ -168,7 +189,7 @@ export class DataBuffer {
         // return data?.split('')?.map( c => c.charCodeAt(0)) ?? [];
     }
 
-    static numberToBytes(value = 0n, length) {
+    static numberToBytes(value = 0n, length = 1) {
 
         // minor optimization to avoid casting to string and back
         if (length <= 4) {
@@ -264,24 +285,22 @@ export class CBOR {
                 return -1 - length;
             case 2:
                 if (length < 0) {
-                    const result = [];
+                    let result = [];
                     while ((length = CBOR.#readIndefiniteStringLength(data, majorType)) >= 0) {
-                        result.push(...data.readBytes(length));
+                        result = result.concat(data.readBytes(length));
                     }
                     return result;
                 }
                 return data.readBytes(length);
             case 3:
-                const result = [];
                 if (length < 0) {
+                    let result = [];
                     while ((length = CBOR.#readIndefiniteStringLength(data, majorType)) >= 0) {
-                        result.push(...data.readBytes(length));
+                        result = result.concat(data.readBytes(length));
                     }
+                    DataBuffer.bytesToString(result);
                 }
-                else {
-                    result.push(...data.readBytes(length));
-                }
-                return DataBuffer.bytesToString(result);
+                return DataBuffer.bytesToString(data.readBytes(length));
             case 4:
                 const retArray = [];
                 if (length < 0) {
