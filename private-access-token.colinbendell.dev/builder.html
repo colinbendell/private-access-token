@@ -184,7 +184,7 @@
 
             document.getElementById('challenge_base64_debug').innerHTML = challenge.toString();
             document.getElementById('challenge').value = challenge.toString();
-            document.getElementById('token-key').value = await challenge.tokenKey();
+            document.getElementById('token-key').value = challenge.getTokenKey().sPKI;
         }
 
         function init() {

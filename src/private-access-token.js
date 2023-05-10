@@ -42,7 +42,7 @@ export class Challenge {
         return this.#redemptionContext || [];
     }
 
-    tokenKey() {
+    getTokenKey() {
         return PublicKey.from(this.issuerName);
     }
 
@@ -128,7 +128,7 @@ export class PublicKey {
         return this.sPKI;
     }
 
-    async tokenKeyID() {
+    async toTokenKeyID() {
         return await sha256(this.toByteArray());
     }
 
@@ -194,7 +194,7 @@ export class Token {
         return Base64.urlEncode(this.toByteArray());
     }
 
-    tokenKey() {
+    getTokenKey() {
         return PublicKey.from(this.tokenKeyID);
     }
 

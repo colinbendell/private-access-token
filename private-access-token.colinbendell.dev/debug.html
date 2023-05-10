@@ -292,7 +292,7 @@
             const challengeRaw = params.challenge || defaultChallenge.toString();
             document.getElementById('challenge').value = decodeURIComponent(challengeRaw);
 
-            const tokenKeyRaw = params["token-key"] || (await defaultChallenge.tokenKey()).sPKI;
+            const tokenKeyRaw = params["token-key"] || defaultChallenge.getTokenKey().sPKI;
             document.getElementById('token-key').value = decodeURIComponent(tokenKeyRaw);
 
             update();

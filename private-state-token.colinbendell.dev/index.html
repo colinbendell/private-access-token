@@ -149,9 +149,8 @@
         </style>
         <script>
           const issuer = location.origin;
-          var x = 0;
           async function issueTokens() {
-            var publicValue = document.getElementById('public').value;
+            const publicValue = document.getElementById('public').value;
             try {
                 const r = await fetch(`https://private-state-token.colinbendell.dev/pst/i?id=${publicValue}`, {
                 privateToken: {
@@ -172,10 +171,7 @@
           }
 
           async function redeemToken(refresh) {
-            var policy = "none";
-            if (refresh) {
-              policy = "refresh";
-            }
+            const policy = refresh ? "refresh" : "none";
             try {
               const r = await fetch("https://private-state-token.colinbendell.dev/pst/r", {
                 privateToken: {
@@ -206,8 +202,16 @@
                 }
               });
               const text = await r.text();
-              const body = text.split(';')[1].split('"')[1];
-              document.getElementById('response-rr').innerText = atob(body);
+              let body;
+              try {
+                body = text?.split(';')[1]?.split('"')[1] || text;
+                atob(body);
+              }
+              catch {
+                body = text;
+              }
+
+              document.getElementById('response-rr').innerText = body;
             }
             catch(e) {
                 document.getElementById('response-rr').innerText = e.message;

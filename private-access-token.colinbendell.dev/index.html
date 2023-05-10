@@ -275,7 +275,7 @@
             ]);
 
             const tokenKeyID = tokenBytes.slice(66,98);
-            const tokenPublicKey = await token.tokenKey();
+            const tokenPublicKey = token.getTokenKey().sPKI;
 
             tests.push([
                 'token_key_id == sha256(token_key)',
@@ -325,7 +325,7 @@
             const challengeRaw = params.challenge || cookies.challenge || defaultChallenge.toString();
             document.getElementById('challenge').value = decodeURIComponent(challengeRaw);
 
-            const publicKeyRaw = params["token-key"] || cookies["token-key"] || (await defaultChallenge.tokenKey()).sPKI;
+            const publicKeyRaw = params["token-key"] || cookies["token-key"] || defaultChallenge.getTokenKey().sPKI;
             document.getElementById('token-key').value = decodeURIComponent(publicKeyRaw);
 
             parseToken();
