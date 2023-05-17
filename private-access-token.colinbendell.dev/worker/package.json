@@ -8,18 +8,19 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "wrangler": "^2.18.0",
     "@noble/curves": "^1.0.0",
     "@noble/hashes": "^1.0.0"
   },
   "scripts": {
     "format": "prettier --write '**/*.{js,css,json,md}'",
-    "build": "wrangler publish index.js --dry-run --outdir dist  --latest",
-    "publish": "wrangler publish index.js --latest"
+    "build": "wrangler deploy index.js --dry-run --outdir dist  --latest",
+    "publish": "wrangler deploy index.js --latest",
+    "serve": "miniflare --watch --debug --modules dist/index.js"
   },
   "devDependencies": {
-    "esbuild": "^0.17.18",
-    "miniflare": "^2.13.0",
-    "prettier": "^2"
+    "esbuild": "^0.17.19",
+    "miniflare": "^3",
+    "prettier": "^2.8.8",
+    "wrangler": "^3"
   }
 }
