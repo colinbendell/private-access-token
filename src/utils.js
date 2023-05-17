@@ -1,27 +1,49 @@
-// host to network long
-export function hostToNetworkLong(n) { return DataBuffer.numberToBytes(n, 4); }
-export function h2nl(n) { return DataBuffer.numberToBytes(n, 4); }
-
-// host to network short
-export function hostToNetworkShort(n) { return DataBuffer.numberToBytes(n, 2); }
-export function h2ns(n) { return DataBuffer.numberToBytes(n, 2); }
-
-// network to host long
-export function networkToHostLong(n) { return DataBuffer.bytesToNumber(n); }
-export function n2hl(n) { return DataBuffer.bytesToNumber(n); }
-
-// network to host short
-export function networkToHostShort(n) { return DataBuffer.bytesToNumber(n); }
-export function n2hs(n) { return DataBuffer.bytesToNumber(n); }
+/**
+ * host to network long
+ * @param {Number} n - Number to be encoded to byte array in network byte order.
+ * @return {Array<number>} - 4 byte Encoded number in network byte order (big endian)
+ */
+export function hostToNetworkLong(n) {
+    return DataBuffer.numberToBytes(n, 4);
+}
+export { hostToNetworkLong as h2nl }
 
 /**
- * I2OSP function
- * @param {Number} value - Number to be encoded to byte array in network byte order.
- * @param {Number} length - Length of byte array
- * @return {Uint8Array} - Encoded number.
+ * host to network short
+ * @param {Number} n - Number to be encoded to byte array in network byte order.
+ * @return {Array<number>} - 2 byte Encoded number in network byte order (big endian)
  */
-export function i2osp(value = 0, length = 2) { return DataBuffer.numberToBytes(value, length); }
+export function hostToNetworkShort(n) {
+    return DataBuffer.numberToBytes(n, 2);
+}
+export { hostToNetworkShort as h2ns }
+export { hostToNetworkShort as i2osp }
 
+/**
+ * network to host long
+ * @param {Array<number>} n - 4 byte Encoded number in network byte order (big endian)
+ * @return {Number} - Decoded number
+ */
+export function networkToHostLong(n) {
+    return DataBuffer.bytesToNumber(n);
+}
+export { networkToHostLong as n2hl }
+
+/**
+ * network to host short
+ * @param {Array<number>} n - 2 byte Encoded number in network byte order (big endian)
+ * @return {Number} - Decoded number
+ */
+export function networkToHostShort(n) {
+    return DataBuffer.bytesToNumber(n);
+}
+export { networkToHostShort as n2hs }
+
+/**
+ * convenience function to sha256 hash a string and return a byte array
+ * @param {string} data - string to be hashed
+ * @return {Array<number>} - sha256 hash of the string
+ */
 export async function sha256(data = []) {
     if (Array.isArray(data)) {
         data = new Uint8Array(data);
@@ -90,7 +112,9 @@ export class DataBuffer {
         this.offset = 0;
     }
 
-    toBytes() { return this.buffer; }
+    toBytes() {
+        return this.buffer;
+    }
 
     /**
     * Reads `size` bytes from the buffer and increments the offset by the same amount.
@@ -264,81 +288,78 @@ export class CBOR {
         const additionalInformation = initialByte & 0x1f;
 
         if (majorType === 7) {
-            switch (additionalInformation) {
-                case 25:
-                    return data.readInt16();
-                case 26:
-                    return data.readInt32();
-                case 27:
-                    return data.readInt64();
-            }
+            if (additionalInformation === 25)
+                return data.readInt16();
+            if (additionalInformation === 26)
+                return data.readInt32();
+            if (additionalInformation === 27)
+                return data.readInt64();
         }
 
         let length = CBOR.#readLength(additionalInformation, data);
-        if (length < 0 && (majorType < 2 || majorType > 6))
-            throw "Invalid length";
+        if (length < 0 && (majorType < 2 || majorType > 6)) throw "Invalid length";
 
-        switch (majorType) {
-            case 0: // 0 - 2^53
-                return length;
-            case 1: // -1 - -2^53
-                return -1 - length;
-            case 2:
-                if (length < 0) {
-                    let result = [];
-                    while ((length = CBOR.#readIndefiniteStringLength(data, majorType)) >= 0) {
-                        result = result.concat(data.readBytes(length));
-                    }
-                    return result;
+        if (majorType === 0) {
+            // 0 to 2^53
+            return length;
+        }
+        else if (majorType === 1) {
+            // -1 to -2^53
+            return -1 - length;
+        }
+        else if (majorType === 2) {
+            if (length < 0) {
+                let result = [];
+                while ((length = CBOR.#readIndefiniteStringLength(data, majorType)) >= 0) {
+                    result = result.concat(data.readBytes(length));
                 }
-                return data.readBytes(length);
-            case 3:
-                if (length < 0) {
-                    let result = [];
-                    while ((length = CBOR.#readIndefiniteStringLength(data, majorType)) >= 0) {
-                        result = result.concat(data.readBytes(length));
-                    }
-                    DataBuffer.bytesToString(result);
+                return result;
+            }
+            return data.readBytes(length);
+        }
+        else if (majorType === 3) {
+            if (length < 0) {
+                let result = [];
+                while ((length = CBOR.#readIndefiniteStringLength(data, majorType)) >= 0) {
+                    result = result.concat(data.readBytes(length));
                 }
-                return DataBuffer.bytesToString(data.readBytes(length));
-            case 4:
-                const retArray = [];
-                if (length < 0) {
-                    while (!CBOR.#readBreak(data)) {
-                        retArray.push(CBOR.#decodeItem(data))
-                    }
+                DataBuffer.bytesToString(result);
+            }
+            return DataBuffer.bytesToString(data.readBytes(length));
+        }
+        else if (majorType === 4) {
+            const retArray = [];
+            if (length < 0) {
+                while (!CBOR.#readBreak(data)) {
+                    retArray.push(CBOR.#decodeItem(data))
                 }
-                else {
-                    for (let i = 0; i < length; ++i) {
-                        retArray.push(CBOR.#decodeItem(data));
-                    }
+            }
+            else {
+                for (let i = 0; i < length; ++i) {
+                    retArray.push(CBOR.#decodeItem(data));
                 }
-                return retArray;
-            case 5:
-                const retObject = {};
-                for (let i = 0; i < length || length < 0 && !CBOR.#readBreak(data); ++i) {
-                    const key = CBOR.#decodeItem(data);
-                    retObject[key] = CBOR.#decodeItem(data);
-                }
-                return retObject;
-            case 6:
-                return;
-            // return tagger(decodeItem(), length);
-            case 7:
-                switch (length) {
-                    case 20:
-                        return false;
-                    case 21:
-                        return true;
-                    case 22:
-                        return null;
-                    case 23:
-                        return undefined;
-                    default:
-                        return undefined;
-                    //     return simpleValue(length);
-                }
+            }
+            return retArray;
+        }
+        else if (majorType === 5) {
+            const retObject = {};
+            for (let i = 0; i < length || length < 0 && !CBOR.#readBreak(data); ++i) {
+                const key = CBOR.#decodeItem(data);
+                retObject[key] = CBOR.#decodeItem(data);
+            }
+            return retObject;
+        }
+        else if (majorType === 6) {
+            return;
+        // return tagger(decodeItem(), length);
+        }
+        else if (majorType === 7) {
+            if (length === 20) return false;
+            if (length === 21) return true;
+            if (length === 22) return null;
+            if (length === 23) return undefined;
+            // return simpleValue(length);
+            return undefined;
         }
     }
-
 }
