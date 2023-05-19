@@ -1,4 +1,5 @@
 import { Base64, DataBuffer, CBOR} from './utils.js';
+import { VOPRF } from './voprf.js';
 
 import { hash_to_field } from '@noble/curves/abstract/hash-to-curve';
 import { p384 as ec, hashToCurve} from '@noble/curves/p384';
@@ -186,6 +187,10 @@ export class PrivateStateTokenPublicKey {
      */
     toBytes() {
         return DataBuffer.numberToBytes(this.scalar, VOPRF_P384.BYTES * 2 + 1); // 384 *2 + 1 or 0x04 + x + y
+    }
+
+    toPoint() {
+        return Point.fromHex(Uint8Array.from(this.toBytes()));
     }
 
     /**
@@ -639,8 +644,8 @@ export class PrivateStateTokenIssuer {
         name: "PrivateStateTokenV1VOPRF",
         suite: "P384_XMD:SHA-384_SSWU_RO_",
         hash: sha384,
-        hashToGroupDST: "HashToGroup-OPRFV1-\x01-P384-SHA384\0",
-        hashToScalarDST: "HashToScalar-OPRFV1-\x01-P384-SHA384\0",
+        hashToGroupDST: "HashToGroup-OPRFV1-\x01-P384-SHA384",
+        hashToScalarDST: "HashToScalar-OPRFV1-\x01-P384-SHA384",
     };
 
     static VERSIONS = new Map([
@@ -862,58 +867,89 @@ export class PrivateStateTokenIssuer {
         // TODO: is null the right way to handle errors?
         if (!keyPair) return null;
 
-        const config = PrivateStateTokenIssuer.getVersionConfig(version);
-        const hashTofieldConfig = {
-            DST: config.hashToScalarDST,
-            m: 1,
-            p: VOPRF_P384.ORDER,
-            k: 192,
-            expand: 'xmd',
-            hash: config.hash
+        if (version === "PrivateStateTokenV1VOPRF") {
+            const voprf = new VOPRF();
+            const k = keyPair.secretKey.scalar;
+            const r = VOPRF_P384.ORDER - 1n;
+            const BTs = request.nonces;
+            const signedNonces = [];
+
+            for (const blindedToken of BTs) {
+                console.log(blindedToken, k);
+                const z = blindedToken.multiply(k);
+                signedNonces.push(z);
+            }
+
+            const A = ec.ProjectivePoint.BASE;
+            const B = ec.ProjectivePoint.BASE.multiply(k); // public key
+            const C = BTs.map(blindedToken => blindedToken.toPoint());
+            const D = signedNonces.map(evaluatedToken => evaluatedToken.toPoint());
+            const proof = voprf.generateProof(k, A, B, C, D, r);
+
+            const serializedProof = [].concat(
+                DataBuffer.numberToBytes(proof[0], VOPRF_P384.BYTES),
+                DataBuffer.numberToBytes(proof[1], VOPRF_P384.BYTES)
+            );
+
+            return new IssueResponse(keyId, signedNonces, serializedProof);
         }
+        else {
+            const config = PrivateStateTokenIssuer.getVersionConfig(version);
+            const hashTofieldConfig = {
+                DST: config.hashToScalarDST,
+                m: 1,
+                p: VOPRF_P384.ORDER,
+                k: 192,
+                expand: 'xmd',
+                hash: config.hash
+            }
 
-        const secretKey = keyPair.secretKey;
-        const count = request.nonces.length;
+            const secretKey = keyPair.secretKey;
+            const count = request.nonces.length;
+            // Fix the random number r.
+            // TODO: this is bad, but useful for testing. refactor.
+            const r = VOPRF_P384.ORDER - 1n;
 
-        const exponentList = [];
-        const signedNonces = [];
+            const exponentList = [];
+            const signedNonces = [];
 
-        let batch = Array.from(keyPair.publicKey.toBytes());
-        for (const blindedToken of request.nonces) {
-            // const blindedToken = request.nonces[i];
-            const z = blindedToken.multiply(secretKey.scalar);
-            signedNonces.push(z);
+            let batch = Array.from(keyPair.publicKey.toBytes());
+            for (const blindedToken of request.nonces) {
+                // const blindedToken = request.nonces[i];
+                const z = blindedToken.multiply(secretKey.scalar);
+                signedNonces.push(z);
 
-            batch = batch.concat(blindedToken.toBytes());
-            batch = batch.concat(z.toBytes());
+                batch = batch.concat(blindedToken.toBytes());
+                batch = batch.concat(z.toBytes());
+            }
+
+            // Batch DLEQ
+            for (let i = 0; i < count; i++) {
+                const buf = new DataBuffer();
+                buf.writeString("DLEQ BATCH\0");
+                buf.writeBytes(batch);
+                buf.writeInt(i, 2);
+                const exponent = hash_to_field(Uint8Array.from(buf.toBytes()), 1, hashTofieldConfig)[0][0];
+                exponentList.push(exponent);
+            }
+
+            let blindedTokenBatch = ec.ProjectivePoint.ZERO;
+            for (let i = 0; i < count; i++) {
+                const blindedToken = request.nonces[i];
+                const exponent = exponentList[i];
+                blindedTokenBatch = blindedTokenBatch.add(blindedToken.toPoint().multiply(exponent));
+            }
+
+            let zBatch = ec.ProjectivePoint.ZERO;
+            for (let i = 0; i < count; i++) {
+                const z = signedNonces[i];
+                const e = exponentList[i];
+                zBatch = zBatch.add(z.toPoint().multiply(e));
+            }
+            const proof = this.#generateDLEQProof(keyPair, blindedTokenBatch, zBatch);
+
+            return new IssueResponse(keyId, signedNonces, proof);
         }
-
-        // Batch DLEQ
-        for (let i = 0; i < count; i++) {
-            const buf = new DataBuffer();
-            buf.writeString("DLEQ BATCH\0");
-            buf.writeBytes(batch);
-            buf.writeInt(i, 2);
-            const exponent = hash_to_field(Uint8Array.from(buf.toBytes()), 1, hashTofieldConfig)[0][0];
-            exponentList.push(exponent);
-        }
-
-        let blindedTokenBatch = ec.ProjectivePoint.ZERO;
-        for (let i = 0; i < count; i++) {
-            const blindedToken = request.nonces[i];
-            const exponent = exponentList[i];
-            blindedTokenBatch = blindedTokenBatch.add(blindedToken.toPoint().multiply(exponent));
-        }
-
-        let zBatch = ec.ProjectivePoint.ZERO;
-        for (let i = 0; i < count; i++) {
-            const z = signedNonces[i];
-            const e = exponentList[i];
-            zBatch = zBatch.add(z.toPoint().multiply(e));
-        }
-        const proof = this.#generateDLEQProof(keyPair, blindedTokenBatch, zBatch);
-
-        return new IssueResponse(keyId, signedNonces, proof);
     }
 
     /**
@@ -1002,6 +1038,7 @@ export class PrivateStateTokenIssuer {
         buf.writeBytes(k0.toRawBytes(false));
         buf.writeBytes(k1.toRawBytes(false));
 
+        // hashToScalar = hash_to_field for
         const c = hash_to_field(Uint8Array.from(buf.toBytes()), 1, hashTofieldConfig)[0][0];
 
         const u = (r + c * keyPair.secretKey.scalar) % VOPRF_P384.ORDER;

@@ -2,7 +2,7 @@ import { PrivateStateTokenIssuer, PrivateStateTokenKeyPair, IssueRequest, Redeem
 
 const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAySgKXvR721O-HwSCp6BF8TeuHicxXGVHXJN4EB8npTqPvHY_3JsFIv19McA1L_Hls3UzYxU0XpOgHKAk34hMPkndSXxOerIbkadB_CcGCGM3mS-MrXbJiPIuFgBG1c4mu9avO3K1PWqsKlOpNbqr3V0u4BiLmYsxv7KoBsqjvx76B8USG1V2-VBOhuDmcIwSxzaawL3Rm_dqQHqe805K_T89EWQFXwEL50CjRQCJvBgvj77mAuVESaB4GPQeDcPqKSlZ4wfa6jcuT9Va-g7stXB7YRLo2TZxdG5n_1yP6-jhXLmQ7q5ijd4DKvWX_BNTIc_g3efHdgEFkfHiizu1qwIDAQAB";
 const CHALLENGE = "AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=";
-const issuer = new PrivateStateTokenIssuer('https://example.com', 11)
+const issuer = new PrivateStateTokenIssuer('https://example.com', 1)
 
 export default {
     async fetch(request, env) {

@@ -166,19 +166,20 @@ export class DataBuffer {
 
     writeInt(value = 0, size = 2) {
         this.buffer = this.buffer.concat(DataBuffer.numberToBytes(value, size));
+        return this;
     }
 
     writeInt8(value = 0) {
-        this.writeInt(value, 1);
+        return this.writeInt(value, 1);
     }
     writeInt16(value = 0) {
-        this.writeInt(value, 1);
+        return this.writeInt(value, 1);
     }
     writeInt32(value = 0) {
-        this.writeInt(value, 4);
+        return this.writeInt(value, 4);
     }
     writeInt64(value = 0) {
-        this.writeInt(value, 8);
+        return this.writeInt(value, 8);
     }
 
     writeBytes(data = []) {
@@ -191,10 +192,11 @@ export class DataBuffer {
 
 
         this.buffer = this.buffer.concat(data);
+        return this;
     }
 
     writeString(str = '') {
-        this.writeBytes(DataBuffer.stringToBytes(str));
+        return this.writeBytes(DataBuffer.stringToBytes(str));
     }
 
     static bytesToString(bytes = []) {
