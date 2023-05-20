@@ -173,7 +173,7 @@ export class DataBuffer {
         return this.writeInt(value, 1);
     }
     writeInt16(value = 0) {
-        return this.writeInt(value, 1);
+        return this.writeInt(value, 2);
     }
     writeInt32(value = 0) {
         return this.writeInt(value, 4);
