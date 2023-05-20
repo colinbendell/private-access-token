@@ -19,6 +19,12 @@ export class VOPRF {
         this.hash = sha384;
     }
 
+    /**
+     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-hash-to-scalar
+     * > The helper function HashToScalar is as defined below, and is an instantiation of the HashToScalar function defined in [I-D.irtf-cfrg-hash-to-curve].
+     * @param {Array<number>} msg the message to use for hashing
+     * @returns {BigInt} the scalar represetnation
+     */
     hashToScalar(msg) {
         // const hashTofieldConfig = {
         //     DST: "HashToScalar-" + this.contextString,
@@ -36,11 +42,18 @@ export class VOPRF {
         return ByteBuffer.bytesToNumber(xmd) % this.order;
     }
 
+    /**
+     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-hash-to-group
+     * > The helper function HashToGroup is as defined below, and is an instantiation of the HashToCurve function defined in [I-D.irtf-cfrg-hash-to-curve].
+     * @param {Array<number>} msg the message to use for hashing
+     * @returns {Point} the point represetnation
+     */
     hashToGroup(msg) {
         const DST = "HashToGroup-" + this.contextString;
         const hash = this.hash;
         return hashToCurve(Uint8Array.from(msg), { DST, hash })
     }
+
     /**
      * from: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-configuration
      *
@@ -52,6 +65,10 @@ export class VOPRF {
      * def CreateContextString(mode, identifier):
      *   return "OPRFV1-" || I2OSP(mode, 1) || "-" || identifier
      * ```
+     *
+     * @param {string} mode the mode to use
+     * @param {string} identifier for the suite
+     * @returns {string} the context string
      */
     static createContextString(mode, identifier) {
         return "OPRFV1-" + mode + "-" + identifier;
@@ -101,11 +118,12 @@ export class VOPRF {
      * > ```
      *
      * @param {number} k The secret key (scalar form).
-     * @param {ec.Point} B The public key.
-     * @param {ec.Point[]} C The blinded tokens.
-     * @param {ec.Point[]} D The unblinded tokens.
+     * @param {Point} B The public key.
+     * @param {Point[]} C The blinded tokens.
+     * @param {Point[]} D The unblinded tokens.
+     * @returns {Array<number>} the M, Z values
      */
-    computeCompositesFast(k, B, C = [], D = [], hashTofieldConfig) {
+    computeCompositesFast(k, B, C = [], D = []) {
 
         // const A = ec.ProjectivePoint.BASE;
         // const B = keyPair.publicKey.toPoint();
@@ -207,7 +225,7 @@ export class VOPRF {
      * @param {number} B The public key.
      * @param {Point[]} C The blinded tokens.
      * @param {Point[]} D The evaluated tokens.
-     * @param {string} version The version of the PrivateStateTokenVOPRF protocol to use.
+     * @param {number} r The random scalar.
      * @returns {Array<number>} The DLEQ proof.
      */
     generateProof(k, A, B, C, D, r) {
@@ -298,6 +316,7 @@ export class VOPRF {
      * @param {number} B The public key.
      * @param {Point[]} C The blinded tokens.
      * @param {Point[]} D The evaluated tokens.
+     * @param {number[]} proof The DLEQ proof to verify
      * @returns {boolean} True if the proof is valid.
      */
     verifyProof(A, B, C, D, proof) {
@@ -332,7 +351,7 @@ export class VOPRF {
         const verified = (expectedC == c);
 
         return verified
-      }
+    }
 
 
     /**
@@ -420,7 +439,6 @@ export class VOPRF {
         return [ M, Z ]
     }
 
-
     /**
      * From: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-oprf-protocol
      *
@@ -446,6 +464,10 @@ export class VOPRF {
      * >               "Finalize"
      * >   return Hash(hashInput)
      * > ```
+     * @param {number} input The private input.
+     * @param {number} blind The blinding factor.
+     * @param {Point} evaluatedElement The evaluated element.
+     * @returns {number[]} The final output.
      */
     finalize(input, blind, evaluatedElement) {
         const N = evaluatedElement.multiply(blind.invert());
@@ -492,6 +514,10 @@ export class VOPRF {
      * >               "Finalize"
      * >   return Hash(hashInput)
      * > ```
+     *
+     * @param {number} skS The private key.
+     * @param {number} input The private input.
+     * @returns {number[]} The output.
      */
     evaluate(skS, input) {
         const inputElement = this.hashToGroup(input);

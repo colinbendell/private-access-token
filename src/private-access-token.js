@@ -48,13 +48,13 @@ export class Challenge {
 
     toByteArray() {
         const byteBuffer = new ByteBuffer()
-        .writeInt(this.tokenType, 2)
-        .writeInt(this.issuerName.length, 2)
-        .writeString(this.issuerName)
-        .writeInt(this.redemptionContext.length, 1)
-        .writeBytes(this.redemptionContext)
-        .writeInt(this.originInfo.length, 2)
-        .writeString(this.originInfo);
+            .writeInt(this.tokenType, 2)
+            .writeInt(this.issuerName.length, 2)
+            .writeString(this.issuerName)
+            .writeInt(this.redemptionContext.length, 1)
+            .writeBytes(this.redemptionContext)
+            .writeInt(this.originInfo.length, 2)
+            .writeString(this.originInfo);
         return byteBuffer.toBytes();
     }
 
@@ -178,11 +178,11 @@ export class Token {
 
     toByteArray() {
         const byteBuffer = new ByteBuffer()
-        .writeInt(this.tokenType, 2)
-        .writeBytes(this.nonce)
-        .writeBytes(this.challengeHash)
-        .writeBytes(this.tokenKeyID)
-        .writeBytes(this.authenticator);
+            .writeInt(this.tokenType, 2)
+            .writeBytes(this.nonce)
+            .writeBytes(this.challengeHash)
+            .writeBytes(this.tokenKeyID)
+            .writeBytes(this.authenticator);
         return byteBuffer.toBytes();
     }
 
