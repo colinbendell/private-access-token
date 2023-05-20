@@ -1,5 +1,5 @@
-import { Base64, DataBuffer, CBOR} from './utils.js';
-import { VOPRF } from './voprf.js';
+import { Base64, ByteBuffer, CBOR} from './utils.js';
+import { VOPRF } from './oprfv1.js';
 
 import { hash_to_field } from '@noble/curves/abstract/hash-to-curve';
 import { p384 as ec, hashToCurve} from '@noble/curves/p384';
@@ -103,7 +103,7 @@ export class PrivateStateTokenSecretKey {
             value = Base64.decode(value);
         }
         if (value instanceof Uint16Array || Array.isArray(value)) {
-            value = DataBuffer.bytesToNumber(Array.from(value));
+            value = ByteBuffer.bytesToNumber(Array.from(value));
         }
         return new PrivateStateTokenSecretKey(id, value, expiry);
     }
@@ -112,7 +112,7 @@ export class PrivateStateTokenSecretKey {
      * @returns {Buffer} Returns the value of the secret key as bytes.
      */
     toBytes() {
-        return DataBuffer.numberToBytes(this.scalar, 48);
+        return ByteBuffer.numberToBytes(this.scalar, 48);
     }
 
     /**
@@ -163,14 +163,13 @@ export class PrivateStateTokenPublicKey {
             value = Base64.decode(value);
         }
         if (ArrayBuffer.isView(value) || Array.isArray(value)) {
-            value = DataBuffer.bytesToNumber(Array.from(value));
+            value = ByteBuffer.bytesToNumber(Array.from(value));
         }
         return new PrivateStateTokenPublicKey(id, value, expiry);
     }
 
     static fromXY(id, x, y, expiry) {
         const bytes = [].concat([0x04], x, y);
-        // const scalar = DataBuffer.bytesToNumber(bytes);
         return PrivateStateTokenPublicKey.from(id, bytes, expiry);
     }
 
@@ -186,7 +185,7 @@ export class PrivateStateTokenPublicKey {
      * @returns {Array<number>} Returns the public key as bytes.
      */
     toBytes() {
-        return DataBuffer.numberToBytes(this.scalar, VOPRF_P384.BYTES * 2 + 1); // 384 *2 + 1 or 0x04 + x + y
+        return ByteBuffer.numberToBytes(this.scalar, VOPRF_P384.BYTES * 2 + 1); // 384 *2 + 1 or 0x04 + x + y
     }
 
     toPoint() {
@@ -386,7 +385,7 @@ export class IssueRequest {
      */
     static from(s) {
         const decodedBytes = Base64.decode(s);
-        const bytes = new DataBuffer(decodedBytes);
+        const bytes = new ByteBuffer(decodedBytes);
 
         const count = bytes.readInt(2);
         const nonces = [];
@@ -409,7 +408,7 @@ export class IssueRequest {
      * @returns {Array<number>} Returns the byte encoding of the request.
      */
     toBytes() {
-        const bytes = new DataBuffer();
+        const bytes = new ByteBuffer();
         bytes.writeInt(this.count, 2);
         for (const nonce of this.nonces) {
             bytes.writeBytes(nonce.toBytes());
@@ -467,7 +466,7 @@ export class IssueResponse {
      * @returns {Array<number>} The issue response as bytes.
      */
     toBytes() {
-        const buf = new DataBuffer();
+        const buf = new ByteBuffer();
         buf.writeInt(this.issued, 2);
         buf.writeInt(this.keyID, 4);
         for (const nonce of this.signed) {
@@ -533,7 +532,7 @@ export class RedeemRequest {
      */
     static from(s) {
         const decodedBytes = Base64.decode(s);
-        const bytes = new DataBuffer(decodedBytes);
+        const bytes = new ByteBuffer(decodedBytes);
 
         const tokenLen = bytes.readInt(2);
         const keyID = bytes.readInt(4);
@@ -553,7 +552,7 @@ export class RedeemRequest {
      * @returns {Array<number>} The redeem request as bytes.
      */
     toBytes() {
-        const buf = new DataBuffer();
+        const buf = new ByteBuffer();
         buf.writeInt(this.nonce.length + this.point.toBytes().length + 4, 2);
         buf.writeInt(this.keyID, 4);
         buf.writeBytes(this.nonce);
@@ -598,7 +597,7 @@ export class RedeemResponse {
             record = Array.from(record);
         }
         else if (!Array.isArray(record)) {
-            record = DataBuffer.stringToBytes(record);
+            record = ByteBuffer.stringToBytes(record);
         }
         this.record = record;
     }
@@ -731,7 +730,7 @@ export class PrivateStateTokenIssuer {
             //    ECPoint pub;
             // } TrustTokenPublicKey;
             // ```
-            const buffer = new DataBuffer();
+            const buffer = new ByteBuffer();
             buffer.writeInt32(key.id);
             buffer.writeBytes(key.toBytes());
 
@@ -887,8 +886,8 @@ export class PrivateStateTokenIssuer {
             const proof = voprf.generateProof(k, A, B, C, D, r);
 
             const serializedProof = [].concat(
-                DataBuffer.numberToBytes(proof[0], VOPRF_P384.BYTES),
-                DataBuffer.numberToBytes(proof[1], VOPRF_P384.BYTES)
+                ByteBuffer.numberToBytes(proof[0], VOPRF_P384.BYTES),
+                ByteBuffer.numberToBytes(proof[1], VOPRF_P384.BYTES)
             );
 
             return new IssueResponse(keyId, signedNonces, serializedProof);
@@ -925,7 +924,7 @@ export class PrivateStateTokenIssuer {
 
             // Batch DLEQ
             for (let i = 0; i < count; i++) {
-                const buf = new DataBuffer();
+                const buf = new ByteBuffer();
                 buf.writeString("DLEQ BATCH\0");
                 buf.writeBytes(batch);
                 buf.writeInt(i, 2);
@@ -1030,7 +1029,7 @@ export class PrivateStateTokenIssuer {
         const k0 = ec.ProjectivePoint.BASE.multiply(r);
         const k1 = btBatch.multiply(r);
 
-        const buf = new DataBuffer();
+        const buf = new ByteBuffer();
         buf.writeString("DLEQ\0");
         buf.writeBytes(keyPair.publicKey.toBytes());
         buf.writeBytes(btBatch.toRawBytes(false));
@@ -1044,8 +1043,8 @@ export class PrivateStateTokenIssuer {
         const u = (r + c * keyPair.secretKey.scalar) % VOPRF_P384.ORDER;
 
         const result = [].concat(
-            DataBuffer.numberToBytes(c, VOPRF_P384.BYTES),
-            DataBuffer.numberToBytes(u, VOPRF_P384.BYTES)
+            ByteBuffer.numberToBytes(c, VOPRF_P384.BYTES),
+            ByteBuffer.numberToBytes(u, VOPRF_P384.BYTES)
         );
         return result;
     }

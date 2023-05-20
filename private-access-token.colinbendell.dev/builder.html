@@ -152,7 +152,7 @@
     </style>
     <script type="module">
         import {Challenge} from "./private-access-token.js";
-        import {Hex, DataBuffer} from "./utils.js";
+        import {Hex, ByteBuffer} from "./utils.js";
 
         function getElement(id) {
             return document.getElementById(id).value;
@@ -174,13 +174,13 @@
 
             const challenge = new Challenge(tokenType, issuerName, redemptionContext, originInfo);
 
-            debugHex('token_type_debug', DataBuffer.numberToBytes(tokenType, 2));
-            debugHex('issuer_name_length_debug', DataBuffer.numberToBytes(issuerName.length, 2));
-            debugHex('issuer_name_debug', DataBuffer.stringToBytes(issuerName));
+            debugHex('token_type_debug', ByteBuffer.numberToBytes(tokenType, 2));
+            debugHex('issuer_name_length_debug', ByteBuffer.numberToBytes(issuerName.length, 2));
+            debugHex('issuer_name_debug', ByteBuffer.stringToBytes(issuerName));
             debugHex('redemption_context_length_debug', [redemptionContext.length]);
             debugHex('redemption_context_debug', redemptionContext);
-            debugHex('origin_info_length_debug', DataBuffer.numberToBytes(originInfo.length, 2));
-            debugHex('origin_info_debug', DataBuffer.stringToBytes(originInfo));
+            debugHex('origin_info_length_debug', ByteBuffer.numberToBytes(originInfo.length, 2));
+            debugHex('origin_info_debug', ByteBuffer.stringToBytes(originInfo));
 
             document.getElementById('challenge_base64_debug').innerHTML = challenge.toString();
             document.getElementById('challenge').value = challenge.toString();

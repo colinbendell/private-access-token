@@ -4,7 +4,7 @@
  * @return {Array<number>} - 4 byte Encoded number in network byte order (big endian)
  */
 export function hostToNetworkLong(n) {
-    return DataBuffer.numberToBytes(n, 4);
+    return ByteBuffer.numberToBytes(n, 4);
 }
 export { hostToNetworkLong as h2nl }
 
@@ -14,7 +14,7 @@ export { hostToNetworkLong as h2nl }
  * @return {Array<number>} - 2 byte Encoded number in network byte order (big endian)
  */
 export function hostToNetworkShort(n) {
-    return DataBuffer.numberToBytes(n, 2);
+    return ByteBuffer.numberToBytes(n, 2);
 }
 export { hostToNetworkShort as h2ns }
 export { hostToNetworkShort as i2osp }
@@ -25,7 +25,7 @@ export { hostToNetworkShort as i2osp }
  * @return {Number} - Decoded number
  */
 export function networkToHostLong(n) {
-    return DataBuffer.bytesToNumber(n);
+    return ByteBuffer.bytesToNumber(n);
 }
 export { networkToHostLong as n2hl }
 
@@ -35,7 +35,7 @@ export { networkToHostLong as n2hl }
  * @return {Number} - Decoded number
  */
 export function networkToHostShort(n) {
-    return DataBuffer.bytesToNumber(n);
+    return ByteBuffer.bytesToNumber(n);
 }
 export { networkToHostShort as n2hs }
 
@@ -68,7 +68,7 @@ export class Hex {
 export class Base64 {
     static encode(data) {
         if (Array.isArray(data) || ArrayBuffer.isView(data)) {
-            data = DataBuffer.bytesToString(data);
+            data = ByteBuffer.bytesToString(data);
         }
 
         return btoa(data ?? "");
@@ -89,7 +89,7 @@ export class Base64 {
                 ?.replaceAll('_', '/')
                 ?.replaceAll(/^"|"$/g, '');
             const encodedData = atob(data);
-            return DataBuffer.stringToBytes(encodedData);
+            return ByteBuffer.stringToBytes(encodedData);
         }
         catch (e) {
             console.error(e);
@@ -103,7 +103,7 @@ export class Base64 {
 *
 * This class helps to parse issuance and redemption requests.
 */
-export class DataBuffer {
+export class ByteBuffer {
     /**
     * @param {Buffer} buffer The byte string to read values from.
     */
@@ -129,7 +129,7 @@ export class DataBuffer {
     }
 
     readString(size) {
-        return DataBuffer.bytesToString(this.readBytes(size));
+        return ByteBuffer.bytesToString(this.readBytes(size));
     }
 
     /**
@@ -141,7 +141,7 @@ export class DataBuffer {
     readInt(size = 1) {
         const value = this.readBytes(size);
         if (size === 1) return value[0];
-        return DataBuffer.bytesToNumber(value);
+        return ByteBuffer.bytesToNumber(value);
     }
 
     readInt8() {
@@ -165,7 +165,7 @@ export class DataBuffer {
     }
 
     writeInt(value = 0, size = 2) {
-        this.buffer = this.buffer.concat(DataBuffer.numberToBytes(value, size));
+        this.buffer = this.buffer.concat(ByteBuffer.numberToBytes(value, size));
         return this;
     }
 
@@ -196,7 +196,7 @@ export class DataBuffer {
     }
 
     writeString(str = '') {
-        return this.writeBytes(DataBuffer.stringToBytes(str));
+        return this.writeBytes(ByteBuffer.stringToBytes(str));
     }
 
     static bytesToString(bytes = []) {
@@ -247,7 +247,7 @@ export class DataBuffer {
 
 export class CBOR {
     static decode(rawData = []) {
-        const data = new DataBuffer(rawData);
+        const data = new ByteBuffer(rawData);
 
         return CBOR.#decodeItem(data);
     }
@@ -325,9 +325,9 @@ export class CBOR {
                 while ((length = CBOR.#readIndefiniteStringLength(data, majorType)) >= 0) {
                     result = result.concat(data.readBytes(length));
                 }
-                DataBuffer.bytesToString(result);
+                ByteBuffer.bytesToString(result);
             }
-            return DataBuffer.bytesToString(data.readBytes(length));
+            return ByteBuffer.bytesToString(data.readBytes(length));
         }
         else if (majorType === 4) {
             const retArray = [];

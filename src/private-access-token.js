@@ -1,4 +1,4 @@
-import {Base64, sha256, DataBuffer} from "./utils.js";
+import {Base64, sha256, ByteBuffer} from "./utils.js";
 
 export class Challenge {
     static DEFAULT = Challenge.from("AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=");
@@ -12,15 +12,15 @@ export class Challenge {
 
     static from(data) {
         const challengeBytes = Base64.decode(data) || [];
-        const dataBuffer = new DataBuffer(challengeBytes);
+        const byteBuffer = new ByteBuffer(challengeBytes);
 
-        const tokenType = dataBuffer.readInt(2);
-        const issuerNameLength = dataBuffer.readInt(2)
-        const issuerName = dataBuffer.readString(issuerNameLength);
-        const redemptionContextLength = dataBuffer.readInt(1);
-        const redemptionContext = dataBuffer.readBytes(redemptionContextLength);
-        const originInfoLength = dataBuffer.readBytes(2);
-        const originInfo = dataBuffer.readString(originInfoLength);
+        const tokenType = byteBuffer.readInt(2);
+        const issuerNameLength = byteBuffer.readInt(2)
+        const issuerName = byteBuffer.readString(issuerNameLength);
+        const redemptionContextLength = byteBuffer.readInt(1);
+        const redemptionContext = byteBuffer.readBytes(redemptionContextLength);
+        const originInfoLength = byteBuffer.readBytes(2);
+        const originInfo = byteBuffer.readString(originInfoLength);
 
         return new Challenge(tokenType, issuerName, redemptionContext, originInfo);
     }
@@ -28,7 +28,7 @@ export class Challenge {
     #redemptionContext = [];
 
     set redemptionContext(value) {
-        let redemptionContext = DataBuffer.stringToBytes(value);
+        let redemptionContext = ByteBuffer.stringToBytes(value);
 
         if (redemptionContext.length > 0) {
             // Pad to 32 bytes
@@ -47,15 +47,15 @@ export class Challenge {
     }
 
     toByteArray() {
-        const dataBuffer = new DataBuffer();
-        dataBuffer.writeInt(this.tokenType, 2);
-        dataBuffer.writeInt(this.issuerName.length, 2);
-        dataBuffer.writeString(this.issuerName);
-        dataBuffer.writeInt(this.redemptionContext.length, 1);
-        dataBuffer.writeBytes(this.redemptionContext);
-        dataBuffer.writeInt(this.originInfo.length, 2);
-        dataBuffer.writeString(this.originInfo);
-        return dataBuffer.toBytes();
+        const byteBuffer = new ByteBuffer()
+        .writeInt(this.tokenType, 2)
+        .writeInt(this.issuerName.length, 2)
+        .writeString(this.issuerName)
+        .writeInt(this.redemptionContext.length, 1)
+        .writeBytes(this.redemptionContext)
+        .writeInt(this.originInfo.length, 2)
+        .writeString(this.originInfo);
+        return byteBuffer.toBytes();
     }
 
     toString() {
@@ -165,25 +165,25 @@ export class Token {
 
     static from(data) {
         const tokenBytes = Base64.decode(data);
-        const dataBuffer = new DataBuffer(tokenBytes);
+        const byteBuffer = new ByteBuffer(tokenBytes);
 
-        const tokenType = dataBuffer.readInt(2);
-        const nonce = dataBuffer.readBytes(32);
-        const challengeHash = dataBuffer.readBytes(32);
-        const tokenKeyID = dataBuffer.readBytes(32);
-        const authenticator = dataBuffer.readBytes(256);
+        const tokenType = byteBuffer.readInt(2);
+        const nonce = byteBuffer.readBytes(32);
+        const challengeHash = byteBuffer.readBytes(32);
+        const tokenKeyID = byteBuffer.readBytes(32);
+        const authenticator = byteBuffer.readBytes(256);
 
         return new Token(tokenType, nonce, challengeHash, tokenKeyID, authenticator);
     }
 
     toByteArray() {
-        const dataBuffer = new DataBuffer();
-        dataBuffer.writeInt(this.tokenType, 2);
-        dataBuffer.writeBytes(this.nonce);
-        dataBuffer.writeBytes(this.challengeHash);
-        dataBuffer.writeBytes(this.tokenKeyID);
-        dataBuffer.writeBytes(this.authenticator);
-        return dataBuffer.toBytes();
+        const byteBuffer = new ByteBuffer()
+        .writeInt(this.tokenType, 2)
+        .writeBytes(this.nonce)
+        .writeBytes(this.challengeHash)
+        .writeBytes(this.tokenKeyID)
+        .writeBytes(this.authenticator);
+        return byteBuffer.toBytes();
     }
 
     toBytes() {
@@ -214,7 +214,7 @@ export class Token {
     async verifyAuthenticator(challengeTokenKey) {
         const publicKey = await challengeTokenKey?.cryptoKey();
         if (publicKey) {
-            const data = Uint8Array.from([].concat(DataBuffer.numberToBytes(this.tokenType, 2), this.nonce, this.challengeHash, this.tokenKeyID));
+            const data = Uint8Array.from([].concat(ByteBuffer.numberToBytes(this.tokenType, 2), this.nonce, this.challengeHash, this.tokenKeyID));
             const signature = Uint8Array.from(this.authenticator);
 
             try {

@@ -199,7 +199,7 @@
     </style>
     <script type="module">
         import {Challenge, PublicKey} from "./private-access-token.js";
-        import {Base64, DataBuffer, Hex} from "./utils.js";
+        import {Base64, ByteBuffer, Hex} from "./utils.js";
 
         const params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) => searchParams.get(prop), });
         const cookies = new Proxy({}, { get: (cookies, prop) => document.cookie.split(prop+"=")[1]?.split(/; */)[0], });
@@ -242,15 +242,15 @@
             tests.push([ "challenge can base64url.decode()", challengeBytes.length > 0, '', challengeBytes ]);
 
             const tokenTypeBytes = challengeBytes.slice(0, 2);
-            const tokenType = DataBuffer.bytesToNumber(tokenTypeBytes);
+            const tokenType = ByteBuffer.bytesToNumber(tokenTypeBytes);
             tests.push([ "token_type is VOPRF (1) or Blind RSA (2)", [1,2].includes(tokenType), ` == ${tokenType === 1 ? 'VOPRF (1)' : tokenType === 2 ? 'Blind RSA (2)' : ''}`, tokenTypeBytes, true ]);
 
             const issuerNameLengthBytes = challengeBytes.slice(2, 4);
-            const issuerNameLength = DataBuffer.bytesToNumber(issuerNameLengthBytes);
+            const issuerNameLength = ByteBuffer.bytesToNumber(issuerNameLengthBytes);
             tests.push([ "issuer_name length prefix > 0", issuerNameLength > 0, ` == ${issuerNameLength}`, issuerNameLengthBytes, true]);
 {}
             const issuerNameBytes = challengeBytes.slice(4, 4 + issuerNameLength);
-            const issuerName = DataBuffer.bytesToString(issuerNameBytes);
+            const issuerName = ByteBuffer.bytesToString(issuerNameBytes);
             tests.push([ "issuer_name matches token-key", issuerName === publicKey.issuerName, ` == "${issuerName}"`, issuerNameBytes, true]);
 
             const redemptionContextLength = challengeBytes[4 + issuerNameLength];
@@ -260,11 +260,11 @@
             tests.push([ "redemption_context is valid", redemptionContext.length === redemptionContextLength, ` == "${Hex.encode(redemptionContext)}"`, redemptionContext, true]);
 
             const originInfoLengthBuytes = challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength, 4 + issuerNameLength + 1 + redemptionContextLength + 2);
-            const originInfoLength = DataBuffer.bytesToNumber(originInfoLengthBuytes);
+            const originInfoLength = ByteBuffer.bytesToNumber(originInfoLengthBuytes);
             tests.push([ "origin_info length prefix", originInfoLength >= 0, ` == ${originInfoLength}`, originInfoLengthBuytes, true ]);
 
             const originInfoBytes = challengeBytes.slice(4 + issuerNameLength + 1 + redemptionContextLength + 2, 4 + issuerNameLength + 1 + redemptionContextLength + 2 + originInfoLength);
-            const originInfo = DataBuffer.bytesToString(originInfoBytes);
+            const originInfo = ByteBuffer.bytesToString(originInfoBytes);
             tests.push([ "origin_info is valid", originInfo.length === originInfoLength, ` == "${originInfo}"`, originInfoBytes, true ]);
 
             let {version, brand} = navigator.userAgentData?.brands[0] || {};
