@@ -39,15 +39,16 @@ export default {
             const redeemPayload = Object.fromEntries([...request.headers.entries()])
             redeemPayload.cf = request.cf
 
+
             if (privateStateToken) {
                 const request = RedeemRequest.from(privateStateToken);
-                const redeemResponse = issuer.redeem(request, redeemPayload, pstCryptoVersion);
+                const redeemResponse = issuer.redeem(request, JSON.stringify(redeemPayload, null, 2), pstCryptoVersion);
 
                 return new Response(`RR: ${JSON.stringify(redeemPayload, null, 2)})`, {
                     status: 200,
                     headers: {
                         "Content-Type": "text/plain",
-                        'Sec-Private-State-Token': redeemResponse.toString(),
+                        'Sec-Private-State-Token': redeemResponse?.toString() || "",
                         'Sec-Private-State-Token-Lifetime': 3660,
                         'Access-Control-Allow-Origin': '*',
                     },
