@@ -728,7 +728,7 @@ export class PrivateStateTokenIssuer {
             "host": this.host,
             "id": Date.now(),
             "batchsize": this.maxBatchSize,
-            "keys": [...this.#keys.values()].map(k => { console.log(k.publicKey); return k.publicKey?.toJWK()})
+            "keys": [...this.#keys.values()].map(k => k.publicKey?.toJWK())
         }
     }
 
