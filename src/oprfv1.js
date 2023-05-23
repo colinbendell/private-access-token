@@ -17,8 +17,8 @@ export class VOPRF {
         this.L = 72;
         this.Ns = 48;
         this.hash = sha384;
-        this.Ne = 49, // 384 / 8 + 1
-        this.Nh = 48, // 384 / 8
+        this.Ne = 49; // 384 / 8 + 1
+        this.Nh = 48; // 384 / 8
     }
 
     /**
