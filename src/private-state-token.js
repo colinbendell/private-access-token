@@ -140,6 +140,21 @@ export class PrivateStateTokenPublicKey {
     toString() {
         return Base64.encode(this.toBytes());
     }
+
+    /**
+     * Convenience method to produce a valid JWK representation of the key pair.
+     * @returns {Object} Returns a JWK representation of the key pair.
+     */
+    toJWK() {
+        const {x, y} = this.toXY();
+        return {
+            kty: 'EC',
+            crv: 'P-384',
+            kid: this.id,
+            x,
+            y
+        };
+    }
 }
 
 /**
@@ -713,7 +728,7 @@ export class PrivateStateTokenIssuer {
             "host": this.host,
             "id": Date.now(),
             "batchsize": this.maxBatchSize,
-            "keys": this.publicKeys.map(k => k.jwk)
+            "keys": [...this.#keys.values()].map(k => { console.log(k.publicKey); return k.publicKey?.toJWK()})
         }
     }
 

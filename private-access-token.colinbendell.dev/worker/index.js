@@ -14,7 +14,7 @@ export default {
             const pstCryptoVersion = request.headers.get("sec-private-state-token-crypto-version");
 
             if (url.pathname === "/.well-known/token-issuer-directory") {
-                const body = JSON.stringify(issuer.directory());
+                const body = JSON.stringify(issuer.directory(), null, 2);
                 return new Response(body, {
                     status: 200,
                     headers: {
@@ -25,7 +25,7 @@ export default {
                 });
             }
             if (url.pathname === "/.well-known/key-commitment") {
-                const body = JSON.stringify(issuer.keyCommitment(pstCryptoVersion));
+                const body = JSON.stringify(issuer.keyCommitment(pstCryptoVersion), null, 2);
                 return new Response(body, {
                     status: 200,
                     headers: {
@@ -36,7 +36,7 @@ export default {
                 });
             }
             if (url.pathname === "/.well-known/jwks.json") {
-                const body = JSON.stringify(issuer.jwks());
+                const body = JSON.stringify(issuer.jwks(), null, 2);
                 return new Response(body, {
                     status: 200,
                     headers: {
