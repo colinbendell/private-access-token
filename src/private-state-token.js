@@ -1,4 +1,4 @@
-import { Base64, ByteBuffer, CBOR} from './utils.js';
+import { Base64, ByteBuffer, CBOR, sha256 } from './utils.js';
 import { OPRF } from './oprfv1.js';
 import { p384 as ec } from '@noble/curves/p384';
 const Point = ec.ProjectivePoint;
@@ -145,14 +145,15 @@ export class PrivateStateTokenPublicKey {
      * Convenience method to produce a valid JWK representation of the key pair.
      * @returns {Object} Returns a JWK representation of the key pair.
      */
-    toJWK() {
+    async toJWK() {
         const {x, y} = this.toXY();
         return {
             kty: 'EC',
             crv: 'P-384',
-            kid: this.id,
+            kid: Base64.urlEncode(await sha256(this.toBytes())),
             x,
-            y
+            y,
+            exp: this.expiry / 1000 / 1000,
         };
     }
 }
@@ -587,10 +588,6 @@ export class RedeemResponse {
  */
 export class PrivateStateTokenIssuer {
 
-    static get KEY_COMMITMENT_ID() {
-        return 1;
-    }
-
     static DEFAULT_VERSION = "PrivateStateTokenV3VOPRF";
 
     /**
@@ -598,13 +595,14 @@ export class PrivateStateTokenIssuer {
      * @param {number} maxBatchSize The max batch size for tokens.
      * @param {Array<PrivateStateTokenKeyPair>} keys The key pairs for this issuer.
      */
-    constructor(host, maxBatchSize, keys = []) {
+    constructor(host, maxBatchSize, id = 1, keys = []) {
         if (!Array.isArray(keys)) keys = [keys];
 
         this.#keys = new Map(keys.map(k => [k.id, k]));
         this.maxBatchSize = maxBatchSize;
         this.host = host;
         this.voprf = new OPRF();
+        this.id = id;
     }
 
     /**
@@ -646,9 +644,7 @@ export class PrivateStateTokenIssuer {
      */
     addJWK(jwk) {
         const key = PrivateStateTokenKeyPair.fromJWK(jwk);
-        this.addKey(key);
-
-        return this;
+        return this.addKey(key);
     }
 
     /**
@@ -661,9 +657,10 @@ export class PrivateStateTokenIssuer {
      * @see https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/web_tests/wpt_internal/trust-tokens/resources/trust_token_voprf.py;l=449-469
      */
     keyCommitment(version = PrivateStateTokenIssuer.DEFAULT_VERSION) {
+        version = version || PrivateStateTokenIssuer.DEFAULT_VERSION;
         const keyCommitment = {
             "protocol_version": version,
-            "id": PrivateStateTokenIssuer.KEY_COMMITMENT_ID,
+            "id": this.id,
             "batchsize": this.maxBatchSize,
             "keys": {}
         };
@@ -712,7 +709,7 @@ export class PrivateStateTokenIssuer {
         return {
             "issuer-request-uri": this.requestURI,
             "issuer-redeem-uri": this.redeemURI,
-            "id": Date.now(),
+            "id": this.id,
             "batchsize": this.maxBatchSize,
             "token-keys": tokenKeys
          }
@@ -723,12 +720,16 @@ export class PrivateStateTokenIssuer {
      * the host, id (version), and max batch size.
      * @returns object formatted as a JWK Set.
      */
-    jwks() {
+    async jwks() {
+        const keys = [];
+        for (const key of this.#keys.values()) {
+            keys.push(await key.publicKey?.toJWK());
+        }
         return {
             "host": this.host,
-            "id": Date.now(),
+            "id": this.id,
             "batchsize": this.maxBatchSize,
-            "keys": [...this.#keys.values()].map(k => k.publicKey?.toJWK())
+            "keys": keys
         }
     }
 
