@@ -116,6 +116,10 @@ export class ByteBuffer {
         return this.buffer;
     }
 
+    get length() {
+        return this.buffer.length;
+    }
+
     /**
     * Reads `size` bytes from the buffer and increments the offset by the same amount.
     *
@@ -144,22 +148,6 @@ export class ByteBuffer {
         return ByteBuffer.bytesToNumber(value);
     }
 
-    readInt8() {
-        return this.readInt(1);
-    }
-
-    readInt16() {
-        return this.readInt(2);
-    }
-
-    readInt32() {
-        return this.readInt(4);
-    }
-
-    readInt64() {
-        return this.readInt(8);
-    }
-
     peekInt() {
         return this.buffer[this.offset];
     }
@@ -167,19 +155,6 @@ export class ByteBuffer {
     writeInt(value = 0, size = 2) {
         this.buffer = this.buffer.concat(ByteBuffer.numberToBytes(value, size));
         return this;
-    }
-
-    writeInt8(value = 0) {
-        return this.writeInt(value, 1);
-    }
-    writeInt16(value = 0) {
-        return this.writeInt(value, 2);
-    }
-    writeInt32(value = 0) {
-        return this.writeInt(value, 4);
-    }
-    writeInt64(value = 0) {
-        return this.writeInt(value, 8);
     }
 
     writeBytes(data = []) {
@@ -263,19 +238,19 @@ export class CBOR {
         if (additionalInformation < 24)
             return additionalInformation;
         if (additionalInformation === 24)
-            return data.readInt8();
+            return data.readInt(1);
         if (additionalInformation === 25)
-            return data.readInt16();
+            return data.readInt(2);
         if (additionalInformation === 26)
-            return data.readInt32();
+            return data.readInt(4);
         if (additionalInformation === 27)
-            return data.readInt64();
+            return data.readInt(8);
         if (additionalInformation === 31)
             return -1;
         throw "Invalid length encoding";
     }
     static #readIndefiniteStringLength(data, majorType) {
-        const initialByte = data.readInt8();
+        const initialByte = data.readInt(1);
         if (initialByte === 0xff)
             return -1;
         const length = CBOR.#readLength(initialByte & 0x1f, data);
@@ -285,17 +260,17 @@ export class CBOR {
     }
 
     static #decodeItem(data) {
-        const initialByte = data.readInt8();
+        const initialByte = data.readInt(1);
         const majorType = initialByte >> 5;
         const additionalInformation = initialByte & 0x1f;
 
         if (majorType === 7) {
             if (additionalInformation === 25)
-                return data.readInt16();
+                return data.readInt(2);
             if (additionalInformation === 26)
-                return data.readInt32();
+                return data.readInt(4);
             if (additionalInformation === 27)
-                return data.readInt64();
+                return data.readInt(6);
         }
 
         let length = CBOR.#readLength(additionalInformation, data);
