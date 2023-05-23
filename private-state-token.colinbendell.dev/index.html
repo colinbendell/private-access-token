@@ -246,9 +246,8 @@
           <input type="button" value="Issue" onclick="issueTokens()">
         </div>
         <div></div>
-        <pre class="code">await fetch('/pst/i', {
+        <pre class="code">await fetch('/request', {
   privateToken: {
-    type: 'private-state-token',
     version: 1,
     operation: 'token-request',
     issuer: 'https://private-state-token.colinbendell.dev',
@@ -276,7 +275,7 @@
           <input type="button" value="Redeem" onclick="redeemToken(false)">
         </div>
         <div></div>
-        <pre class="code">await fetch('/pst/r', {
+        <pre class="code">await fetch('/redeem', {
   privateToken: {
     version: 1,
     operation: 'token-redemption',
@@ -290,7 +289,7 @@
 
         <input type="button" value="Forward RR" onclick="sendRR(true)">
         <div></div>
-              <pre class="code">await fetch('/pst/echo', {
+              <pre class="code">await fetch('/echo', {
   privateToken: {
     version: 1,
     operation: 'send-redemption-record',
