@@ -604,6 +604,14 @@ export class PrivateStateTokenIssuer {
         return [...this.#keys.values()].map(k => k.publicKey);
     }
 
+    get requestURI() {
+        return `https://${this.host}/request`;
+    }
+
+    get redeemURI() {
+        return `https://${this.host}/request`;
+    }
+
     /**
      * Adds a key pair to the issuer.
      * @param {PrivateStateTokenKeyPair} key The key pair to add.
@@ -673,6 +681,22 @@ export class PrivateStateTokenIssuer {
                 [version]: keyCommitment
             }
         };
+    }
+
+    directory() {
+        const tokenKeys = [];
+        for (const key of this.#keys.values()) {
+            tokenKeys.push({
+                "token-type": 2,
+                "token-key": Base64.urlEncode(key.publicKey.toBytes())
+            });
+
+        }
+
+        return {
+            "issuer-request-uri": this.requestURI,
+            "token-keys": tokenKeys
+         }
     }
 
     /**

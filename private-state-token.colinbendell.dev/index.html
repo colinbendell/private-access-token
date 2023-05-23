@@ -152,9 +152,8 @@
           async function issueTokens() {
             const publicValue = document.getElementById('public').value;
             try {
-                const r = await fetch(`https://private-state-token.colinbendell.dev/pst/i?id=${publicValue}`, {
+                const r = await fetch(`https://private-state-token.colinbendell.dev/request?id=${publicValue}`, {
                 privateToken: {
-                  type: 'private-state-token',
                   version: 1,
                   operation: 'token-request',
                   issuer: issuer
@@ -173,9 +172,8 @@
           async function redeemToken(refresh) {
             const policy = refresh ? "refresh" : "none";
             try {
-              const r = await fetch("https://private-state-token.colinbendell.dev/pst/r", {
+              const r = await fetch("https://private-state-token.colinbendell.dev/redeem", {
                 privateToken: {
-                  type: 'private-state-token',
                   version: 1,
                   operation: 'token-redemption',
                   issuer: issuer,
@@ -193,9 +191,8 @@
 
           async function sendRR(refresh) {
             try {
-              const r = await fetch("/pst/echo", {
+              const r = await fetch("/echo", {
                 privateToken: {
-                  type: 'private-state-token',
                   version: 1,
                   operation: 'send-redemption-record',
                   issuers:[issuer]
@@ -227,10 +224,10 @@
     <main>
       <h1>Public State Token v3 Test</h1>
       <div  style="vertical-align: super; font-size: 0.75rem; margin: -0.6rem 0 0.6rem 0;">
-              <a href="https://github.com/colinbendell/private-access-token">Github Source</a> ⏐
-              <a href="https://wicg.github.io/trust-token-api/">W3C: PST (Draft)</a> ⏐ IETF:
-              <a href="https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21">VOPRF (21)</a>
-              <a href="https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-16">Hash-to-Curve (16)</a>
+          <a href="https://github.com/colinbendell/private-access-token">Github Source</a> ⏐
+          <a href="https://wicg.github.io/trust-token-api/">W3C: PST (Draft)</a> ⏐ IETF:
+          <a href="https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21">VOPRF (21)</a>
+          <a href="https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-16">Hash-to-Curve (16)</a>
       </div>
       <details><summary>You need Chrome 113+ with beta flags</summary>
         <pre>--enable-blink-features=PrivateStateTokens,PrivateStateTokensAlwaysAllowIssuance
@@ -281,7 +278,6 @@
         <div></div>
         <pre class="code">await fetch('/pst/r', {
   privateToken: {
-    type: 'private-state-token',
     version: 1,
     operation: 'token-redemption',
     issuer: 'https://private-state-token.colinbendell.dev',
@@ -296,7 +292,6 @@
         <div></div>
               <pre class="code">await fetch('/pst/echo', {
   privateToken: {
-    type: 'private-state-token',
     version: 1,
     operation: 'send-redemption-record',
     issuers: ['https://private-state-token.colinbendell.dev'],
