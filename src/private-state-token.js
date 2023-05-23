@@ -622,7 +622,7 @@ export class PrivateStateTokenIssuer {
     }
 
     get redeemURI() {
-        return `https://${this.host}/request`;
+        return `https://${this.host}/redeem`;
     }
 
     /**
