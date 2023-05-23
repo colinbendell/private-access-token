@@ -1,7 +1,7 @@
 import { should, describe } from 'micro-should';
 import * as assert from 'assert';
 import { ByteBuffer, Hex } from "../src/utils.js";
-import { VOPRF } from "../src/oprfv1.js";
+import { OPRF } from "../src/oprfv1.js";
 import { p384 as ec, hashToCurve } from '@noble/curves/p384';
 const Point = ec.ProjectivePoint;
 
@@ -92,7 +92,7 @@ describe('OPRFv1', () => {
 
             assert.deepEqual(Array.from(D[0].toRawBytes(true)), test.evaluatedElement)
 
-            const voprf = new VOPRF();
+            const voprf = new OPRF();
             const proof = voprf.generateProof(k, A, B, C, D, r);
 
             assert.deepEqual(proof[0], ByteBuffer.bytesToNumber(test.proof.slice(0, 48)));

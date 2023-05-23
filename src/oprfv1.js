@@ -5,11 +5,13 @@ import { ByteBuffer, Hex } from './utils.js';
 
 const Point = ec.ProjectivePoint;
 
-export class VOPRF {
+export class OPRF {
 
     constructor(cipherSuite = "P384-SHA384", mode="\x01") {
+        if (cipherSuite !== "P384-SHA384") throw new Error("Only P384-SHA384 is supported");
+        if (mode !== "\x01") throw new Error("Only VOPRF (mode 1) is supported");
         // TODO: make this actually multi-suite
-        this.contextString = VOPRF.createContextString(mode, cipherSuite);
+        this.contextString = OPRF.createContextString(mode, cipherSuite);
         this.identifier = cipherSuite;
         this.mode = mode;
         this.order = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973');

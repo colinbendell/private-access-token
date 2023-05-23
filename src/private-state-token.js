@@ -1,5 +1,5 @@
 import { Base64, ByteBuffer, CBOR} from './utils.js';
-import { VOPRF } from './oprfv1.js';
+import { OPRF } from './oprfv1.js';
 import { p384 as ec } from '@noble/curves/p384';
 const Point = ec.ProjectivePoint;
 
@@ -589,7 +589,7 @@ export class PrivateStateTokenIssuer {
         this.#keys = new Map(keys.map(k => [k.id, k]));
         this.maxBatchSize = maxBatchSize;
         this.host = host;
-        this.voprf = new VOPRF();
+        this.voprf = new OPRF();
     }
 
     /**
@@ -652,8 +652,8 @@ export class PrivateStateTokenIssuer {
             "batchsize": this.maxBatchSize,
             "keys": {}
         };
-        for (const key of this.publicKeys) {
-
+        for (const key of this.#keys.values()) {
+            const publicKey = key.publicKey;
             // Returns the public key as bytes.
             // The structure takes the form:
             // ```
@@ -663,17 +663,14 @@ export class PrivateStateTokenIssuer {
             // } TrustTokenPublicKey;
             // ```
             const buffer = new ByteBuffer()
-                .writeInt(key.id, 4)
-                .writeBytes(key.toBytes());
-
-            const publicKey = Base64.encode(buffer.toBytes());
-            const expiry = key.expiry;
+                .writeInt(publicKey.id, 4)
+                .writeBytes(publicKey.toBytes());
 
             keyCommitment.keys[key.id] = {
-                "Y": publicKey,
+                "Y": Base64.encode(buffer.toBytes()),
                 // epoch timestamp in microseconds
                 // string escaped integer
-                expiry: `${expiry}`,
+                expiry: `${publicKey.expiry}`,
             };
         }
         return {
@@ -683,6 +680,10 @@ export class PrivateStateTokenIssuer {
         };
     }
 
+    /**
+     * A serializer for the issuer keys in token issuer directory format as specfiied in the PrivacyPass Protocol spec.
+     * @returns a token-issuer-directory formatted object
+     */
     directory() {
         const tokenKeys = [];
         for (const key of this.#keys.values()) {
@@ -695,8 +696,25 @@ export class PrivateStateTokenIssuer {
 
         return {
             "issuer-request-uri": this.requestURI,
+            "issuer-redeem-uri": this.redeemURI,
+            "id": Date.now(),
+            "batchsize": this.maxBatchSize,
             "token-keys": tokenKeys
          }
+    }
+
+    /**
+     * A serializer for the issuer keys in JWK Set format. Additional fields are added to the JWK Set to provide
+     * the host, id (version), and max batch size.
+     * @returns object formatted as a JWK Set.
+     */
+    jwks() {
+        return {
+            "host": this.host,
+            "id": Date.now(),
+            "batchsize": this.maxBatchSize,
+            "keys": this.publicKeys.map(k => k.jwk)
+        }
     }
 
     /**
@@ -803,7 +821,6 @@ export class PrivateStateTokenIssuer {
         // TODO: is null the right way to handle errors?
         if (!keyPair) return null;
 
-        const voprf = new VOPRF();
         const k = keyPair.secretKey.scalar;
         const r = VOPRF_P384.ORDER - 1n;
         const blindedElements = request.nonces;
