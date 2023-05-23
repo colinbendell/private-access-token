@@ -1,5 +1,5 @@
 import { p384 as ec, hashToCurve, encodeToCurve} from '@noble/curves/p384';
-import { sha384 } from '@noble/hashes/sha512';
+import { sha384, sha512 } from '@noble/hashes/sha512';
 import { expand_message_xmd } from '@noble/curves/abstract/hash-to-curve';
 import { ByteBuffer, Hex } from './utils.js';
 
@@ -25,7 +25,7 @@ export class VOPRF {
      * @param {Array<number>} msg the message to use for hashing
      * @returns {BigInt} the scalar represetnation
      */
-    hashToScalar(msg) {
+    hashToScalar(msg, DSTOverride, hashOverride) {
         // const hashTofieldConfig = {
         //     DST: "HashToScalar-" + this.contextString,
         //     m: 1,
@@ -37,8 +37,9 @@ export class VOPRF {
         //     hash: this.hash
         // }
         // return hash_to_field(Uint8Array.from(msg), 1, hashTofieldConfig)[0][0];
-        const DST = ByteBuffer.stringToBytes("HashToScalar-" + this.contextString);
-        const xmd = expand_message_xmd(Uint8Array.from(msg), Uint8Array.from(DST), this.L, this.hash)
+        const DST = ByteBuffer.stringToBytes(DSTOverride || ("HashToScalar-" + this.contextString));
+        const hash = hashOverride || this.hash;
+        const xmd = expand_message_xmd(Uint8Array.from(msg), Uint8Array.from(DST), this.L, hash)
         return ByteBuffer.bytesToNumber(xmd) % this.order;
     }
 
@@ -48,9 +49,9 @@ export class VOPRF {
      * @param {Array<number>} msg the message to use for hashing
      * @returns {Point} the point represetnation
      */
-    hashToGroup(msg) {
-        const DST = "HashToGroup-" + this.contextString;
-        const hash = this.hash;
+    hashToGroup(msg, DSTOverride, hashOverride) {
+        const DST = DSTOverride || "HashToGroup-" + this.contextString;
+        const hash = hashOverride || this.hash;
         return hashToCurve(Uint8Array.from(msg), { DST, hash })
     }
 
@@ -132,9 +133,9 @@ export class VOPRF {
         const Bm = B.toRawBytes(true);
 
         const seedTranscript = new ByteBuffer()
-            .writeInt16(Bm.length)
+            .writeInt(Bm.length, 2)
             .writeBytes(Bm)
-            .writeInt16(seedDST.length)
+            .writeInt(seedDST.length, 2)
             .writeString(seedDST);
 
         const seed = Array.from(sha384.create()
@@ -148,12 +149,12 @@ export class VOPRF {
             const Di = D[i].toRawBytes(true);
 
             const buf = new ByteBuffer()
-                .writeInt16(seed.length)
+                .writeInt(seed.length, 2)
                 .writeBytes(seed)
-                .writeInt16(i)
-                .writeInt16(Ci.length)
+                .writeInt(i, 2)
+                .writeInt(Ci.length, 2)
                 .writeBytes(Ci)
-                .writeInt16(Di.length)
+                .writeInt(Di.length, 2)
                 .writeBytes(Di)
                 .writeString("Composite");
 
@@ -241,18 +242,18 @@ export class VOPRF {
         const a2 = t2.toRawBytes(true);
         const a3 = t3.toRawBytes(true);
 
-        const buf = new ByteBuffer();
-        buf.writeInt16(Bm.length)
-        buf.writeBytes(Bm);
-        buf.writeInt16(a0.length)
-        buf.writeBytes(a0);
-        buf.writeInt16(a1.length)
-        buf.writeBytes(a1);
-        buf.writeInt16(a2.length)
-        buf.writeBytes(a2);
-        buf.writeInt16(a3.length)
-        buf.writeBytes(a3);
-        buf.writeString("Challenge");
+        const buf = new ByteBuffer()
+            .writeInt(Bm.length, 2)
+            .writeBytes(Bm)
+            .writeInt(a0.length, 2)
+            .writeBytes(a0)
+            .writeInt(a1.length, 2)
+            .writeBytes(a1)
+            .writeInt(a2.length, 2)
+            .writeBytes(a2)
+            .writeInt(a3.length, 2)
+            .writeBytes(a3)
+            .writeString("Challenge");
 
         // hashToScalar = hash_to_field for
         const c = this.hashToScalar(buf.toBytes());
@@ -335,17 +336,17 @@ export class VOPRF {
         const a3 = t3.toRawBytes(true);
 
         const challengeTranscript = new ByteBuffer()
-        challengeTranscript.writeInt16(Bm.length)
-        challengeTranscript.writeBytes(Bm)
-        challengeTranscript.writeInt16(a0.length)
-        challengeTranscript.writeBytes(a0)
-        challengeTranscript.writeInt16(a1.length)
-        challengeTranscript.writeBytes(a1)
-        challengeTranscript.writeInt16(a2.length)
-        challengeTranscript.writeBytes(a2)
-        challengeTranscript.writeInt16(a3.length)
-        challengeTranscript.writeBytes(a3)
-        challengeTranscript.writeString("Challenge");
+            .writeInt(Bm.length, 2)
+            .writeBytes(Bm)
+            .writeInt(a0.length, 2)
+            .writeBytes(a0)
+            .writeInt(a1.length, 2)
+            .writeBytes(a1)
+            .writeInt(a2.length, 2)
+            .writeBytes(a2)
+            .writeInt(a3.length, 2)
+            .writeBytes(a3)
+            .writeString("Challenge");
 
         const expectedC = this.hashToScalar(challengeTranscript.toBytes());
         const verified = (expectedC == c);
@@ -408,9 +409,9 @@ export class VOPRF {
         const seedDST = "Seed-" + this.contextString;
 
         const seedTranscript = new ByteBuffer()
-            .writeInt16(Bm.length)
+            .writeInt(Bm.length, 2)
             .writeBytes(Bm)
-            .writeInt16(seedDST.length)
+            .writeInt(seedDST.length, 2)
             .writeString(seedDST);
 
         const seed = Array.from(sha384.create()
@@ -423,12 +424,12 @@ export class VOPRF {
             const Ci = C[i].toRawBytes(true);
             const Di = D[i].toRawBytes(true);
             const compositeTranscript = new ByteBuffer()
-                .writeInt16(seed.length)
+                .writeInt(seed.length, 2)
                 .writeBytes(seed)
-                .writeInt16(i)
-                .writeInt16(Ci.length)
+                .writeInt(i, 2)
+                .writeInt(Ci.length, 2)
                 .writeBytes(Ci)
-                .writeInt16(Di.length)
+                .writeInt(Di.length, 2)
                 .writeBytes(Di)
                 .writeString("Composite");
 
@@ -474,9 +475,9 @@ export class VOPRF {
         const unblindedElement = N.toRawBytes(true);
 
         const hashInput = new ByteBuffer()
-            .writeInt16(input.length)
+            .writeInt(input.length, 2)
             .writeBytes(input)
-            .writeInt16(unblindedElement.length)
+            .writeInt(unblindedElement.length, 2)
             .writeBytes(unblindedElement)
             .writeString("Finalize");
 
@@ -528,14 +529,83 @@ export class VOPRF {
         const issuedElement = evaluatedElement.toRawBytes(true);
 
         const hashInput = new ByteBuffer()
-            .writeInt16(input.length)
+            .writeInt(input.length, 2)
             .writeString(input)
-            .writeInt16(issuedElement.length)
+            .writeInt(issuedElement.length, 2)
             .writeBytes(issuedElement)
             .writeString("Finalize");
 
         return sha384.create()
             .update(Uint8Array.from(hashInput.toBytes()))
             .digest();
+    }
+
+    computeCompositesFastDraft7(k, B, C, D) {
+        const batch = new ByteBuffer()
+            .writeBytes(B.toRawBytes(false));
+
+        for (let i = 0; i < C.length; i++) {
+            batch.writeBytes(C[i].toRawBytes(false));
+            batch.writeBytes(D[i].toRawBytes(false));
+        }
+
+        const exponentList = [];
+        // Batch DLEQ
+        for (let i = 0; i < C.length; i++) {
+            const buf = new ByteBuffer();
+            buf.writeString("DLEQ BATCH\0");
+            buf.writeBytes(batch.toBytes());
+            buf.writeInt(i, 2);
+            const exponent = this.hashToScalar(buf.toBytes(), "TrustToken VOPRF Experiment V2 HashToScalar\0", sha512);
+            exponentList.push(exponent);
+        }
+
+        let M = ec.ProjectivePoint.ZERO;
+        for (let i = 0; i < C.length; i++) {
+            M = M.add(C[i].multiply(exponentList[i]));
+        }
+
+        let Z = ec.ProjectivePoint.ZERO;
+        for (let i = 0; i < C.length; i++) {
+            Z = Z.add(D[i].multiply(exponentList[i]));
+        }
+
+        return [ M, Z ]
+
+    }
+    generateProofDraft7(k, A, B, C, D, r) {
+
+        const [ M, Z ] = this.computeCompositesFastDraft7(k, B, C, D);
+
+        const t2 = A.multiply(r);
+        const t3 = M.multiply(r);
+
+        const Bm = B.toRawBytes(false);
+        const a0 = M.toRawBytes(false);
+        const a1 = Z.toRawBytes(false);
+        const a2 = t2.toRawBytes(false);
+        const a3 = t3.toRawBytes(false);
+
+        const buf = new ByteBuffer();
+        buf.writeString("DLEQ\0");
+        buf.writeBytes(Bm);
+        buf.writeBytes(a0);
+        buf.writeBytes(a1);
+        buf.writeBytes(a2);
+        buf.writeBytes(a3);
+        // hashToScalar = hash_to_field for
+        const c = this.hashToScalar(buf.toBytes(), "TrustToken VOPRF Experiment V2 HashToScalar\0", sha512);
+
+        const s = (r + c * k) % this.order;
+
+        return [c, s];
+    }
+
+    // def VerifyFinalize(skS, input, output):
+    verifyFinalizeDraft7(skS, input, output) {
+        const evaluatedElement = this.hashToGroup(input, "TrustToken VOPRF Experiment V2 HashToGroup\0", sha512);
+        const issuedElement = evaluatedElement.multiply(skS);
+
+        return output.equals(issuedElement);
     }
 }

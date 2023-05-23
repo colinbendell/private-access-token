@@ -24,62 +24,9 @@ const VOPRF_P384 = {
     // h: 1n,
     BITS: 384,
     BYTES: 384 / 8,
+    Ne: 49, // 384 / 8 + 1
+    Nh: 48, // 384 / 8
 };
-
-/**
- * An elliptic curve point used in elliptic curve operations over the curve P-384.
- *
- * Scalar multiplication can be written as `s*p` or `p*s`, where `s` is a
- * `Scalar` and `p` is an `ECPoint`. An `ECPoint` is encoded as an X9.62
- * uncompressed point.
- *
- * @param {Buffer} value An X9.62 encoded elliptic curve point.
- * @param {PointJacobi} point The `PointJacobi` representation of the point.
- */
-export class ECPoint {
-    /**
-     * @param {Array<number>} value The byte string to read values from.
-     */
-    constructor(value) {
-        if (value instanceof Point) {
-            this.#point = value;
-            this.#value = Array.from(value.toRawBytes(false));
-        }
-        else {
-            this.#value = value;
-            this.#point = ec.ProjectivePoint.fromHex(Uint8Array.from(this.#value));
-        }
-    }
-
-    #value;
-    #point;
-
-    /**
-     * @returns {Buffer} The point as an X9.62 uncompressed byte string.
-     */
-    toBytes() {
-        return this.#value;
-    }
-
-    /**
-     * @returns {string} The point as a Base64 string.
-     */
-    toString() {
-        return Base64.encode(this.toBytes());
-    }
-
-    multiply(scalar) {
-        return new ECPoint(this.#point.multiply(scalar));
-    }
-
-    toPoint() {
-        return this.#point;
-    }
-
-    [Symbol.for('nodejs.util.inspect.custom')]() {
-        return this.toString();
-    }
-}
 
 /**
  * A public key for a trust token issuer.
@@ -175,8 +122,8 @@ export class PrivateStateTokenPublicKey {
 
     toXY() {
         const bytes = this.toBytes();
-        const x = Base64.urlEncode(bytes.slice(1, VOPRF_P384.BYTES + 1));
-        const y = Base64.urlEncode(bytes.slice(VOPRF_P384.BYTES + 2));
+        const x = Base64.urlEncode(bytes.slice(1, VOPRF_P384.Nh + 1));
+        const y = Base64.urlEncode(bytes.slice(VOPRF_P384.Nh + 2));
         return {x, y};
     }
 
@@ -185,7 +132,7 @@ export class PrivateStateTokenPublicKey {
      * @returns {Array<number>} Returns the public key as bytes.
      */
     toBytes() {
-        return ByteBuffer.numberToBytes(this.scalar, VOPRF_P384.BYTES * 2 + 1); // 384 *2 + 1 or 0x04 + x + y
+        return ByteBuffer.numberToBytes(this.scalar, VOPRF_P384.Nh * 2 + 1); // Techncially should be .Ne
     }
 
     toPoint() {
@@ -388,14 +335,16 @@ export class IssueRequest {
         const bytes = new ByteBuffer(decodedBytes);
 
         const count = bytes.readInt(2);
+        const blindedLength = Math.round((bytes.length - 2) / count); // to handle Nk=49 or legacy uncompressed (Nk=97)
         const nonces = [];
-        while (nonces.length < count) {
-            const value = bytes.readBytes(VOPRF_P384.BYTES*2+1);
+        for (let i = 0; i < count; i++) {
+            const value = bytes.readBytes(blindedLength);
             try {
-                const ecPoint = new ECPoint(value);
+                const ecPoint = Point.fromHex(Uint8Array.from(value));
                 nonces.push(ecPoint);
             }
-            catch {
+            catch (e) {
+                console.error(e);
                 // null;
             }
         }
@@ -411,7 +360,7 @@ export class IssueRequest {
         const bytes = new ByteBuffer();
         bytes.writeInt(this.count, 2);
         for (const nonce of this.nonces) {
-            bytes.writeBytes(nonce.toBytes());
+            bytes.writeBytes(nonce.toRawBytes(false));
         }
         return bytes.buffer;
     }
@@ -436,7 +385,7 @@ export class IssueResponse {
 
     /**
      * @param {number} keyID The ID of the key used for signing.
-     * @param {Array<ECPoint>} signed The list of signed nonces.
+     * @param {Array<Point>} signed The list of signed nonces.
      * @param {Array<number>} proof The DLEQ proof.
      */
     constructor(keyID, signed, proof) {
@@ -470,7 +419,7 @@ export class IssueResponse {
         buf.writeInt(this.issued, 2);
         buf.writeInt(this.keyID, 4);
         for (const nonce of this.signed) {
-            buf.writeBytes(nonce.toBytes());
+            buf.writeBytes(nonce.toRawBytes(false));
         }
         buf.writeInt(this.proof.length, 2);
         buf.writeBytes(this.proof);
@@ -496,7 +445,7 @@ export class RedeemRequest {
     /**
      * @param {number} keyID The ID of the key used to sign the trust token.
      * @param {Uint8Array} nonce The nonce part of the token.
-     * @param {ECPoint} point The elliptic curve point part of the token.
+     * @param {Point} point The elliptic curve point part of the token.
      * @param {Uint8Array} clientData Client data associated with the request.
      */
     constructor(keyID, nonce, point, clientData) {
@@ -538,8 +487,8 @@ export class RedeemRequest {
         const keyID = bytes.readInt(4);
         const nonce = bytes.readBytes(NONCE_LENGTH);
 
-        const value = bytes.readBytes(VOPRF_P384.BYTES * 2 + 1);
-        const point = new ECPoint(value);
+        const value = bytes.readBytes(tokenLen - 4 - NONCE_LENGTH);
+        const point = Point.fromHex(Uint8Array.from(value));
 
         const clientDataLen = bytes.readInt(2);
         const clientData = bytes.readBytes(clientDataLen);
@@ -552,11 +501,12 @@ export class RedeemRequest {
      * @returns {Array<number>} The redeem request as bytes.
      */
     toBytes() {
+        const pointBytes = Array.from(this.point.toRawBytes(false));
         const buf = new ByteBuffer();
-        buf.writeInt(this.nonce.length + this.point.toBytes().length + 4, 2);
+        buf.writeInt(this.nonce.length + pointBytes.length + 4, 2);
         buf.writeInt(this.keyID, 4);
         buf.writeBytes(this.nonce);
-        buf.writeBytes(this.point.toBytes());
+        buf.writeBytes(pointBytes);
         buf.writeInt(this.clientData.length, 2);
         buf.writeBytes(this.clientData);
         return buf.toBytes();
@@ -631,27 +581,6 @@ export class PrivateStateTokenIssuer {
         return 1;
     }
 
-    static PrivateStateTokenV3VOPRF = {
-        name: "PrivateStateTokenV3VOPRF",
-        suite: "P384_XMD:SHA-512_SSWU_RO_",
-        hash: sha512,
-        hashToGroupDST: "TrustToken VOPRF Experiment V2 HashToGroup\0",
-        hashToScalarDST: "TrustToken VOPRF Experiment V2 HashToScalar\0",
-    };
-
-    static PrivateStateTokenV1VOPRF = {
-        name: "PrivateStateTokenV1VOPRF",
-        suite: "P384_XMD:SHA-384_SSWU_RO_",
-        hash: sha384,
-        hashToGroupDST: "HashToGroup-OPRFV1-\x01-P384-SHA384",
-        hashToScalarDST: "HashToScalar-OPRFV1-\x01-P384-SHA384",
-    };
-
-    static VERSIONS = new Map([
-        ["PrivateStateTokenV3VOPRF", PrivateStateTokenIssuer.PrivateStateTokenV3VOPRF],
-        ["PrivateStateTokenV1VOPRF", PrivateStateTokenIssuer.PrivateStateTokenV1VOPRF]
-    ]);
-
     static DEFAULT_VERSION = "PrivateStateTokenV3VOPRF";
 
     /**
@@ -713,9 +642,8 @@ export class PrivateStateTokenIssuer {
      * @see https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/web_tests/wpt_internal/trust-tokens/resources/trust_token_voprf.py;l=449-469
      */
     keyCommitment(version = PrivateStateTokenIssuer.DEFAULT_VERSION) {
-        const protocol = PrivateStateTokenIssuer.getVersionConfig(version);
         const keyCommitment = {
-            "protocol_version": protocol.name,
+            "protocol_version": version,
             "id": PrivateStateTokenIssuer.KEY_COMMITMENT_ID,
             "batchsize": this.maxBatchSize,
             "keys": {}
@@ -730,9 +658,9 @@ export class PrivateStateTokenIssuer {
             //    ECPoint pub;
             // } TrustTokenPublicKey;
             // ```
-            const buffer = new ByteBuffer();
-            buffer.writeInt32(key.id);
-            buffer.writeBytes(key.toBytes());
+            const buffer = new ByteBuffer()
+                .writeInt(key.id, 4)
+                .writeBytes(key.toBytes());
 
             const publicKey = Base64.encode(buffer.toBytes());
             const expiry = key.expiry;
@@ -746,7 +674,7 @@ export class PrivateStateTokenIssuer {
         }
         return {
             [this.host]: {
-                [protocol.name]: keyCommitment
+                [version]: keyCommitment
             }
         };
     }
@@ -764,17 +692,6 @@ export class PrivateStateTokenIssuer {
         const keyPair = PrivateStateTokenKeyPair.generate(id);
         const issuer = new PrivateStateTokenIssuer(host, maxBatchSize, keyPair);
         return issuer;
-    }
-
-    /**
-     * provides the necessary configuration details that differs between versions of PST
-     * TODO: remove legacy v3 definition
-     * @param {string} version The version of PST to use
-     * @param {string} name The name of the protocol
-     * @returns {Object} The configuration details for the given version
-     */
-    static getVersionConfig(version = "PrivateStateTokenV3VOPRF") {
-        return PrivateStateTokenIssuer.VERSIONS.get(version) || PrivateStateTokenIssuer.VERSIONS.get(PrivateStateTokenIssuer.DEFAULT_VERSION);
     }
 
     /**
@@ -866,187 +783,36 @@ export class PrivateStateTokenIssuer {
         // TODO: is null the right way to handle errors?
         if (!keyPair) return null;
 
+        const voprf = new VOPRF();
+        const k = keyPair.secretKey.scalar;
+        const r = VOPRF_P384.ORDER - 1n;
+        const blindedElements = request.nonces;
+        const evaluatedElements = [];
+
+        for (const blindedToken of blindedElements) {
+            const z = blindedToken.multiply(k);
+            evaluatedElements.push(z);
+        }
+
+        const A = ec.ProjectivePoint.BASE;
+        const B = keyPair.publicKey.toPoint(); // public key // ec.ProjectivePoint.BASE.multiply(k)
+        const C = blindedElements;
+        const D = evaluatedElements;
+        let proof = [];
+
         if (version === "PrivateStateTokenV1VOPRF") {
-            const voprf = new VOPRF();
-            const k = keyPair.secretKey.scalar;
-            const r = VOPRF_P384.ORDER - 1n;
-            const BTs = request.nonces;
-            const signedNonces = [];
-
-            for (const blindedToken of BTs) {
-                console.log(blindedToken, k);
-                const z = blindedToken.multiply(k);
-                signedNonces.push(z);
-            }
-
-            const A = ec.ProjectivePoint.BASE;
-            const B = ec.ProjectivePoint.BASE.multiply(k); // public key
-            const C = BTs.map(blindedToken => blindedToken.toPoint());
-            const D = signedNonces.map(evaluatedToken => evaluatedToken.toPoint());
-            const proof = voprf.generateProof(k, A, B, C, D, r);
-
-            const serializedProof = [].concat(
-                ByteBuffer.numberToBytes(proof[0], VOPRF_P384.BYTES),
-                ByteBuffer.numberToBytes(proof[1], VOPRF_P384.BYTES)
-            );
-
-            return new IssueResponse(keyId, signedNonces, serializedProof);
+            proof = voprf.generateProof(k, A, B, C, D, r);
         }
         else {
-            const config = PrivateStateTokenIssuer.getVersionConfig(version);
-            const hashTofieldConfig = {
-                DST: config.hashToScalarDST,
-                m: 1,
-                p: VOPRF_P384.ORDER,
-                k: 192,
-                expand: 'xmd',
-                hash: config.hash
-            }
-
-            const secretKey = keyPair.secretKey;
-            const count = request.nonces.length;
-            // Fix the random number r.
-            // TODO: this is bad, but useful for testing. refactor.
-            const r = VOPRF_P384.ORDER - 1n;
-
-            const exponentList = [];
-            const signedNonces = [];
-
-            let batch = Array.from(keyPair.publicKey.toBytes());
-            for (const blindedToken of request.nonces) {
-                // const blindedToken = request.nonces[i];
-                const z = blindedToken.multiply(secretKey.scalar);
-                signedNonces.push(z);
-
-                batch = batch.concat(blindedToken.toBytes());
-                batch = batch.concat(z.toBytes());
-            }
-
-            // Batch DLEQ
-            for (let i = 0; i < count; i++) {
-                const buf = new ByteBuffer();
-                buf.writeString("DLEQ BATCH\0");
-                buf.writeBytes(batch);
-                buf.writeInt(i, 2);
-                const exponent = hash_to_field(Uint8Array.from(buf.toBytes()), 1, hashTofieldConfig)[0][0];
-                exponentList.push(exponent);
-            }
-
-            let blindedTokenBatch = ec.ProjectivePoint.ZERO;
-            for (let i = 0; i < count; i++) {
-                const blindedToken = request.nonces[i];
-                const exponent = exponentList[i];
-                blindedTokenBatch = blindedTokenBatch.add(blindedToken.toPoint().multiply(exponent));
-            }
-
-            let zBatch = ec.ProjectivePoint.ZERO;
-            for (let i = 0; i < count; i++) {
-                const z = signedNonces[i];
-                const e = exponentList[i];
-                zBatch = zBatch.add(z.toPoint().multiply(e));
-            }
-            const proof = this.#generateDLEQProof(keyPair, blindedTokenBatch, zBatch);
-
-            return new IssueResponse(keyId, signedNonces, proof);
-        }
-    }
-
-    /**
-     * Generates the DLEQ proof for the issuance.
-     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#section-2.2.1
-     * > Generating a proof is done with the GenerateProof function, defined below. Given elements A and B,
-     * > two non-empty lists of elements C and D of length m, and a scalar k; this function produces a proof
-     * > that k*A == B and k*C[i] == D[i] for each i in [0, ..., m - 1]. The output is a value of type Proof,
-     * > which is a tuple of two Scalar values. We use the notation proof[0] and proof[1] to denote the first
-     * > and second elements in this tuple, respectively.
-     * >
-     * > GenerateProof accepts lists of inputs to amortize the cost of proof generation. Applications can take
-     * > advantage of this functionality to produce a single, constant-sized proof for m DLEQ inputs, rather
-     * > than m proofs for m DLEQ inputs.
-     * >
-     * > ```
-     * > Input:
-     * >   Scalar k
-     * >   Element A
-     * >   Element B
-     * >   Element C[m]
-     * >   Element D[m]
-     * > Output:
-     * >   Proof proof
-     * > Parameters:
-     * >   Group G
-     * >
-     * > def GenerateProof(k, A, B, C, D)
-     * >   (M, Z) = ComputeCompositesFast(k, B, C, D)
-     * >
-     * >   r = G.RandomScalar()
-     * >   t2 = r * A
-     * >   t3 = r * M
-     * >
-     * >   Bm = G.SerializeElement(B)
-     * >   a0 = G.SerializeElement(M)
-     * >   a1 = G.SerializeElement(Z)
-     * >   a2 = G.SerializeElement(t2)
-     * >   a3 = G.SerializeElement(t3)
-     * >
-     * >   challengeTranscript =
-     * >     I2OSP(len(Bm), 2) || Bm ||
-     * >     I2OSP(len(a0), 2) || a0 ||
-     * >     I2OSP(len(a1), 2) || a1 ||
-     * >     I2OSP(len(a2), 2) || a2 ||
-     * >     I2OSP(len(a3), 2) || a3 ||
-     * >     "Challenge"
-     * >
-     * >   c = G.HashToScalar(challengeTranscript)
-     * >   s = r - c * k
-     * >
-     * >   return [c, s]
-     * > ```
-     *
-     * The same defnitions for HashToScalar apply as in the VOPRF specification above.
-     *
-     * @param {PrivateStateTokenKeyPair} keyPair The issuer's key pair.
-     * @param {Point} btBatch The batched form of the blinded tokens.
-     * @param {Point} zBatch The batched form of the signed tokens.
-     * @param {string} version The version of the PrivateStateTokenVOPRF protocol to use.
-     * @returns {Array<number>} The DLEQ proof.
-     */
-    #generateDLEQProof(keyPair, btBatch, zBatch, version="PrivateStateTokenV3VOPRF") {
-        // Fix the random number r.
-        // TODO: this is bad, but useful for testing. refactor.
-        const r = VOPRF_P384.ORDER - 1n;
-
-        const config = PrivateStateTokenIssuer.getVersionConfig(version);
-        const hashTofieldConfig = {
-            DST: config.hashToScalarDST,
-            m: 1,
-            p: VOPRF_P384.ORDER,
-            k: 192,
-            expand: 'xmd',
-            hash: config.hash
+            proof = voprf.generateProofDraft7(k, A, B, C, D, r);
         }
 
-        const k0 = ec.ProjectivePoint.BASE.multiply(r);
-        const k1 = btBatch.multiply(r);
-
-        const buf = new ByteBuffer();
-        buf.writeString("DLEQ\0");
-        buf.writeBytes(keyPair.publicKey.toBytes());
-        buf.writeBytes(btBatch.toRawBytes(false));
-        buf.writeBytes(zBatch.toRawBytes(false));
-        buf.writeBytes(k0.toRawBytes(false));
-        buf.writeBytes(k1.toRawBytes(false));
-
-        // hashToScalar = hash_to_field for
-        const c = hash_to_field(Uint8Array.from(buf.toBytes()), 1, hashTofieldConfig)[0][0];
-
-        const u = (r + c * keyPair.secretKey.scalar) % VOPRF_P384.ORDER;
-
-        const result = [].concat(
-            ByteBuffer.numberToBytes(c, VOPRF_P384.BYTES),
-            ByteBuffer.numberToBytes(u, VOPRF_P384.BYTES)
+        const serializedProof = [].concat(
+            ByteBuffer.numberToBytes(proof[0], VOPRF_P384.Nh),
+            ByteBuffer.numberToBytes(proof[1], VOPRF_P384.Nh)
         );
-        return result;
+
+        return new IssueResponse(keyId, evaluatedElements, serializedProof);
     }
 
     /**
@@ -1118,13 +884,10 @@ export class PrivateStateTokenIssuer {
      * @returns {RedeemResponse} The redemption response.
      */
     redeem(request, redemptionRecord, version=PrivateStateTokenIssuer.DEFAULT_VERSION) {
-        const config = PrivateStateTokenIssuer.getVersionConfig(version);
+        const secretKey = this.#keys.get(request.keyID)?.secretKey?.scalar;
+        const voprf = new VOPRF()
 
-        const evaluatedElement = hashToCurve(Uint8Array.from(request.nonce), { DST: config.hashToGroupDST, hash: config.hash })
-        const secretKey = this.#keys.get(request.keyID)?.secretKey;
-        const issuedElement = evaluatedElement.multiply(secretKey?.scalar);
-
-        if (request.point.toPoint().equals(issuedElement)) {
+        if (voprf.verifyFinalizeDraft7(secretKey, request.nonce, request.point)) {
             return new RedeemResponse(redemptionRecord);
         }
         return null;
