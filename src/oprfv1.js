@@ -17,6 +17,8 @@ export class VOPRF {
         this.L = 72;
         this.Ns = 48;
         this.hash = sha384;
+        this.Ne = 49, // 384 / 8 + 1
+        this.Nh = 48, // 384 / 8
     }
 
     /**
@@ -516,6 +518,20 @@ export class VOPRF {
      * >   return Hash(hashInput)
      * > ```
      *
+     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#section-2.1
+     *
+     * > HashToGroup(x): Deterministically maps an array of bytes x to an element of Group.
+     * > The map must ensure that, for any adversary receiving R = HashToGroup(x), it is
+     * > computationally difficult to reverse the mapping. This function is optionally parameterized
+     * > by a domain separation tag (DST);
+     *
+     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#section-4.4
+     *
+     * > HashToGroup(): Use hash_to_curve with suite P384_XMD:SHA-384_SSWU_RO_
+     * > and DST = "HashToGroup-" || contextString.
+     *
+     * hash_to_curve is defined in https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-16#section-3
+     *
      * @param {number} skS The private key.
      * @param {number} input The private input.
      * @returns {number[]} The output.
@@ -573,6 +589,7 @@ export class VOPRF {
         return [ M, Z ]
 
     }
+
     generateProofDraft7(k, A, B, C, D, r) {
 
         const [ M, Z ] = this.computeCompositesFastDraft7(k, B, C, D);
@@ -601,7 +618,6 @@ export class VOPRF {
         return [c, s];
     }
 
-    // def VerifyFinalize(skS, input, output):
     verifyFinalizeDraft7(skS, input, output) {
         const evaluatedElement = this.hashToGroup(input, "TrustToken VOPRF Experiment V2 HashToGroup\0", sha512);
         const issuedElement = evaluatedElement.multiply(skS);

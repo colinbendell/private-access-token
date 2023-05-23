@@ -1,9 +1,6 @@
 import { Base64, ByteBuffer, CBOR} from './utils.js';
 import { VOPRF } from './oprfv1.js';
-
-import { hash_to_field } from '@noble/curves/abstract/hash-to-curve';
-import { p384 as ec, hashToCurve} from '@noble/curves/p384';
-import { sha384, sha512 } from '@noble/hashes/sha512';
+import { p384 as ec } from '@noble/curves/p384';
 const Point = ec.ProjectivePoint;
 
 const NONCE_LENGTH = 64;
@@ -22,8 +19,6 @@ const VOPRF_P384 = {
     // Gx: 26247035095799689268623156744566981891852923491109213387815615900925518854738050089022388053975719786650872476732087n,
     // Gy: 8325710961489029985546751289520108179287853048861315594709205902480503199884419224438643760392947333078086511627871n,
     // h: 1n,
-    BITS: 384,
-    BYTES: 384 / 8,
     Ne: 49, // 384 / 8 + 1
     Nh: 48, // 384 / 8
 };
@@ -594,6 +589,7 @@ export class PrivateStateTokenIssuer {
         this.#keys = new Map(keys.map(k => [k.id, k]));
         this.maxBatchSize = maxBatchSize;
         this.host = host;
+        this.voprf = new VOPRF();
     }
 
     /**
@@ -801,10 +797,10 @@ export class PrivateStateTokenIssuer {
         let proof = [];
 
         if (version === "PrivateStateTokenV1VOPRF") {
-            proof = voprf.generateProof(k, A, B, C, D, r);
+            proof = this.voprf.generateProof(k, A, B, C, D, r);
         }
         else {
-            proof = voprf.generateProofDraft7(k, A, B, C, D, r);
+            proof = this.voprf.generateProofDraft7(k, A, B, C, D, r);
         }
 
         const serializedProof = [].concat(
@@ -839,45 +835,6 @@ export class PrivateStateTokenIssuer {
      * >     opaque rr<1..2^16-1>;
      * >   } RedeemResponse;
      *
-     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#section-3.3.1
-     * > Finally, an entity which knows both the private key and the input can compute the PRF result
-     * > using the Evaluate function described in Section 3.3.1.
-     *
-     * > Input:
-     * >   Scalar skS
-     * >   PrivateInput input
-     * > Output:
-     * >   opaque output[Nh]
-     * > Parameters:
-     * >   Group G
-     * > Errors: InvalidInputError
-     * >
-     * > def Evaluate(skS, input):
-     * >   inputElement = G.HashToGroup(input)
-     * >   if inputElement == G.Identity():
-     * >     raise InvalidInputError
-     * >   evaluatedElement = skS * inputElement
-     * >   issuedElement = G.SerializeElement(evaluatedElement)
-     * >
-     * >   hashInput = I2OSP(len(input), 2) || input ||
-     * >               I2OSP(len(issuedElement), 2) || issuedElement ||
-     * >               "Finalize"
-     * >   return Hash(hashInput)
-     *
-     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#section-2.1
-     *
-     * > HashToGroup(x): Deterministically maps an array of bytes x to an element of Group.
-     * > The map must ensure that, for any adversary receiving R = HashToGroup(x), it is
-     * > computationally difficult to reverse the mapping. This function is optionally parameterized
-     * > by a domain separation tag (DST);
-     *
-     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#section-4.4
-     *
-     * > HashToGroup(): Use hash_to_curve with suite P384_XMD:SHA-384_SSWU_RO_
-     * > and DST = "HashToGroup-" || contextString.
-     *
-     * hash_to_curve is defined in https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-16#section-3
-     *
      * @param {RedeemRequest} request The redemption request.
      * @param {RedemptionRecord} redemptionRecord The redemption record.
      * @param {string} version The version of the protocol to use.
@@ -885,9 +842,8 @@ export class PrivateStateTokenIssuer {
      */
     redeem(request, redemptionRecord, version=PrivateStateTokenIssuer.DEFAULT_VERSION) {
         const secretKey = this.#keys.get(request.keyID)?.secretKey?.scalar;
-        const voprf = new VOPRF()
 
-        if (voprf.verifyFinalizeDraft7(secretKey, request.nonce, request.point)) {
+        if (this.voprf.verifyFinalizeDraft7(secretKey, request.nonce, request.point)) {
             return new RedeemResponse(redemptionRecord);
         }
         return null;
