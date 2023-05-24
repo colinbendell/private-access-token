@@ -21,15 +21,15 @@ describe('Private-State-Tokens', async () => {
         keyPair.id = 7;
         assert.deepEqual(keyPair.id, 7);
         assert.deepEqual(keyPair.publicKey.id, 7);
-        assert.deepEqual(keyPair.publicKey.toString(), 'BKqHyiK+iwU3jrHHHvMgrXRuHTtii6ebmFn3QeCCVCo4VQLyXb9VKWw6VF44cnYKt8noIbVp2dOQomFnQG1tI9YHC+JC12XrgxYlzuxKD0c+9Z9OMOKBfmKFvOKEbxXxoA==');
-        assert.deepEqual(keyPair.secretKey.toString(), '////////////////////////////////x2NNgfQ3Ld9YGg2ySLCneuzsGWrMxSly');
+        assert.deepEqual(keyPair.publicKey.point.toHex(false), '04aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7c9e821b569d9d390a26167406d6d23d6070be242d765eb831625ceec4a0f473ef59f4e30e2817e6285bce2846f15f1a0');
+        assert.deepEqual(keyPair.secretKey.scalar.toString(16), 'ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972');
     });
 
     should('KeyCommitment', async () => {
         const issuer = new PrivateStateTokenIssuer('https://example.com', 11)
         issuer.addKey(PrivateStateTokenKeyPair.TEST_JWK);
         const keyCommitment = issuer.keyCommitment();
-        assert.deepEqual(keyCommitment, {"https://example.com":{"PrivateStateTokenV3VOPRF":{"protocol_version":"PrivateStateTokenV3VOPRF","id":1,"batchsize":11,"keys":{"0":{"Y":"AAAAAASqh8oivosFN46xxx7zIK10bh07Younm5hZ90HgglQqOFUC8l2/VSlsOlReOHJ2CrfJ6CG1adnTkKJhZ0BtbSPWBwviQtdl64MWJc7sSg9HPvWfTjDigX5ihbzihG8V8aA=","expiry":"253402300799000000"}}}}});
+        assert.deepEqual(keyCommitment, {"https://example.com":{"PrivateStateTokenV3VOPRF":{"protocol_version":"PrivateStateTokenV3VOPRF","id":1,"batchsize":11,"keys":{"251":{"Y":"AAAA+wSqh8oivosFN46xxx7zIK10bh07Younm5hZ90HgglQqOFUC8l2/VSlsOlReOHJ2CrfJ6CG1adnTkKJhZ0BtbSPWBwviQtdl64MWJc7sSg9HPvWfTjDigX5ihbzihG8V8aA=","expiry":"253402300799000000"}}}}});
     });
 
     should('PrivateStateTokenIssuer.issue()', async () => {

@@ -36,7 +36,7 @@ export default {
                 });
             }
             if (url.pathname === "/.well-known/jwks.json") {
-                const body = JSON.stringify(await issuer.jwks(), null, 2);
+                const body = JSON.stringify(issuer.jwks(), null, 2);
                 return new Response(body, {
                     status: 200,
                     headers: {

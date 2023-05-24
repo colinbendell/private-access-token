@@ -1,5 +1,6 @@
-import { Base64, ByteBuffer, CBOR, sha256 } from './utils.js';
+import { Hex, Base64, ByteBuffer, CBOR } from './utils.js';
 import { OPRF } from './oprfv1.js';
+import { sha256 } from '@noble/hashes/sha256';
 import { p384 as ec } from '@noble/curves/p384';
 const Point = ec.ProjectivePoint;
 
@@ -11,10 +12,9 @@ const VOPRF_P384 = {
     name: "P-384",
     // modulus prime number
     // p: 39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112319n,
-    MODULUS: ec.CURVE.p,
     // Curve order, total count of valid points in the field.
     // n: 39402006196394479212279040100143613805079739270465446667946905279627659399113263569398956308152294913554433653942643n,
-    ORDER: ec.CURVE.n,
+    ORDER: 39402006196394479212279040100143613805079739270465446667946905279627659399113263569398956308152294913554433653942643n,
     // Base (generator) point (x, y)
     // Gx: 26247035095799689268623156744566981891852923491109213387815615900925518854738050089022388053975719786650872476732087n,
     // Gy: 8325710961489029985546751289520108179287853048861315594709205902480503199884419224438643760392947333078086511627871n,
@@ -49,21 +49,6 @@ export class PrivateStateTokenSecretKey {
         }
         return new PrivateStateTokenSecretKey(id, value, expiry);
     }
-
-    /**
-     * @returns {Buffer} Returns the value of the secret key as bytes.
-     */
-    toBytes() {
-        return ByteBuffer.numberToBytes(this.scalar, 48);
-    }
-
-    /**
-     *
-     * @returns {string} Returns the value of the secret key as a Base64 string.
-     */
-    toString() {
-        return Base64.encode(this.toBytes());
-    }
 }
 
 /**
@@ -78,11 +63,15 @@ export class PrivateStateTokenPublicKey {
      */
     id;
 
+    get truncatedKeyID() {
+        return this.keyID.slice(-1)[0];
+    };
+
     /**
      * TODO: retain in X/Y coordinates rather than in scalar form?
-     * @param {number} scalar The scalar value of the public key. ()
+     * @param {Point} point The scalar value of the public key. ()
      */
-    scalar;
+    point;
 
     /**
      * @param {number} expiry The expiry time of the public key.
@@ -91,70 +80,40 @@ export class PrivateStateTokenPublicKey {
 
     /**
      * @param {number} id The ID of the public key.
-     * @param {number} scalar The value of the public key.
+     * @param {Point} point The value of the public key.
      * @param {number} expiry The expiry time of the public key.
      */
-    constructor(id, scalar, expiry) {
+    constructor(id, point, expiry) {
         this.id = id;
-        this.scalar = scalar;
+        this.point = point;
         this.expiry = expiry;
+        this.bytes = Array.from(point.toRawBytes(false));
+        this.keyID = Array.from(sha256(Uint8Array.from(this.bytes)));
+        this.x = this.bytes.slice(1, VOPRF_P384.Nh + 1);
+        this.y = this.bytes.slice(VOPRF_P384.Nh + 2);
     }
 
     static from(id, value, expiry) {
-        if (typeof value === 'string') {
+        if (value?.x && value?.y) {
+            value = [].concat([0x04], value.x, value.y)
+        }
+        else if (typeof value === 'string') {
             value = Base64.decode(value);
         }
-        if (ArrayBuffer.isView(value) || Array.isArray(value)) {
-            value = ByteBuffer.bytesToNumber(Array.from(value));
+        else if (typeof value === 'number') {
+            value = ByteBuffer.numberToBytes(value, VOPRF_P384.Nh * 2 + 1);
         }
-        return new PrivateStateTokenPublicKey(id, value, expiry);
-    }
 
-    static fromXY(id, x, y, expiry) {
-        const bytes = [].concat([0x04], x, y);
-        return PrivateStateTokenPublicKey.from(id, bytes, expiry);
-    }
-
-    toXY() {
-        const bytes = this.toBytes();
-        const x = Base64.urlEncode(bytes.slice(1, VOPRF_P384.Nh + 1));
-        const y = Base64.urlEncode(bytes.slice(VOPRF_P384.Nh + 2));
-        return {x, y};
+        const point = Point.fromHex(Uint8Array.from(value));
+        return new PrivateStateTokenPublicKey(id, point, expiry);
     }
 
     /**
      *
      * @returns {Array<number>} Returns the public key as bytes.
      */
-    toBytes() {
-        return ByteBuffer.numberToBytes(this.scalar, VOPRF_P384.Nh * 2 + 1); // Techncially should be .Ne
-    }
-
-    toPoint() {
-        return Point.fromHex(Uint8Array.from(this.toBytes()));
-    }
-
-    /**
-     * @returns {string} Returns the public key as a Base64 string suitable for use in key commitments.
-     */
-    toString() {
-        return Base64.encode(this.toBytes());
-    }
-
-    /**
-     * Convenience method to produce a valid JWK representation of the key pair.
-     * @returns {Object} Returns a JWK representation of the key pair.
-     */
-    async toJWK() {
-        const {x, y} = this.toXY();
-        return {
-            kty: 'EC',
-            crv: 'P-384',
-            kid: Base64.urlEncode(await sha256(this.toBytes())),
-            x,
-            y,
-            exp: this.expiry / 1000 / 1000,
-        };
+    toBytes(isCompressed=false) {
+        return this.point.toRawBytes(isCompressed); // Techncially should be .Ne
     }
 }
 
@@ -238,16 +197,19 @@ export class PrivateStateTokenKeyPair {
      * Convenience method to produce a valid JWK representation of the key pair.
      * @returns {Object} Returns a JWK representation of the key pair.
      */
-    toJWK() {
-        const {x, y} = this.publicKey.toXY();
-        return {
+    toJWK(secure = false) {
+        const jwk = {
             kty: 'EC',
             crv: 'P-384',
-            kid: this.id,
-            x,
-            y,
-            d: this.secretKey.toString(),
+            kid: Base64.urlEncode(this.keyID),
+            x: Base64.urlEncode(this.x),
+            y: Base64.urlEncode(this.y),
+            exp: this.expiry / 1000 / 1000,
         };
+        if (secure) {
+            jwk.d = Base64.urlEncode(this.d);
+        }
+        return jwk;
     }
 
     /**
@@ -272,7 +234,7 @@ export class PrivateStateTokenKeyPair {
         // jwk typically uses milliseconds for the exp field, we need microseconds
         const expiry = jwk.exp;
 
-        const publicKey = PrivateStateTokenPublicKey.fromXY(keyID, x, y, expiry);
+        const publicKey = PrivateStateTokenPublicKey.from(keyID, {x, y}, expiry);
         const secretKey = PrivateStateTokenSecretKey.from(keyID, d, expiry);
         return new PrivateStateTokenKeyPair(keyID, publicKey, secretKey, expiry);
     }
@@ -347,6 +309,7 @@ export class IssueRequest {
 
         const count = bytes.readInt(2);
         const blindedLength = Math.round((bytes.length - 2) / count); // to handle Nk=49 or legacy uncompressed (Nk=97)
+        console.log('blindedLength', blindedLength);
         const nonces = [];
         for (let i = 0; i < count; i++) {
             const value = bytes.readBytes(blindedLength);
@@ -360,6 +323,7 @@ export class IssueRequest {
             }
         }
 
+        console.log(nonces);
         return new IssueRequest(nonces.filter(n => n !== null));
     }
 
@@ -675,10 +639,10 @@ export class PrivateStateTokenIssuer {
             // } TrustTokenPublicKey;
             // ```
             const buffer = new ByteBuffer()
-                .writeInt(publicKey.id, 4)
-                .writeBytes(publicKey.toBytes());
+                .writeInt(publicKey.truncatedKeyID, 4)
+                .writeBytes(publicKey.toBytes(false));
 
-            keyCommitment.keys[key.id] = {
+            keyCommitment.keys[publicKey.truncatedKeyID] = {
                 "Y": Base64.encode(buffer.toBytes()),
                 // epoch timestamp in microseconds
                 // string escaped integer
@@ -709,7 +673,7 @@ export class PrivateStateTokenIssuer {
         return {
             "issuer-request-uri": this.requestURI,
             "issuer-redeem-uri": this.redeemURI,
-            "id": this.id,
+            "id": this.truncatedKeyID,
             "batchsize": this.maxBatchSize,
             "token-keys": tokenKeys
          }
@@ -720,10 +684,10 @@ export class PrivateStateTokenIssuer {
      * the host, id (version), and max batch size.
      * @returns object formatted as a JWK Set.
      */
-    async jwks() {
+    jwks() {
         const keys = [];
         for (const key of this.#keys.values()) {
-            keys.push(await key.publicKey?.toJWK());
+            keys.push(key.toJWK());
         }
         return {
             "host": this.host,
@@ -848,7 +812,7 @@ export class PrivateStateTokenIssuer {
         }
 
         const A = ec.ProjectivePoint.BASE;
-        const B = keyPair.publicKey.toPoint(); // public key // ec.ProjectivePoint.BASE.multiply(k)
+        const B = keyPair.publicKey.point; // public key // ec.ProjectivePoint.BASE.multiply(k)
         const C = blindedElements;
         const D = evaluatedElements;
         let proof = [];
