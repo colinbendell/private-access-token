@@ -309,7 +309,6 @@ export class IssueRequest {
 
         const count = bytes.readInt(2);
         const blindedLength = Math.round((bytes.length - 2) / count); // to handle Nk=49 or legacy uncompressed (Nk=97)
-        console.log('blindedLength', blindedLength);
         const nonces = [];
         for (let i = 0; i < count; i++) {
             const value = bytes.readBytes(blindedLength);
@@ -323,7 +322,6 @@ export class IssueRequest {
             }
         }
 
-        console.log(nonces);
         return new IssueRequest(nonces.filter(n => n !== null));
     }
 
