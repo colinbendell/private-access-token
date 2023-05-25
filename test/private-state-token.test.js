@@ -18,9 +18,7 @@ describe('Private-State-Tokens', async () => {
     });
     should('PrivateStateTokenKeyPair.generate()', async () => {
         const keyPair = PrivateStateTokenKeyPair.TEST_JWK;
-        keyPair.id = 7;
-        assert.deepEqual(keyPair.id, 7);
-        assert.deepEqual(keyPair.publicKey.id, 7);
+        assert.deepEqual(keyPair.id, 251);
         assert.deepEqual(keyPair.publicKey.point.toHex(false), '04aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7c9e821b569d9d390a26167406d6d23d6070be242d765eb831625ceec4a0f473ef59f4e30e2817e6285bce2846f15f1a0');
         assert.deepEqual(keyPair.secretKey.scalar.toString(16), 'ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972');
     });
@@ -38,7 +36,7 @@ describe('Private-State-Tokens', async () => {
 
         let secPrivateStateToken = "AAEEVFIqN9o3HN46V8fr0KBj1GnlGTx2hX+Hej8tUG8AOI49fPHAQsjhbVY7m4P8DEG4dZMlsPYDQVS/kKkcG7aNnkm0yL9kUdskhfBc+/4OgH2ILjTj1zVRkest+62csHUN";
         let req = IssueRequest.from(secPrivateStateToken, 0);
-        let response = issuer.issue(0, req);
+        let response = issuer.issue(0, req); // defaults to 251
 
         assert.deepEqual(response.issued, 1);
         assert.deepEqual(response.signed[0].toHex(false), "0454522a37da371cde3a57c7ebd0a063d469e5193c76857f877a3f2d506f00388e3d7cf1c042c8e16d563b9b83fc0c41b88a6cda4f09fcbeab406f56e3e4497261b64b37409bae24db7a0fa30401f17f8177d1cb1b28caae6e14d20453634f8af2");
@@ -52,11 +50,11 @@ describe('Private-State-Tokens', async () => {
              60,  52, 127, 153, 211, 122,  74, 166,  16, 249, 136, 174,
             185, 250,  13,  88, 133, 141,  89,  89, 191,   1, 182, 220
           ]);
-        assert.deepEqual(response.toString(), "AAEAAAAABFRSKjfaNxzeOlfH69CgY9Rp5Rk8doV/h3o/LVBvADiOPXzxwELI4W1WO5uD/AxBuIps2k8J/L6rQG9W4+RJcmG2SzdAm64k23oPowQB8X+Bd9HLGyjKrm4U0gRTY0+K8gBg4qDHrgFt2s/0FG8oYsyv65i0FY501GVTiy7N6CC84zlHIIUDjraaImdewBENw3KWHV84Uf6SJTAL65DXnTNQFGdL6nGLK5qsPDR/mdN6SqYQ+YiuufoNWIWNWVm/Abbc");
+        assert.deepEqual(response.toString(), "AAEAAAD7BFRSKjfaNxzeOlfH69CgY9Rp5Rk8doV/h3o/LVBvADiOPXzxwELI4W1WO5uD/AxBuIps2k8J/L6rQG9W4+RJcmG2SzdAm64k23oPowQB8X+Bd9HLGyjKrm4U0gRTY0+K8gBg4qDHrgFt2s/0FG8oYsyv65i0FY501GVTiy7N6CC84zlHIIUDjraaImdewBENw3KWHV84Uf6SJTAL65DXnTNQFGdL6nGLK5qsPDR/mdN6SqYQ+YiuufoNWIWNWVm/Abbc");
 
         secPrivateStateToken = "AAoE6MVSc5AT8OyFhghz27roBKy9A1X+Tkjjr5OH9Tx/xvJa6Sl42DuS0lq+tR6gmN/iKvkUIGqlv+4m/M/N1Ww312UBn1/ayaklEjQxJp3gWtEp0YBx2PxXGGJIf24+z5AJBMUKrhoQSLzFTLQUsTNQi793uliKmCNt6BTg6XoTYaE3HztgCJ9ixPyRifwPM079sG1kdW+C17C4N3Hjd4U2yyKlaG9P7DuTIuStxoDNav7lfQXdbssN+e+DHR7tucKELgRJcrjoA7nabuTDGzRJ1Co5P0hPeCmX2up+W0KDDGUAsi9Upoj6IZmFV9OZWhdGXvDmRT5smXkKTq8JpQHoN6ZtAmAdC6492cDRfSu94drW5f3p357qoB94xPVqVDRbdmMEOK2IsHCnMotvCoZSRQsOXKwWqXx2JBWoHOO4wDGeEMEr5YJs+CjzOaSJkSznZvBZm/V1Ud7E2oXZkbVHnKFTge3Sv/DoIO46XjkpdgwA9oKaPjJkTx+1LkZahhCZOi/MBDIzt6q+zmkfAMoynQmym5dty0wjNKgrvOPS2CLdw0fiq7t2RmvppEww33XnWTlkrysgldaOyzEVdTrkGY+4RHpjJYlJaVIljEqUyhKXgD7wAU6uOHLyI0jzu/C+AV6prAQJ1qa8Z1OpchATYr/zWYcoQLGVQf+0YJmlCPuGJOT4hNH0y9zLv/5+gQyIdOGkSlP6HgQuVXRCHbt9PFIsb7dXPANtLekxwgdp5xFlX5rW8iihd1QYnwmjSFCEG7b1m5MEBt9MVIneAgqIzT4ADHYP44bPaC5UDLOW+3kAJhKKNuKoxHAglX3CEqArzIvrM4YdEDIy0CGK5q9HCMbjiF5VcC3exGXItL9YuSClCNRTSCXkcIr3/0o1F23og1ZN/kSnBK6BaIOlekz6e20DSeAD60KzcXUUGlK8wI0z/FOPAsYaMcFt0he2t/iSm7nU9UQrDwPtJ3atpip1XaqIg+M2QcSrLYZUF8nF3dtgh70IFBRC8YGFamLVNboXquMGqTYobwSh/GBZcDowgIEHF3ttJoxjHidfRqWhG2LXP029QONky3iic0ANewAP6fQDvMhF3+TeBSVjk3Rn0XmoJ/WTJLhgocXPxOOGMeEPlkxjjNmzOL+M5B8x4+aqCkRNm76Ico4E64nB5JcYKcMdwYJrplfGpXpq9OB1Az7U0SFZLJYhqv58GD53cgJbFnfto6q3qUvA0nVhhzhIM7Dhfv2vqMNqLtfS9PPC3/kR1DxUxJ/2ieXHdIAyMGUIxUPTN5fh4n08";
         req = IssueRequest.from(secPrivateStateToken, 0);
-        response = issuer.issue(0, req);
+        response = issuer.issue(251, req);
         assert.deepEqual(response.issued, 10);
         assert.deepEqual(response.proof, [
             112,  68,  49, 198,  77,  76, 240,  46, 197, 141, 238, 170,
@@ -68,17 +66,17 @@ describe('Private-State-Tokens', async () => {
              57, 255,  40,  27, 138, 249,  40, 157, 157,  51, 218, 108,
             216, 204, 105, 146, 239,  90, 250, 161, 109, 236, 250, 156
           ]);
-        assert.deepEqual(response.toString(), "AAoAAAAABOjFUnOQE/DshYYIc9u66ASsvQNV/k5I46+Th/U8f8byWukpeNg7ktJavrUeoJjf4tUG69+VWkAR2QMwMiqTyCia/mCgJTZW2u3LztliH6Ut1i5/jScDqOedt4CSwTBv9gTFCq4aEEi8xUy0FLEzUIu/d7pYipgjbegU4Ol6E2GhNx87YAifYsT8kYn8DzNO/bCSm4qQfShPR8iOHIh6yTTdWpeQsBPEbN0bUjl/MpUBGYL6IpA08gYQfOLhE0Y9e9EESXK46AO52m7kwxs0SdQqOT9IT3gpl9rqfltCgwxlALIvVKaI+iGZhVfTmVoXRl7wGbrBk2aG9bFQ9lr+F8hZkv2f4vRRwiY/LoLUQh4lKRkCFiBgFV/ghzsKlazLpImcBDitiLBwpzKLbwqGUkULDlysFql8diQVqBzjuMAxnhDBK+WCbPgo8zmkiZEs52bwWWQKiq4hOyV6Jm5KuGNerH4SLUAPF98RxaHG1onz/wl8ZcHNmrDgStG5pXnwZsXQMwQyM7eqvs5pHwDKMp0JspuXbctMIzSoK7zj0tgi3cNH4qu7dkZr6aRMMN9151k5ZK/U32opcTTO6orFG+ZwR7uFnNp2tpat2nO1azXtaH/BDv6xUcaNDdy3DEQPQv6hVlMECdamvGdTqXIQE2K/81mHKECxlUH/tGCZpQj7hiTk+ITR9Mvcy7/+foEMiHThpEpTBeH70aqLveJEgsOt05BIqMP8ktIWzj34lhjumqBlKQzXXoiq52D2XLeve+VJCmRsBAbfTFSJ3gIKiM0+AAx2D+OGz2guVAyzlvt5ACYSijbiqMRwIJV9whKgK8yL6zOGHe/NzS/edRlQuPc5HHehqo/SITuaN0tAp0bfWvcrrLfZG491BwC1yuiSF3yqsgG7WASugWiDpXpM+nttA0ngA+tCs3F1FBpSvMCNM/xTjwLGGjHBbdIXtrf4kpu51PVEKw/8EtiJUlnViqJVd3wcyb47VNJ5q+g2OiIkn3hC9+vrvA5+epSdKspF6FUc+lbJ15AEofxgWXA6MICBBxd7bSaMYx4nX0aloRti1z9NvUDjZMt4onNADXsAD+n0A7zIRd/kIfranGyLmC6GV9gKbNtHn146MDscec4e8GmznHMmTMZAcxvfzhwZVfW7smVBd41xBOuJweSXGCnDHcGCa6ZXxqV6avTgdQM+1NEhWSyWIar+fBg+d3ICWxZ37aOqt6lLwC2KnnjHt8xPHoECUFc8ldEoLQsMPSAG7ivDqztgCXYZOIt/zM+a9zq8LMhpHh2CwwBgcEQxxk1M8C7Fje6qGT1rwtmEvUOzV1DqjWQlZmk+BUG65jNFb+Q95/2RHsle2C7Wj7vOObKzD9E6chFV5sKUPSZ7QrxMqK8VOf8oG4r5KJ2dM9ps2Mxpku9a+qFt7Pqc");
+        assert.deepEqual(response.toString(), "AAoAAAD7BOjFUnOQE/DshYYIc9u66ASsvQNV/k5I46+Th/U8f8byWukpeNg7ktJavrUeoJjf4tUG69+VWkAR2QMwMiqTyCia/mCgJTZW2u3LztliH6Ut1i5/jScDqOedt4CSwTBv9gTFCq4aEEi8xUy0FLEzUIu/d7pYipgjbegU4Ol6E2GhNx87YAifYsT8kYn8DzNO/bCSm4qQfShPR8iOHIh6yTTdWpeQsBPEbN0bUjl/MpUBGYL6IpA08gYQfOLhE0Y9e9EESXK46AO52m7kwxs0SdQqOT9IT3gpl9rqfltCgwxlALIvVKaI+iGZhVfTmVoXRl7wGbrBk2aG9bFQ9lr+F8hZkv2f4vRRwiY/LoLUQh4lKRkCFiBgFV/ghzsKlazLpImcBDitiLBwpzKLbwqGUkULDlysFql8diQVqBzjuMAxnhDBK+WCbPgo8zmkiZEs52bwWWQKiq4hOyV6Jm5KuGNerH4SLUAPF98RxaHG1onz/wl8ZcHNmrDgStG5pXnwZsXQMwQyM7eqvs5pHwDKMp0JspuXbctMIzSoK7zj0tgi3cNH4qu7dkZr6aRMMN9151k5ZK/U32opcTTO6orFG+ZwR7uFnNp2tpat2nO1azXtaH/BDv6xUcaNDdy3DEQPQv6hVlMECdamvGdTqXIQE2K/81mHKECxlUH/tGCZpQj7hiTk+ITR9Mvcy7/+foEMiHThpEpTBeH70aqLveJEgsOt05BIqMP8ktIWzj34lhjumqBlKQzXXoiq52D2XLeve+VJCmRsBAbfTFSJ3gIKiM0+AAx2D+OGz2guVAyzlvt5ACYSijbiqMRwIJV9whKgK8yL6zOGHe/NzS/edRlQuPc5HHehqo/SITuaN0tAp0bfWvcrrLfZG491BwC1yuiSF3yqsgG7WASugWiDpXpM+nttA0ngA+tCs3F1FBpSvMCNM/xTjwLGGjHBbdIXtrf4kpu51PVEKw/8EtiJUlnViqJVd3wcyb47VNJ5q+g2OiIkn3hC9+vrvA5+epSdKspF6FUc+lbJ15AEofxgWXA6MICBBxd7bSaMYx4nX0aloRti1z9NvUDjZMt4onNADXsAD+n0A7zIRd/kIfranGyLmC6GV9gKbNtHn146MDscec4e8GmznHMmTMZAcxvfzhwZVfW7smVBd41xBOuJweSXGCnDHcGCa6ZXxqV6avTgdQM+1NEhWSyWIar+fBg+d3ICWxZ37aOqt6lLwC2KnnjHt8xPHoECUFc8ldEoLQsMPSAG7ivDqztgCXYZOIt/zM+a9zq8LMhpHh2CwwBgcEQxxk1M8C7Fje6qGT1rwtmEvUOzV1DqjWQlZmk+BUG65jNFb+Q95/2RHsle2C7Wj7vOObKzD9E6chFV5sKUPSZ7QrxMqK8VOf8oG4r5KJ2dM9ps2Mxpku9a+qFt7Pqc");
     });
 
     should('PrivateStateTokenIssuer.redeem()', async () => {
       const issuer = new PrivateStateTokenIssuer('https://example.com', 11)
       issuer.addKey(PrivateStateTokenKeyPair.TEST_JWK);
 
-        const secPrivateStateToken = "AKUAAAAAtVsA7lhWk9bStGA1fzKP/RvaKgcvVDAq1QvzW43xhYO9AamHe6u5wZIfrydStvtAcu0vNU+HXSdsokoaC02taQSYGczrEyU05BIvR2fl0osHsQvC/uTNq9+PQOBxXe8k3pAnRnV5CTOT4CuiuVO2/1JKtDEJMn4Ww51YOj7yLxkQ00Iv7iV8SmCXMnZ3V7ZyM3j/FfSdbolwS5qYSVM/0ucAT6JwcmVkZWVtaW5nLW9yaWdpbnghaHR0cHM6Ly9zaG9lc2J5Y29saW4uZGV2LmNvbTozMDAwdHJlZGVtcHRpb24tdGltZXN0YW1wGmRKygU=";
+        const secPrivateStateToken = "AKUAAAD7tVsA7lhWk9bStGA1fzKP/RvaKgcvVDAq1QvzW43xhYO9AamHe6u5wZIfrydStvtAcu0vNU+HXSdsokoaC02taQSYGczrEyU05BIvR2fl0osHsQvC/uTNq9+PQOBxXe8k3pAnRnV5CTOT4CuiuVO2/1JKtDEJMn4Ww51YOj7yLxkQ00Iv7iV8SmCXMnZ3V7ZyM3j/FfSdbolwS5qYSVM/0ucAT6JwcmVkZWVtaW5nLW9yaWdpbnghaHR0cHM6Ly9zaG9lc2J5Y29saW4uZGV2LmNvbTozMDAwdHJlZGVtcHRpb24tdGltZXN0YW1wGmRKygU=";
         const redeemRequest = RedeemRequest.from(secPrivateStateToken);
 
-        assert.deepEqual(redeemRequest.keyID, 0);
+        assert.deepEqual(redeemRequest.keyID, 251);
         assert.deepEqual(redeemRequest.nonce, [
             181,  91,   0, 238,  88,  86, 147, 214, 210, 180,  96,
              53, 127,  50, 143, 253,  27, 218,  42,   7,  47,  84,

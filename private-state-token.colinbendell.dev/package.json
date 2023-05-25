@@ -1,0 +1,24 @@
+{
+  "private": true,
+  "name": "worker",
+  "version": "1.0.0",
+  "description": "A PrivateStateToken implementation of PrivacyPass",
+  "main": "index.js",
+  "author": "Colin Bendell <colin@bendell.ca>",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@noble/curves": "^1.0.0",
+    "@noble/hashes": "^1.0.0"
+  },
+  "scripts": {
+    "build": "wrangler deploy _worker.js --dry-run --outdir dist --latest && cp *.html dist && cp _routes.json dist",
+    "publish": "npm run build && wrangler pages deploy dist --project-name=private-state-token",
+    "serve": "wrangler pages dev ."
+  },
+  "devDependencies": {
+    "esbuild": "^0.17.19",
+    "miniflare": "^2.14.0",
+    "wrangler": "^3"
+  }
+}

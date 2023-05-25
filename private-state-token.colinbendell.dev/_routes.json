@@ -1,0 +1,5 @@
+{
+    "version": 1,
+    "include": ["/request", "/redeem", "/echo", "/.well-known/*"],
+    "exclude": ["/", "/index.html"]
+ }
