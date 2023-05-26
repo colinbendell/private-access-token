@@ -71,8 +71,8 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           workingDirectory: "private-access-token.colinbendell.dev/worker"
-      - run: npm --prefix private-state-token.colinbendell.dev/worker install
-      - run: npm --prefix private-state-token.colinbendell.dev/worker run build
+      - run: npm --prefix private-state-token.colinbendell.dev install
+      - run: npm --prefix private-state-token.colinbendell.dev run build
       - name: Update Cloudflare (private-state-token.colinbendell.dev)
         uses: cloudflare/pages-action@v1
         with:
