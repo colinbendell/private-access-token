@@ -12,7 +12,7 @@
     "@noble/hashes": "^1.0.0"
   },
   "scripts": {
-    "build": "wrangler deploy _worker.js --dry-run --outdir dist --latest --name=private-state-token && cp -v {_routes.json,*.html} dist",
+    "build": "wrangler deploy _worker.js --dry-run --outdir dist --latest --name=private-state-token && mkdir -p dist && cp -v _routes.json *.html dist",
     "publish": "npm run build && wrangler pages deploy dist --project-name=private-state-token",
     "serve": "wrangler pages dev ."
   },
