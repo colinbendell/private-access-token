@@ -12,13 +12,12 @@
     "@noble/hashes": "^1.0.0"
   },
   "scripts": {
-    "build": "wrangler deploy _worker.js --dry-run --outdir dist --latest && cp *.html dist && cp _routes.json dist",
+    "build": "wrangler deploy _worker.js --dry-run --outdir dist --latest && cp -v {_routes.json,*.html} dist",
     "publish": "npm run build && wrangler pages deploy dist --project-name=private-state-token",
     "serve": "wrangler pages dev ."
   },
   "devDependencies": {
     "esbuild": "^0.17.19",
-    "miniflare": "^2.14.0",
     "wrangler": "^3"
   }
 }

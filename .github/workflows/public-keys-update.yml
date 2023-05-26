@@ -32,11 +32,11 @@ jobs:
       - uses: actions/setup-node@v3
         if: ${{ github.event_name == 'schedule' }}
         with:
-          node-version: '20'
+          node-version: "20"
       - run: npm --prefix public-keys install
         if: ${{ github.event_name == 'schedule' }}
         env:
-          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
       - name: Extract PublicKey
         if: ${{ github.event_name == 'schedule' }}
         uses: mujo-code/puppeteer-headful@18.9.0
@@ -65,12 +65,23 @@ jobs:
           node-version: latest
       - run: npm install
       - run: npm --prefix private-access-token.colinbendell.dev/worker install
-      - name: Update Cloudflare
+      - name: Update Cloudflare (private-access-token.colinbendell.dev)
         uses: cloudflare/wrangler-action@2.0.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          workingDirectory: 'private-access-token.colinbendell.dev/worker'
+          workingDirectory: "private-access-token.colinbendell.dev/worker"
+      - run: npm --prefix private-state-token.colinbendell.dev/worker install
+      - run: npm --prefix private-state-token.colinbendell.dev/worker run build
+      - name: Update Cloudflare (private-state-token.colinbendell.dev)
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: "private-state-token"
+          directory: "private-state-token.colinbendell.dev/dist"
+          # Enable Wrangler v3
+          wranglerVersion: '3'
   pages:
     name: Update GH Pages
     needs: extract
@@ -83,7 +94,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: 'build'
+          path: "build"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
