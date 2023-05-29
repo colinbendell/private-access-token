@@ -59,6 +59,76 @@ export class OPRF {
         return hashToCurve(Uint8Array.from(msg), { DST, hash })
     }
 
+    serializeElement(A, compressed=false) {
+        return Array.from(A.toRawBytes(compressed));
+    }
+
+    deserializeElement(buf) {
+        return Point.fromHex(Uint8Array.from(buf));
+    }
+
+    serializeScalar(s) {
+        return ByteBuffer.numberToBytes(s, this.Ns);
+    }
+
+    deserializeScalar(buf) {
+        return ByteBuffer.bytesToNumber(buf);
+    }
+
+    randomScalar() {
+        const rand = ec.CURVE.randomBytes(this.Ns + 8);
+        const val = ByteBuffer.bytesToNumber(rand) % this.order;
+        if (val < 0) return val + this.order;
+        return val;
+    }
+
+        /**
+     * Input:
+     *   opaque seed[Ns]
+     *   PublicInput info
+     * Output:
+     *   Scalar skS
+     *   Element pkS
+     * Parameters:
+     *   Group G
+     *   PublicInput contextString
+     * Errors: DeriveKeyPairError
+     *
+     * def DeriveKeyPair(seed, info):
+     *   deriveInput = seed || I2OSP(len(info), 2) || info
+     *   counter = 0
+     *   skS = 0
+     *   while skS == 0:
+     *     if counter > 255:
+     *       raise DeriveKeyPairError
+     *     skS = G.HashToScalar(deriveInput || I2OSP(counter, 1),
+     *                           DST = "DeriveKeyPair" || contextString)
+     *     counter = counter + 1
+     *   pkS = G.ScalarMultGen(skS)
+     *   return skS, pkS
+     */
+    deriveKeyPair(seed, info="") {
+        const deriveInput = new ByteBuffer()
+            .writeInt(seed, this.Ns)
+            .writeInt(info.length, 2)
+            .writeString(info)
+            .toBytes();
+
+        let counter = 0;
+        let skS = null;
+        while (skS === null) {
+            if (counter > 255) {
+                throw new Error("DeriveKeyPairError");
+            }
+            const input = deriveInput.concat([counter]);
+
+            skS = this.hashToScalar(input, "DeriveKeyPair" + this.contextString);
+            counter++;
+        }
+        const pkS = Point.BASE.multiply(skS);
+        return [ skS, pkS ];
+    }
+
     /**
      * from: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-configuration
      *

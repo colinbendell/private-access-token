@@ -80,7 +80,7 @@ export class PrivateStateTokenPublicKey {
         this.#keyID = Array.from(sha256(Uint8Array.from(this.bytes)));
         this.#truncatedKeyID = this.keyID.slice(-1)[0];
         this.x = this.bytes.slice(1, VOPRF_P384.Nh + 1);
-        this.y = this.bytes.slice(VOPRF_P384.Nh + 2);
+        this.y = this.bytes.slice(VOPRF_P384.Nh + 1);
     }
 
     static from(value) {
@@ -122,7 +122,7 @@ export class PrivateStateTokenKeyPair {
     publicKey;
 
     /**
-     * @param {PrivateStateTokenSecretKey} secretKey The secret key
+     * @param {number} secretKey The secret key
      */
     secretKey;
 
@@ -141,14 +141,19 @@ export class PrivateStateTokenKeyPair {
     /**
      * @param {number} id The ID associated with the key pair.
      * @param {PrivateStateTokenPublicKey} publicKey The public component of the key pair.
-     * @param {PrivateStateTokenSecretKey} secretKey The secret component of the key pair.
+     * @param {number} secretKey The secret component of the key pair.
      * @param {number} expiry The expiry of the key pair.
      */
     constructor(publicKey, secretKey, expiry) {
         this.publicKey = publicKey;
+
+        if (secretKey instanceof Uint16Array || Array.isArray(secretKey)) {
+            secretKey = ByteBuffer.bytesToNumber(Array.from(secretKey));
+        }
+
         this.secretKey = secretKey;
 
-        expiry = expiry || this.secretKey.expiry || this.publicKey.expiry || Date.now() + 90*24*60*60*1000; //+90 days default
+        expiry = expiry || Date.now() + 90*24*60*60*1000; //+90 days default
         // quick sanitation to ensure that we are in microseconds
         expiry = expiry * (10**(Math.ceil(Math.max(16-Math.ceil(Math.log10(expiry)), 0)/3)*3))
         this.expiry = expiry;
@@ -162,13 +167,14 @@ export class PrivateStateTokenKeyPair {
         const jwk = {
             kty: 'EC',
             crv: 'P-384',
-            kid: Base64.urlEncode(this.keyID),
-            x: Base64.urlEncode(this.x),
-            y: Base64.urlEncode(this.y),
-            exp: this.expiry / 1000 / 1000,
+            kid: this.publicKey.truncatedKeyID,
+            "x5t#S256": Base64.urlEncode(this.publicKey.keyID),
+            x: Base64.urlEncode(this.publicKey.x),
+            y: Base64.urlEncode(this.publicKey.y),
+            exp: Math.floor(this.expiry / 1000 / 1000), //assume seconds since epoch; second resolution
         };
         if (secure) {
-            jwk.d = Base64.urlEncode(this.d);
+            jwk.d = Base64.urlEncode(ByteBuffer.numberToBytes(this.secretKey, 48));
         }
         return jwk;
     }
@@ -184,53 +190,18 @@ export class PrivateStateTokenKeyPair {
      * - exp: The expiry of the key pair in seconds since the epoch.
      *
      * @param {Object} jwk The JWK representation of the key pair.
-     * @param {number} id The ID associated with the key pair. (If not present in the jwk definition)
      * @returns {PrivateStateTokenKeyPair} The key pair.
      */
-    static fromJWK(jwk, id=0) {
-        const keyID = id || jwk.kid || 0;
+    static from(jwk) {
         const x = Base64.decode(jwk.x);
         const y = Base64.decode(jwk.y);
         const d = Base64.decode(jwk.d);
         // jwk typically uses milliseconds for the exp field, we need microseconds
         const expiry = jwk.exp;
-
         const publicKey = PrivateStateTokenPublicKey.from({x, y});
-        const secretKey = PrivateStateTokenSecretKey.from(d);
-        return new PrivateStateTokenKeyPair(publicKey, secretKey, expiry);
+        return new PrivateStateTokenKeyPair(publicKey, d, expiry);
     }
 
-    /**
-     * Generates a key pair for a trust token issuer.
-     * For testing purposes, the secret value is fixed. The public value is the
-     * product of the secret value and the generator of P-384.
-     *
-     * @param {number} id The ID associated with the key pair.
-     * @returns {PrivateStateTokenKeyPair} The key pair.
-     */
-    static generate() {
-        // const priv = VOPRF_P384.ORDER - 1n;
-        // priv cannot be 0
-        const priv = ec.utils.randomPrivateKey();
-        const pub = ec.ProjectivePoint.BASE.multiply(k);
-
-        const publicKey = PrivateStateTokenPublicKey.from(pub);
-        const secretKey = PrivateStateTokenSecretKey.from(priv);
-        return new PrivateStateTokenKeyPair(publicKey, secretKey);
-    }
-
-    static get TEST_JWK() {
-        return PrivateStateTokenKeyPair.fromJWK({
-            kty: 'EC',
-            crv: 'P-384',
-            kid: 0,
-            x: 'qofKIr6LBTeOscce8yCtdG4dO2KLp5uYWfdB4IJUKjhVAvJdv1UpbDpUXjhydgq3',
-            y: 'yeghtWnZ05CiYWdAbW0j1gcL4kLXZeuDFiXO7EoPRz71n04w4oF-YoW84oRvFfGg',
-            d: '////////////////////////////////x2NNgfQ3Ld9YGg2ySLCneuzsGWrMxSly',
-            // Friday, December 31, 9999 11:59:59 PM GMT
-            exp: 253402300799
-        });
-    }
 }
 
 /**
@@ -490,7 +461,10 @@ export class RedeemResponse {
      * @returns {Array<number>} The redemption record as bytes.
      */
     toBytes() {
-        return this.record;
+        return new ByteBuffer()
+            .writeBytes(this.record.length, 2)
+            .writeBytes(this.record)
+            .toBytes();
     }
 
     /**
@@ -561,13 +535,15 @@ export class PrivateStateTokenIssuer {
 
     /**
      * Adds a key pair from a JWK definition.
-     * @param {Object} jwk A JWK definition.
+     * @param {Object|Object[]} jwks A JWK definition.
      * @see https://tools.ietf.org/html/rfc7517
      * @returns {PrivateStateTokenIssuer} This issuer (for chaining)
      */
-    addJWK(jwk) {
-        const key = PrivateStateTokenKeyPair.fromJWK(jwk);
-        return this.addKey(key);
+    addJWK(jwks) {
+        for (const jwk of Array.isArray(jwks) ? jwks : [jwks]) {
+            this.addKey(PrivateStateTokenKeyPair.from(jwk));
+        }
+        return this;
     }
 
     /**
@@ -665,10 +641,20 @@ export class PrivateStateTokenIssuer {
      * @param {number} id The id for the key pair.
      * @returns {PrivateStateTokenIssuer} The trust token issuer with a generated key pair.
      */
-    static generate(host = DEFAULT_HOST, maxBatchSize = 10, id=0) {
-        const keyPair = PrivateStateTokenKeyPair.generate(id);
+    static generate(host = DEFAULT_HOST, maxBatchSize = 2) {
+        const keyPair = PrivateStateTokenKeyPair.generate();
         const issuer = new PrivateStateTokenIssuer(host, maxBatchSize, keyPair);
         return issuer;
+    }
+
+    generateKey() {
+        const seed = this.voprf.randomScalar();
+        const [priv, pub] = this.voprf.deriveKeyPair(seed);
+        const publicKey = PrivateStateTokenPublicKey.from(pub);
+        const keyPair = new PrivateStateTokenKeyPair(publicKey, priv);
+
+        this.addKey(keyPair);
+        return keyPair;
     }
 
     /**
@@ -760,7 +746,7 @@ export class PrivateStateTokenIssuer {
         // TODO: is null the right way to handle errors?
         if (!keyPair) return null;
 
-        const k = keyPair.secretKey.scalar;
+        const k = keyPair.secretKey;
         const r = VOPRF_P384.ORDER - 1n;
         const blindedElements = request.nonces;
         const evaluatedElements = [];
@@ -783,12 +769,11 @@ export class PrivateStateTokenIssuer {
             proof = this.voprf.generateProofDraft7(k, A, B, C, D, r);
         }
 
-        const serializedProof = [].concat(
-            ByteBuffer.numberToBytes(proof[0], VOPRF_P384.Nh),
-            ByteBuffer.numberToBytes(proof[1], VOPRF_P384.Nh)
-        );
+        const serializedProof = new ByteBuffer()
+            .writeBytes(this.voprf.serializeScalar(proof[0]))
+            .writeBytes(this.voprf.serializeScalar(proof[1]));
 
-        return new IssueResponse(keyPair.id, evaluatedElements, serializedProof);
+        return new IssueResponse(keyPair.id, evaluatedElements, serializedProof.toBytes());
     }
 
     /**
@@ -821,7 +806,7 @@ export class PrivateStateTokenIssuer {
      * @returns {RedeemResponse} The redemption response.
      */
     redeem(request, redemptionRecord, version=PrivateStateTokenIssuer.DEFAULT_VERSION) {
-        const secretKey = this.#keys.get(request.keyID)?.secretKey?.scalar;
+        const secretKey = this.#keys.get(request.keyID)?.secretKey;
 
         if (this.voprf.verifyFinalizeDraft7(secretKey, request.nonce, request.W)) {
             return new RedeemResponse(redemptionRecord);

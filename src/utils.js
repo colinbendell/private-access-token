@@ -165,7 +165,6 @@ export class ByteBuffer {
             data = [data];
         }
 
-
         this.buffer = this.buffer.concat(data);
         return this;
     }
@@ -207,6 +206,17 @@ export class ByteBuffer {
     }
 
     static bytesToNumber(octets = []) {
+        if (octets instanceof Uint8Array) {
+            octets = Array.from(octets);
+        }
+        else if (typeof octets === 'string') {
+            // assume it's hex encoded
+            octets = Hex.decode(octets);
+        }
+        else if (!Array.isArray(octets)) {
+            return octets;
+        }
+
         let result = 0n;
         for (const octet of octets) {
             result <<= 8n;

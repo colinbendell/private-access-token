@@ -1,10 +1,14 @@
 import { PrivateStateTokenIssuer, PrivateStateTokenKeyPair, IssueRequest, RedeemRequest } from "../src/private-state-token.js";
+import jwks from "../SAMPLE.jwks.json";
 
-const issuer = new PrivateStateTokenIssuer('https://private-state-token.colinbendell.dev', 10, 1684870124)
-if (issuer.publicKeys.length === 0) issuer.addKey(PrivateStateTokenKeyPair.TEST_JWK);
+const issuer = new PrivateStateTokenIssuer('https://private-state-token.colinbendell.dev', 2, 1684870124)
 
 export default {
+
     async fetch(request, env) {
+        if (issuer.publicKeys.length === 0) {
+            issuer.addJWK(jwks.keys);
+        }
         const url = new URL(request.url);
         const privateStateToken = request.headers.get("sec-private-state-token");
         const pstCryptoVersion = request.headers.get("sec-private-state-token-crypto-version");

@@ -1,7 +1,12 @@
 import { should, describe } from 'micro-should';
 import * as assert from 'assert';
 import { IssueRequest, PrivateStateTokenKeyPair, PrivateStateTokenIssuer, RedeemRequest} from '../src/private-state-token.js';
-import { Base64, Hex } from '../src/utils.js';
+import { Base64, Hex } from '../src/utils.js' ;
+// import SAMPLE.jwks.json
+// const SAMPLE_JWKS_JSON = require('./SAMPLE.jwks.json');
+import SAMPLE_JWKS_JSON from '../SAMPLE.jwks.json' assert { type: "json" };
+
+const DEFAULT_JWK = SAMPLE_JWKS_JSON.keys.find(k => k["x5t#S256"] === '1BKV0jzi-c2GZnKWqHy5JI8Owr5PoDtq1Lj_WoVg_Ps=') || {};
 
 describe('Private-State-Tokens', async () => {
     should('IssueRequest.from()', async () => {
@@ -17,22 +22,22 @@ describe('Private-State-Tokens', async () => {
 
     });
     should('PrivateStateTokenKeyPair.generate()', async () => {
-        const keyPair = PrivateStateTokenKeyPair.TEST_JWK;
+        const keyPair = PrivateStateTokenKeyPair.from(DEFAULT_JWK);
         assert.deepEqual(keyPair.id, 251);
         assert.deepEqual(keyPair.publicKey.point.toHex(false), '04aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7c9e821b569d9d390a26167406d6d23d6070be242d765eb831625ceec4a0f473ef59f4e30e2817e6285bce2846f15f1a0');
-        assert.deepEqual(keyPair.secretKey.scalar.toString(16), 'ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972');
+        assert.deepEqual(keyPair.secretKey.toString(16), 'ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972');
     });
 
     should('KeyCommitment', async () => {
         const issuer = new PrivateStateTokenIssuer('https://example.com', 11)
-        issuer.addKey(PrivateStateTokenKeyPair.TEST_JWK);
+        issuer.addKey(PrivateStateTokenKeyPair.from(DEFAULT_JWK));
         const keyCommitment = issuer.keyCommitment();
         assert.deepEqual(keyCommitment, {"https://example.com":{"PrivateStateTokenV3VOPRF":{"protocol_version":"PrivateStateTokenV3VOPRF","id":1,"batchsize":11,"keys":{"251":{"Y":"AAAA+wSqh8oivosFN46xxx7zIK10bh07Younm5hZ90HgglQqOFUC8l2/VSlsOlReOHJ2CrfJ6CG1adnTkKJhZ0BtbSPWBwviQtdl64MWJc7sSg9HPvWfTjDigX5ihbzihG8V8aA=","expiry":"253402300799000000"}}}}});
     });
 
     should('PrivateStateTokenIssuer.issue()', async () => {
       const issuer = new PrivateStateTokenIssuer('https://example.com', 10)
-      issuer.addKey(PrivateStateTokenKeyPair.TEST_JWK);
+      issuer.addKey(PrivateStateTokenKeyPair.from(DEFAULT_JWK));
 
         let secPrivateStateToken = "AAEEVFIqN9o3HN46V8fr0KBj1GnlGTx2hX+Hej8tUG8AOI49fPHAQsjhbVY7m4P8DEG4dZMlsPYDQVS/kKkcG7aNnkm0yL9kUdskhfBc+/4OgH2ILjTj1zVRkest+62csHUN";
         let req = IssueRequest.from(secPrivateStateToken, 0);
@@ -71,7 +76,7 @@ describe('Private-State-Tokens', async () => {
 
     should('PrivateStateTokenIssuer.redeem()', async () => {
       const issuer = new PrivateStateTokenIssuer('https://example.com', 11)
-      issuer.addKey(PrivateStateTokenKeyPair.TEST_JWK);
+      issuer.addKey(PrivateStateTokenKeyPair.from(DEFAULT_JWK));
 
         const secPrivateStateToken = "AKUAAAD7tVsA7lhWk9bStGA1fzKP/RvaKgcvVDAq1QvzW43xhYO9AamHe6u5wZIfrydStvtAcu0vNU+HXSdsokoaC02taQSYGczrEyU05BIvR2fl0osHsQvC/uTNq9+PQOBxXe8k3pAnRnV5CTOT4CuiuVO2/1JKtDEJMn4Ww51YOj7yLxkQ00Iv7iV8SmCXMnZ3V7ZyM3j/FfSdbolwS5qYSVM/0ucAT6JwcmVkZWVtaW5nLW9yaWdpbnghaHR0cHM6Ly9zaG9lc2J5Y29saW4uZGV2LmNvbTozMDAwdHJlZGVtcHRpb24tdGltZXN0YW1wGmRKygU=";
         const redeemRequest = RedeemRequest.from(secPrivateStateToken);
@@ -85,7 +90,7 @@ describe('Private-State-Tokens', async () => {
              82, 182, 251,  64, 114, 237,  47,  53,  79, 135,  93,
              39, 108, 162,  74,  26,  11,  77, 173, 105
           ]);
-        assert.deepEqual(Array.from(redeemRequest.point.toRawBytes(false)), [
+        assert.deepEqual(Array.from(redeemRequest.W.toRawBytes(false)), [
             4, 152,  25, 204, 235,  19,  37,  52, 228,  18,  47,  71,
           103, 229, 210, 139,   7, 177,  11, 194, 254, 228, 205, 171,
           223, 143,  64, 224, 113,  93, 239,  36, 222, 144,  39,  70,
