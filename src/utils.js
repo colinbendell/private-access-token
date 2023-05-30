@@ -350,3 +350,89 @@ export class CBOR {
         }
     }
 }
+
+export class PS384 {
+    static async asnToJWK(rawData = []) {
+        if (typeof rawData === "string") {
+            rawData = Base64.decode(rawData);
+        }
+        const e = rawData.slice(-3);
+        const n = rawData.slice(-261, -5);
+        const keyID = await sha256(PS384.toASN({e: Base64.encode(e), n: Base64.encode(n)}, false));
+        return {
+            kty: "RSA",
+            alg: "PS384",
+            use: "sig",
+            kid: `${keyID.slice(-1)}`,
+            "x5t#S256": Base64.urlEncode(keyID),
+            e: Base64.urlEncode(e),
+            n: Base64.urlEncode(n),
+        }
+    }
+
+    static jwkToASN(jwk, rsaEncoded=false) {
+
+        // this is a cheat
+        // we are going to use a pre-formed header for RSAPSS
+        const header = Hex.decode(rsaEncoded ?
+            // oid = rsaEnoded type with length set to 290
+            "30820122300d06092a864886f70d01010105000382010f003082010a0282010100" :
+            // oid =  1.2.840.113549.1.1.10 rsaPSS (PKCS #1)
+            // with length set to 338
+            // params: 2.16.840.1.101.3.4.2.2 sha-384 (NIST Algorithm)
+            // params: 1.2.840.113549.1.1.8 pkcs1-MGF (PKCS #1)
+            // params: 2.16.840.1.101.3.4.2.2 sha-384 (NIST Algorithm)
+            // params: salt length set to 48, and hash set to sha-256
+            "30820152303d06092a864886f70d01010a3030a00d300b0609608648016503040202a11a301806092a864886f70d010108300b0609608648016503040202a2030201300382010f003082010a0282010100");
+
+        const data = new ByteBuffer()
+        .writeBytes(header)
+        .writeBytes(Base64.decode(jwk.n))
+        .writeBytes([0x02, 0x03])
+        .writeBytes(Base64.decode(jwk.e));
+
+        return data.toBytes();
+    }
+}
+
+export class P384 {
+    static async toJWK(rawData = []) {
+
+        if (typeof rawData === "string") {
+            rawData = Base64.decode(rawData);
+        }
+        else if (typeof me.toRawBytes === "function") {
+            rawData = Array.from(rawData.toRawBytes());
+        }
+        // const Ns = 384/8;
+        const x = rawData.slice(-96,-48);
+        const y = rawData.slice(-48);
+        // just in case the array is not a properly formatted ASN.1 sequence
+        const keyID = await sha256(P384.toASN({x: Base64.encode(x), y: Base64.encode(y)}));
+        return {
+            kty: 'EC',
+            crv: 'P-384',
+            use: "sig",
+            kid: `${keyID.slice(-1)}`,
+            "x5t#S256": Base64.urlEncode(keyID),
+            x: Base64.urlEncode(x),
+            y: Base64.urlEncode(y),
+        }
+    }
+
+    static toASN(jwk) {
+
+        // this is a cheat
+        // we are going to use a pre-formed header for P384
+        // OID: 1.2.840.10045.2.1 ecPublicKey (ANSI X9.62 public key type)
+        // 1.3.132.0.34 secp384r1 (SECG (Certicom) named elliptic curve)
+        const header = Hex.decode("3076301006072a8648ce3d020106052b81040022036200");
+        const data = new ByteBuffer()
+        .writeBytes(header)
+        .writeBytes([0x04])
+        .writeBytes(Base64.decode(jwk.x))
+        .writeBytes(Base64.decode(jwk.y));
+
+        return data.toBytes();
+    }
+}

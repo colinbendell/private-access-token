@@ -3,17 +3,15 @@ import { sha384, sha512 } from '@noble/hashes/sha512';
 import { expand_message_xmd } from '@noble/curves/abstract/hash-to-curve';
 import { ByteBuffer, Hex } from './utils.js';
 
-const Point = ec.ProjectivePoint;
+export const Point = ec.ProjectivePoint;
 
-export class OPRF {
-
-    constructor(cipherSuite = "P384-SHA384", mode="\x01") {
-        if (cipherSuite !== "P384-SHA384") throw new Error("Only P384-SHA384 is supported");
-        if (mode !== "\x01") throw new Error("Only VOPRF (mode 1) is supported");
+class OPRF {
+    constructor(cipherSuite = "P384-SHA384") {
+        // if (cipherSuite !== "P384-SHA384") throw new Error(`Only P384-SHA384 is supported. Got ${cipherSuite}`);
         // TODO: make this actually multi-suite
-        this.contextString = OPRF.createContextString(mode, cipherSuite);
         this.identifier = cipherSuite;
-        this.mode = mode;
+        this.mode = "x00";
+        this.contextString = OPRF.createContextString(this.mode, this.identifier);
         this.order = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973');
         this.expand = 'xmd';
         this.L = 72;
@@ -21,42 +19,13 @@ export class OPRF {
         this.hash = sha384;
         this.Ne = 49; // 384 / 8 + 1
         this.Nh = 48; // 384 / 8
+        this.generator = ec.ProjectivePoint.BASE;
     }
 
-    /**
-     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-hash-to-scalar
-     * > The helper function HashToScalar is as defined below, and is an instantiation of the HashToScalar function defined in [I-D.irtf-cfrg-hash-to-curve].
-     * @param {Array<number>} msg the message to use for hashing
-     * @returns {BigInt} the scalar represetnation
-     */
-    hashToScalar(msg, DSTOverride, hashOverride) {
-        // const hashTofieldConfig = {
-        //     DST: "HashToScalar-" + this.contextString,
-        //     m: 1,
-        //     p: this.order,
-        //     k: 192,
-        //     // k: this.L / 8,
-        //     // L: this.L,
-        //     expand: this.expand,
-        //     hash: this.hash
-        // }
-        // return hash_to_field(Uint8Array.from(msg), 1, hashTofieldConfig)[0][0];
-        const DST = ByteBuffer.stringToBytes(DSTOverride || ("HashToScalar-" + this.contextString));
-        const hash = hashOverride || this.hash;
-        const xmd = expand_message_xmd(Uint8Array.from(msg), Uint8Array.from(DST), this.L, hash)
-        return ByteBuffer.bytesToNumber(xmd) % this.order;
+    hashToScalar(msg, DSTOverride) {
     }
 
-    /**
-     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-hash-to-group
-     * > The helper function HashToGroup is as defined below, and is an instantiation of the HashToCurve function defined in [I-D.irtf-cfrg-hash-to-curve].
-     * @param {Array<number>} msg the message to use for hashing
-     * @returns {Point} the point represetnation
-     */
-    hashToGroup(msg, DSTOverride, hashOverride) {
-        const DST = DSTOverride || "HashToGroup-" + this.contextString;
-        const hash = hashOverride || this.hash;
-        return hashToCurve(Uint8Array.from(msg), { DST, hash })
+    hashToGroup(msg, DSTOverride) {
     }
 
     serializeElement(A, compressed=false) {
@@ -82,7 +51,7 @@ export class OPRF {
         return val;
     }
 
-        /**
+    /**
      * Input:
      *   opaque seed[Ns]
      *   PublicInput info
@@ -517,52 +486,6 @@ export class OPRF {
     /**
      * From: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-oprf-protocol
      *
-     * > Upon receipt of evaluatedElement, clients process it to complete the OPRF evaluation with the Finalize function described below.
-     * >
-     * > Input:
-     * >   PrivateInput input
-     * >   Scalar blind
-     * >   Element evaluatedElement
-     * >
-     * > Output:
-     * >   opaque output[Nh]
-     * >
-     * > Parameters:
-     * >   Group G
-     * >
-     * > def Finalize(input, blind, evaluatedElement):
-     * >   N = G.ScalarInverse(blind) * evaluatedElement
-     * >   unblindedElement = G.SerializeElement(N)
-     * >
-     * >   hashInput = I2OSP(len(input), 2) || input ||
-     * >               I2OSP(len(unblindedElement), 2) || unblindedElement ||
-     * >               "Finalize"
-     * >   return Hash(hashInput)
-     * > ```
-     * @param {number} input The private input.
-     * @param {number} blind The blinding factor.
-     * @param {Point} evaluatedElement The evaluated element.
-     * @returns {number[]} The final output.
-     */
-    finalize(input, blind, evaluatedElement) {
-        const N = evaluatedElement.multiply(blind.invert());
-        const unblindedElement = N.toRawBytes(true);
-
-        const hashInput = new ByteBuffer()
-            .writeInt(input.length, 2)
-            .writeBytes(input)
-            .writeInt(unblindedElement.length, 2)
-            .writeBytes(unblindedElement)
-            .writeString("Finalize");
-
-        return sha384.create()
-            .update(Uint8Array.from(hashInput.toBytes()))
-            .digest();
-    }
-
-    /**
-     * From: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-oprf-protocol
-     *
      * > An entity which knows both the private key and the input can compute the PRF result using the following Evaluate function.
      * >
      * > Input:
@@ -627,8 +550,109 @@ export class OPRF {
             .update(Uint8Array.from(hashInput.toBytes()))
             .digest();
     }
+}
 
-    computeCompositesFastDraft7(k, B, C, D) {
+class VOPRF extends OPRF {
+    constructor(cipherSuite = "P384-SHA384") {
+        super(cipherSuite);
+
+        this.mode="\x01";
+        this.contextString = OPRF.createContextString(this.mode, this.identifier);
+    }
+
+    /**
+     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-hash-to-scalar
+     * > The helper function HashToScalar is as defined below, and is an instantiation of the HashToScalar function defined in [I-D.irtf-cfrg-hash-to-curve].
+     * @param {Array<number>} msg the message to use for hashing
+     * @returns {BigInt} the scalar represetnation
+     */
+    hashToScalar(msg, DSTOverride) {
+        // const hashTofieldConfig = {
+        //     DST: "HashToScalar-" + this.contextString,
+        //     m: 1,
+        //     p: this.order,
+        //     k: 192,
+        //     // k: this.L / 8,
+        //     // L: this.L,
+        //     expand: this.expand,
+        //     hash: this.hash
+        // }
+        // return hash_to_field(Uint8Array.from(msg), 1, hashTofieldConfig)[0][0];
+        const DST = ByteBuffer.stringToBytes(DSTOverride || "HashToScalar-" + this.contextString);
+        const xmd = expand_message_xmd(Uint8Array.from(msg), Uint8Array.from(DST), this.L, this.hash)
+        return ByteBuffer.bytesToNumber(xmd) % this.order;
+    }
+
+    /**
+     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-hash-to-group
+     * > The helper function HashToGroup is as defined below, and is an instantiation of the HashToCurve function defined in [I-D.irtf-cfrg-hash-to-curve].
+     * @param {Array<number>} msg the message to use for hashing
+     * @returns {Point} the point represetnation
+     */
+    hashToGroup(msg, DSTOverride) {
+        const DST = DSTOverride || "HashToGroup-" + this.contextString;
+        return hashToCurve(Uint8Array.from(msg), { DST, hash: this.hash })
+    }
+
+    /**
+     * From: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-oprf-protocol
+     *
+     * > Upon receipt of evaluatedElement, clients process it to complete the OPRF evaluation with the Finalize function described below.
+     * >
+     * > Input:
+     * >   PrivateInput input
+     * >   Scalar blind
+     * >   Element evaluatedElement
+     * >
+     * > Output:
+     * >   opaque output[Nh]
+     * >
+     * > Parameters:
+     * >   Group G
+     * >
+     * > def Finalize(input, blind, evaluatedElement):
+     * >   N = G.ScalarInverse(blind) * evaluatedElement
+     * >   unblindedElement = G.SerializeElement(N)
+     * >
+     * >   hashInput = I2OSP(len(input), 2) || input ||
+     * >               I2OSP(len(unblindedElement), 2) || unblindedElement ||
+     * >               "Finalize"
+     * >   return Hash(hashInput)
+     * > ```
+     * @param {number} input The private input.
+     * @param {number} blind The blinding factor.
+     * @param {Point} evaluatedElement The evaluated element.
+     * @returns {number[]} The final output.
+     */
+    finalize(input, blind, evaluatedElement) {
+        const N = evaluatedElement.multiply(blind.invert());
+        const unblindedElement = N.toRawBytes(true);
+
+        const hashInput = new ByteBuffer()
+            .writeInt(input.length, 2)
+            .writeBytes(input)
+            .writeInt(unblindedElement.length, 2)
+            .writeBytes(unblindedElement)
+            .writeString("Finalize");
+
+        return sha384.create()
+            .update(Uint8Array.from(hashInput.toBytes()))
+            .digest();
+    }
+}
+
+class VOPRFDraft7 extends VOPRF {
+    constructor(cipherSuite = "P384-SHA384") {
+        super(cipherSuite);
+        this.contextString = "";
+        this.hash = sha512;
+    }
+
+    serializeElement(A) {
+        return Array.from(A.toRawBytes(false));
+    }
+
+    computeCompositesFast(k, B, C, D) {
         const batch = new ByteBuffer()
             .writeBytes(B.toRawBytes(false));
 
@@ -644,7 +668,7 @@ export class OPRF {
             buf.writeString("DLEQ BATCH\0");
             buf.writeBytes(batch.toBytes());
             buf.writeInt(i, 2);
-            const exponent = this.hashToScalar(buf.toBytes(), "TrustToken VOPRF Experiment V2 HashToScalar\0", sha512);
+            const exponent = this.hashToScalar(buf.toBytes(), "TrustToken VOPRF Experiment V2 HashToScalar\0");
             exponentList.push(exponent);
         }
 
@@ -662,9 +686,9 @@ export class OPRF {
 
     }
 
-    generateProofDraft7(k, A, B, C, D, r) {
+    generateProof(k, A, B, C, D, r) {
 
-        const [ M, Z ] = this.computeCompositesFastDraft7(k, B, C, D);
+        const [ M, Z ] = this.computeCompositesFast(k, B, C, D);
 
         const t2 = A.multiply(r);
         const t3 = M.multiply(r);
@@ -683,17 +707,20 @@ export class OPRF {
         buf.writeBytes(a2);
         buf.writeBytes(a3);
         // hashToScalar = hash_to_field for
-        const c = this.hashToScalar(buf.toBytes(), "TrustToken VOPRF Experiment V2 HashToScalar\0", sha512);
+        const c = this.hashToScalar(buf.toBytes(), "TrustToken VOPRF Experiment V2 HashToScalar\0");
 
         const s = (r + c * k) % this.order;
 
         return [c, s];
     }
 
-    verifyFinalizeDraft7(skS, input, output) {
-        const evaluatedElement = this.hashToGroup(input, "TrustToken VOPRF Experiment V2 HashToGroup\0", sha512);
+    verifyFinalize(skS, input, output) {
+        const evaluatedElement = this.hashToGroup(input, "TrustToken VOPRF Experiment V2 HashToGroup\0");
         const issuedElement = evaluatedElement.multiply(skS);
 
         return output.equals(issuedElement);
     }
 }
+
+export const VOPRF_P384 = new VOPRF("P384-SHA384");
+export const VOPRF_P384_Draft7 = new VOPRFDraft7("P384-SHA512");

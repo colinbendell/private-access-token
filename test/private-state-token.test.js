@@ -24,7 +24,7 @@ describe('Private-State-Tokens', async () => {
     should('PrivateStateTokenKeyPair.generate()', async () => {
         const keyPair = PrivateStateTokenKeyPair.from(DEFAULT_JWK);
         assert.deepEqual(keyPair.id, 251);
-        assert.deepEqual(keyPair.publicKey.point.toHex(false), '04aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7c9e821b569d9d390a26167406d6d23d6070be242d765eb831625ceec4a0f473ef59f4e30e2817e6285bce2846f15f1a0');
+        assert.deepEqual(keyPair.publicKey.toHex(false), '04aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7c9e821b569d9d390a26167406d6d23d6070be242d765eb831625ceec4a0f473ef59f4e30e2817e6285bce2846f15f1a0');
         assert.deepEqual(keyPair.secretKey.toString(16), 'ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972');
     });
 

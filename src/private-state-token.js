@@ -1,115 +1,9 @@
-import { Base64, ByteBuffer, CBOR } from './utils.js';
-import { OPRF } from './oprfv1.js';
+import { Base64, ByteBuffer, CBOR, P384} from './utils.js';
+import { VOPRF_P384, VOPRF_P384_Draft7, Point } from './oprfv1.js';
 import { sha256 } from '@noble/hashes/sha256';
-import { p384 as ec } from '@noble/curves/p384';
-const Point = ec.ProjectivePoint;
 
 const NONCE_LENGTH = 64;
 const DEFAULT_HOST = "https://localhost:8444";
-
-const VOPRF_P384 = {
-    // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf
-    name: "P-384",
-    // modulus prime number
-    // p: 39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112319n,
-    // Curve order, total count of valid points in the field.
-    // n: 39402006196394479212279040100143613805079739270465446667946905279627659399113263569398956308152294913554433653942643n,
-    ORDER: 39402006196394479212279040100143613805079739270465446667946905279627659399113263569398956308152294913554433653942643n,
-    // Base (generator) point (x, y)
-    // Gx: 26247035095799689268623156744566981891852923491109213387815615900925518854738050089022388053975719786650872476732087n,
-    // Gy: 8325710961489029985546751289520108179287853048861315594709205902480503199884419224438643760392947333078086511627871n,
-    // h: 1n,
-    Ne: 49, // 384 / 8 + 1
-    Nh: 48, // 384 / 8
-};
-
-/**
- * A public key for a trust token issuer.
- * The value of a secret key is a scalar. The secret key is used to sign
- * blinded tokens from the client.
- */
-export class PrivateStateTokenSecretKey {
-    /**
-     * @param {number} scalar The value of the secret key.
-     */
-    constructor(scalar) {
-        this.scalar = scalar;
-    }
-
-    static from(value) {
-        if (typeof value === 'string') {
-            value = Base64.decode(value);
-        }
-        if (value instanceof Uint16Array || Array.isArray(value)) {
-            value = ByteBuffer.bytesToNumber(Array.from(value));
-        }
-        return new PrivateStateTokenSecretKey(value);
-    }
-}
-
-/**
- * A public key for a trust token issuer.
- * The value of a public key is an elliptic curve point. A public key is
- * generated from a secret key.
- */
-export class PrivateStateTokenPublicKey {
-
-    #truncatedKeyID;
-
-    get truncatedKeyID() {
-        return this.#truncatedKeyID;
-    };
-
-    #keyID;
-    get keyID() {
-        return this.#keyID;
-    };
-
-    /**
-     * TODO: retain in X/Y coordinates rather than in scalar form?
-     * @param {Point} point The scalar value of the public key. ()
-     */
-    point;
-
-    /**
-     * @param {Point} point The value of the public key.
-     */
-    constructor(point) {
-        this.point = point;
-        this.bytes = Array.from(point.toRawBytes(false));
-        this.#keyID = Array.from(sha256(Uint8Array.from(this.bytes)));
-        this.#truncatedKeyID = this.keyID.slice(-1)[0];
-        this.x = this.bytes.slice(1, VOPRF_P384.Nh + 1);
-        this.y = this.bytes.slice(VOPRF_P384.Nh + 1);
-    }
-
-    static from(value) {
-        let point = value;
-        if (value instanceof Point === false) {
-            let bytes = value;
-            if (value?.x && value?.y) {
-                bytes = [].concat([0x04], value.x, value.y)
-            }
-            else if (typeof value === 'string') {
-                bytes = Base64.decode(value);
-            }
-            else if (typeof value === 'number') {
-                bytes = ByteBuffer.numberToBytes(value, VOPRF_P384.Nh * 2 + 1);
-            }
-            point = Point.fromHex(Uint8Array.from(bytes));
-        }
-
-        return new PrivateStateTokenPublicKey(point);
-    }
-
-    /**
-     *
-     * @returns {Array<number>} Returns the public key as bytes.
-     */
-    toBytes(isCompressed=false) {
-        return this.point.toRawBytes(isCompressed); // Techncially should be .Ne
-    }
-}
 
 /**
  * A key pair for a trust token issuer.
@@ -117,7 +11,7 @@ export class PrivateStateTokenPublicKey {
 export class PrivateStateTokenKeyPair {
 
     /**
-     * @param {PrivateStateTokenPublicKey} publicKey The public key
+     * @param {Point} publicKey The public key
      */
     publicKey;
 
@@ -127,30 +21,26 @@ export class PrivateStateTokenKeyPair {
     secretKey;
 
     /**
-     * @returns {number} The ID associated with the key pair.
-     */
-    get id() {
-        return this.publicKey.truncatedKeyID;
-    }
-
-    /**
      * @returns {number} The expiry of the key pair.
      */
     expiry;
 
     /**
      * @param {number} id The ID associated with the key pair.
-     * @param {PrivateStateTokenPublicKey} publicKey The public component of the key pair.
+     * @param {Point} publicKey The public component of the key pair.
      * @param {number} secretKey The secret component of the key pair.
      * @param {number} expiry The expiry of the key pair.
      */
-    constructor(publicKey, secretKey, expiry) {
+    constructor(id, tokenKeyID, publicKey, secretKey, expiry) {
+
+        // TODO: validate ID and tokenKeyID consistency, for now we just trust
+        this.id = id;
+        this.tokenKeyID = tokenKeyID
         this.publicKey = publicKey;
 
         if (secretKey instanceof Uint16Array || Array.isArray(secretKey)) {
             secretKey = ByteBuffer.bytesToNumber(Array.from(secretKey));
         }
-
         this.secretKey = secretKey;
 
         expiry = expiry || Date.now() + 90*24*60*60*1000; //+90 days default
@@ -167,15 +57,17 @@ export class PrivateStateTokenKeyPair {
         const jwk = {
             kty: 'EC',
             crv: 'P-384',
-            kid: this.publicKey.truncatedKeyID,
-            "x5t#S256": Base64.urlEncode(this.publicKey.keyID),
-            x: Base64.urlEncode(this.publicKey.x),
-            y: Base64.urlEncode(this.publicKey.y),
+            use: 'sig',
+            kid: this.id,
+            "x5t#S256": Base64.urlEncode(this.tokenKeyID),
+            x: Base64.urlEncode(VOPRF_P384.serializeScalar(this.publicKey.x)),
+            y: Base64.urlEncode(VOPRF_P384.serializeScalar(this.publicKey.y)),
             exp: Math.floor(this.expiry / 1000 / 1000), //assume seconds since epoch; second resolution
         };
         if (secure) {
-            jwk.d = Base64.urlEncode(ByteBuffer.numberToBytes(this.secretKey, 48));
+            jwk.d = Base64.urlEncode(VOPRF_P384.serializeScalar(this.secretKey));
         }
+
         return jwk;
     }
 
@@ -192,14 +84,27 @@ export class PrivateStateTokenKeyPair {
      * @param {Object} jwk The JWK representation of the key pair.
      * @returns {PrivateStateTokenKeyPair} The key pair.
      */
-    static from(jwk) {
-        const x = Base64.decode(jwk.x);
-        const y = Base64.decode(jwk.y);
-        const d = Base64.decode(jwk.d);
-        // jwk typically uses milliseconds for the exp field, we need microseconds
-        const expiry = jwk.exp;
-        const publicKey = PrivateStateTokenPublicKey.from({x, y});
-        return new PrivateStateTokenKeyPair(publicKey, d, expiry);
+    static from(data) {
+        if (data instanceof PrivateStateTokenKeyPair) {
+            return data;
+        }
+        if (data?.x && data?.y && data?.d) {
+            const x = Base64.decode(data.x);
+            const y = Base64.decode(data.y);
+            const d = Base64.decode(data.d);
+            // jwk typically uses milliseconds for the exp field, we need microseconds
+            const expiry = data.exp;
+            const publicKey = Point.fromAffine({x: ByteBuffer.bytesToNumber(x), y: ByteBuffer.bytesToNumber(y)});
+            return new PrivateStateTokenKeyPair(data.kid, data["x5t#S256"], publicKey, d, expiry);
+        }
+        // else if (typeof data === 'bigint') {
+        //     const secretKey = data;
+        //     const publicKey = Point.BASE.multiply(data);
+
+        //     // calculate the token_key_id and id. use the JWK generator for convenience.
+        //     const jwk = P384.toJWK(publicKey);
+        //     return new PrivateStateTokenKeyPair(jwk.kid, jwk["x5t#S256"], publicKey, secretKey);
+        // }
     }
 
 }
@@ -265,7 +170,7 @@ export class IssueRequest {
         const bytes = new ByteBuffer();
         bytes.writeInt(this.count, 2);
         for (const nonce of this.nonces) {
-            bytes.writeBytes(nonce.toRawBytes(false));
+            bytes.writeBytes(VOPRF_P384_Draft7.serializeElement(nonce));
         }
         return bytes.buffer;
     }
@@ -324,7 +229,7 @@ export class IssueResponse {
         buf.writeInt(this.issued, 2); // the number issued
         buf.writeInt(this.keyID, 4); // the key ID associated with the public key
         for (const nonce of this.signed) {
-            buf.writeBytes(nonce.toRawBytes(false));
+            buf.writeBytes(VOPRF_P384_Draft7.serializeElement(nonce));
         }
         buf.writeInt(this.proof.length, 2);
         buf.writeBytes(this.proof);
@@ -406,7 +311,7 @@ export class RedeemRequest {
      * @returns {Array<number>} The redeem request as bytes.
      */
     toBytes() {
-        const pointBytes = Array.from(this.W.toRawBytes(false));
+        const pointBytes = VOPRF_P384_Draft7.serializeElement(this.W);
         const buf = new ByteBuffer()
             .writeInt(this.nonce.length + pointBytes.length + 4, 2)
             .writeInt(this.keyID, 4)
@@ -498,7 +403,6 @@ export class PrivateStateTokenIssuer {
         this.#keys = new Map(keys.map(k => [k.id, k]));
         this.maxBatchSize = maxBatchSize;
         this.host = host;
-        this.voprf = new OPRF();
         this.id = id;
     }
 
@@ -564,7 +468,6 @@ export class PrivateStateTokenIssuer {
             "keys": {}
         };
         for (const key of this.#keys.values()) {
-            const publicKey = key.publicKey;
             // Returns the public key as bytes.
             // The structure takes the form:
             // ```
@@ -574,10 +477,10 @@ export class PrivateStateTokenIssuer {
             // } TrustTokenPublicKey;
             // ```
             const buffer = new ByteBuffer()
-                .writeInt(publicKey.truncatedKeyID, 4)
-                .writeBytes(publicKey.toBytes(false));
+                .writeInt(key.id, 4)
+                .writeBytes(VOPRF_P384_Draft7.serializeElement(key.publicKey));
 
-            keyCommitment.keys[publicKey.truncatedKeyID] = {
+            keyCommitment.keys[key.id] = {
                 "Y": Base64.encode(buffer.toBytes()),
                 // epoch timestamp in microseconds
                 // string escaped integer
@@ -600,7 +503,7 @@ export class PrivateStateTokenIssuer {
         for (const key of this.#keys.values()) {
             tokenKeys.push({
                 "token-type": 2,
-                "token-key": Base64.urlEncode(key.publicKey.toBytes())
+                "token-key": Base64.urlEncode(VOPRF_P384_Draft7.serializeElement(key.publicKey)) // we are expanding to the full form
             });
 
         }
@@ -641,17 +544,12 @@ export class PrivateStateTokenIssuer {
      * @param {number} id The id for the key pair.
      * @returns {PrivateStateTokenIssuer} The trust token issuer with a generated key pair.
      */
-    static generate(host = DEFAULT_HOST, maxBatchSize = 2) {
-        const keyPair = PrivateStateTokenKeyPair.generate();
-        const issuer = new PrivateStateTokenIssuer(host, maxBatchSize, keyPair);
-        return issuer;
-    }
-
     generateKey() {
-        const seed = this.voprf.randomScalar();
-        const [priv, pub] = this.voprf.deriveKeyPair(seed);
-        const publicKey = PrivateStateTokenPublicKey.from(pub);
-        const keyPair = new PrivateStateTokenKeyPair(publicKey, priv);
+        const seed = VOPRF_P384.randomScalar();
+        const [privateKey, publicKey] = VOPRF_P384.deriveKeyPair(seed);
+        const publicKeyID = Array.from(sha256(Uint8Array.from(P384.toASN(pub))));
+        const truncatedPublicKeyID = publicKeyID.slice(-1)[0];
+        const keyPair = new PrivateStateTokenKeyPair(truncatedPublicKeyID, publicKeyID, publicKey, privateKey);
 
         this.addKey(keyPair);
         return keyPair;
@@ -747,7 +645,7 @@ export class PrivateStateTokenIssuer {
         if (!keyPair) return null;
 
         const k = keyPair.secretKey;
-        const r = VOPRF_P384.ORDER - 1n;
+        const r = VOPRF_P384.order - 1n;
         const blindedElements = request.nonces;
         const evaluatedElements = [];
 
@@ -756,22 +654,22 @@ export class PrivateStateTokenIssuer {
             evaluatedElements.push(z);
         }
 
-        const A = ec.ProjectivePoint.BASE;
-        const B = keyPair.publicKey.point; // public key // ec.ProjectivePoint.BASE.multiply(k)
+        const A = VOPRF_P384.generator;
+        const B = keyPair.publicKey; // public key // ec.ProjectivePoint.BASE.multiply(k)
         const C = blindedElements;
         const D = evaluatedElements;
         let proof = [];
 
         if (version === "PrivateStateTokenV1VOPRF") {
-            proof = this.voprf.generateProof(k, A, B, C, D, r);
+            proof = VOPRF_P384.generateProof(k, A, B, C, D, r);
         }
         else {
-            proof = this.voprf.generateProofDraft7(k, A, B, C, D, r);
+            proof = VOPRF_P384_Draft7.generateProof(k, A, B, C, D, r);
         }
 
         const serializedProof = new ByteBuffer()
-            .writeBytes(this.voprf.serializeScalar(proof[0]))
-            .writeBytes(this.voprf.serializeScalar(proof[1]));
+            .writeBytes(VOPRF_P384.serializeScalar(proof[0]))
+            .writeBytes(VOPRF_P384.serializeScalar(proof[1]));
 
         return new IssueResponse(keyPair.id, evaluatedElements, serializedProof.toBytes());
     }
@@ -808,7 +706,7 @@ export class PrivateStateTokenIssuer {
     redeem(request, redemptionRecord, version=PrivateStateTokenIssuer.DEFAULT_VERSION) {
         const secretKey = this.#keys.get(request.keyID)?.secretKey;
 
-        if (this.voprf.verifyFinalizeDraft7(secretKey, request.nonce, request.W)) {
+        if (VOPRF_P384_Draft7.verifyFinalize(secretKey, request.nonce, request.W)) {
             return new RedeemResponse(redemptionRecord);
         }
         return null;
