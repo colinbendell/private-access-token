@@ -2,7 +2,6 @@ import { Base64, ByteBuffer, CBOR, P384} from './utils.js';
 import { VOPRF_P384, VOPRF_P384_Draft7, Point } from './oprfv1.js';
 import { sha256 } from '@noble/hashes/sha256';
 
-const NONCE_LENGTH = 64;
 const DEFAULT_HOST = "https://localhost:8444";
 
 /**
@@ -275,9 +274,9 @@ export class RedeemRequest {
 
         const tokenLen = bytes.readInt(2);
         const keyID = bytes.readInt(4);
-        const nonce = bytes.readBytes(NONCE_LENGTH);
+        const nonce = bytes.readBytes(VOPRF_P384_Draft7.Nh);
 
-        const value = bytes.readBytes(tokenLen - 4 - NONCE_LENGTH);
+        const value = bytes.readBytes(tokenLen - 4 - VOPRF_P384_Draft7.Nh);
         const point = Point.fromHex(Uint8Array.from(value));
 
         const clientDataLen = bytes.readInt(2);

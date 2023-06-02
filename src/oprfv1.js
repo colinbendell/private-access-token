@@ -654,6 +654,7 @@ class VOPRFDraft7 extends VOPRF {
         super(cipherSuite);
         this.contextString = "";
         this.hash = sha512;
+        this.Nh = 512/8;
     }
 
     serializeElement(A) {
