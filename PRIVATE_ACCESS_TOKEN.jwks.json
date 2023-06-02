@@ -1,6 +1,16 @@
 {
   "keys": [
     {
+      "iss": "pat-issuer.cloudflare.com",
+      "kty": "RSA",
+      "alg": "PS384",
+      "use": "sig",
+      "kid": "136",
+      "x5t#S256": "8a7fpo0jzy-8XSduXV3AjUVIfpraNSbxSBGRmEr0yIg=",
+      "e": "AQAB",
+      "n": "2QmmahoTCdzzWU_cjTkt9rzQkK7r0JRDfy3Ug31wK-hp3n5Nlkur9cyfSmGhvETNfzP7DjBWLuFe3BGfCvaMn-2I8epeGGFpx57OKWenWkS0ozAVw8pZwpCGNdPD2eeeWcC63BypcwUcZnnJKohILWHt5HcJ6e71kKJNsOrcX9gfLt3ZesHAVwc1uJomYnRcvyLUtAXgg8B8n-H2X664Z3WqgUtqA8ZprXuyXHIjXxHORfViPZWU-y48WLmCWq4SgzW8OJH-fB8OU4naRCAme2w1bQV7r8xfE0uHuhhsMqoI6A_Q-BHk2mkZDHYaScQrq-E1vjk9ZMN1gVzfLYDHgw=="
+    },
+    {
       "iss": "demo-pat.issuer.cloudflare.com",
       "kty": "RSA",
       "alg": "PS384",
@@ -11,7 +21,7 @@
       "n": "js9aOuRH9lO-AUJx-jj9ZwQU2KTT7tQunoMbvqUWnEjte4xCscsSYgkfgVVw1ZlXs0BRc9perJefAONia8mHr5PU1D7n0EYMXXUDvSwdXY7Mive-Tmx9JpZiNYPJiqBxW5rFXQ_U1OYZGQ2zcF_u-mWmJu18oSbYN-WAxY0tBf4ciJBHcbQVr18lOM59DeQ1yK8LlG6QJ4BlSSZQ04orfvVjSNpS9v8PWOPbH3OIKoxH5Jn8PmQc730q-7fqusUmN5wJRZM-ozRsvxOj7SGJLIYzC9d0gyx0O18TkkYwIh0A0VWODqFDXfnQSVN1TgMCdUZcFhxT1coJXZDRPIjMmw=="
     },
     {
-      "iss": "demo-issuer.privvate-access-tokens.fastly.com",
+      "iss": "demo-issuer.private-access-tokens.fastly.com",
       "kty": "RSA",
       "alg": "PS384",
       "use": "sig",
@@ -19,16 +29,6 @@
       "x5t#S256": "252MlXJMAflvJYZiNQfUjk1SdnNQcDKvtEr_8vrxL5o=",
       "e": "AQAB",
       "n": "3u2Eqv0aOFEyI9Q42gqtgG2eo5Dgm7H8GUTJGdxOI7L8-10Jr1miUeTofM8d2ddSMTiJPNhsoniy3q2l2omwH_KXgEYuCUgUBykrMcse4m7mG2QijluejXwooHN9KtErBi_jlOlC1MRmuD1aYWI_egv78A6zw1wvUJOAQ3twQpCRWkzt9Q7eiAGMaPD_c2Te3oeOPTIuhpKaqKjVaRtNnng-3eRC5uIE8mGu-41iZM2efdcqO68lE1s4z8hLNM_0ZDzm3zMdLwpQYq1Bp0WXXrLYTQWDDu2MTR_aNTJ44wJdYutuK-FeRHQGIxUDTvA5PDq-M3ZuUHk_gAAHzYu12w=="
-    },
-    {
-      "iss": "pat-issuer.cloudflare.com",
-      "kty": "RSA",
-      "alg": "PS384",
-      "use": "sig",
-      "kid": "136",
-      "x5t#S256": "8a7fpo0jzy-8XSduXV3AjUVIfpraNSbxSBGRmEr0yIg=",
-      "e": "AQAB",
-      "n": "2QmmahoTCdzzWU_cjTkt9rzQkK7r0JRDfy3Ug31wK-hp3n5Nlkur9cyfSmGhvETNfzP7DjBWLuFe3BGfCvaMn-2I8epeGGFpx57OKWenWkS0ozAVw8pZwpCGNdPD2eeeWcC63BypcwUcZnnJKohILWHt5HcJ6e71kKJNsOrcX9gfLt3ZesHAVwc1uJomYnRcvyLUtAXgg8B8n-H2X664Z3WqgUtqA8ZprXuyXHIjXxHORfViPZWU-y48WLmCWq4SgzW8OJH-fB8OU4naRCAme2w1bQV7r8xfE0uHuhhsMqoI6A_Q-BHk2mkZDHYaScQrq-E1vjk9ZMN1gVzfLYDHgw=="
     }
   ]
 }

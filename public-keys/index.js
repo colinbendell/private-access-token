@@ -125,7 +125,7 @@ async function getCloudflareDemoPublicKey() {
 
 async function build() {
     let issuers = await Promise.all([
-        // getCloudflarePublicKey(),
+        getCloudflarePublicKey(),
         getCloudflareDemoPublicKey(),
         getFastlyDemoPublicKey()
     ]);
@@ -141,8 +141,8 @@ async function build() {
         issuerSet.add(issuer.iss);
     }
 
-    const path = __dirname + '/../private-access-token-issuers.json';
-    const jwkPath = __dirname + '/../CURRENT_PUBLIC_ISSUERS.jwks.json';
+    const path = __dirname + '/../PRIVATE_ACCESS_TOKEN_ISSUERS.json';
+    const jwkPath = __dirname + '/../PRIVATE_ACCESS_TOKEN.jwks.json';
 
     // back fill missing just in case an error happened
     const prevIssuers = JSON.parse(await fs.readFile(jwkPath, {encoding: 'utf8'}).catch(() => '{}')) || {};

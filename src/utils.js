@@ -375,7 +375,6 @@ export class PS384 {
             nbf: extra?.notBefore ? extra?.notBefore : undefined,
             exp: extra?.expires ? extra?.expires : undefined,
         }
-        console.log(jwk);
         return jwk;
     }
 
