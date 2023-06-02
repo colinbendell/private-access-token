@@ -26,7 +26,8 @@ export class PrivateStateTokenKeyPair {
     expiry;
 
     /**
-     * @param {number} id The ID associated with the key pair.
+     * @param {number} id The legacy-token-key-ID associated with the key pair (least significant byte)
+     * @param {number[]} tokenKeyID The token-key-ID (or `sha(x509.1(key))`) associated with the key pair
      * @param {Point} publicKey The public component of the key pair.
      * @param {number} secretKey The secret component of the key pair.
      * @param {number} expiry The expiry of the key pair.
@@ -51,6 +52,7 @@ export class PrivateStateTokenKeyPair {
 
     /**
      * Convenience method to produce a valid JWK representation of the key pair.
+     * @param {boolean} secure If true, the private key will be included in the JWK.
      * @returns {Object} Returns a JWK representation of the key pair.
      */
     toJWK(secure = false) {
@@ -81,7 +83,7 @@ export class PrivateStateTokenKeyPair {
      * - d: The value of the secret key.
      * - exp: The expiry of the key pair in seconds since the epoch.
      *
-     * @param {Object} jwk The JWK representation of the key pair.
+     * @param {Object|number} data The JWK representation of the key pair.
      * @returns {PrivateStateTokenKeyPair} The key pair.
      */
     static from(data) {
@@ -175,16 +177,8 @@ export class IssueRequest {
         return bytes.buffer;
     }
 
-    /**
-     *
-     * @returns {string} Returns the Base64 encoding of the request.
-     */
-    toString() {
-        return Base64.encode(this.toBytes());
-    }
-
     [Symbol.for('nodejs.util.inspect.custom')]() {
-        return this.toString();
+        return Base64.encode(this.toBytes());
     }
 }
 
@@ -205,13 +199,6 @@ export class IssueResponse {
     }
 
     /**
-     * @returns {number} The number of issued tokens.
-     */
-    get issued() {
-        return this.signed.length;
-    }
-
-    /**
      * Returns the issue response as bytes.
      * The structure has the form:
      * ```
@@ -226,7 +213,7 @@ export class IssueResponse {
      */
     toBytes() {
         const buf = new ByteBuffer();
-        buf.writeInt(this.issued, 2); // the number issued
+        buf.writeInt(this.signed.length, 2); // the number issued
         buf.writeInt(this.keyID, 4); // the key ID associated with the public key
         for (const nonce of this.signed) {
             buf.writeBytes(VOPRF_P384_Draft7.serializeElement(nonce));
@@ -236,15 +223,8 @@ export class IssueResponse {
         return buf.toBytes();
     }
 
-    /**
-     * @returns {string} The issue response as a Base64 string.
-     */
-    toString() {
-        return Base64.encode(this.toBytes());
-    }
-
     [Symbol.for('nodejs.util.inspect.custom')]() {
-        return this.toString();
+        return Base64.encode(this.toBytes());
     }
 }
 
@@ -322,16 +302,8 @@ export class RedeemRequest {
         return buf.toBytes();
     }
 
-    /**
-     *
-     * @returns {string} The redeem request as a Base64 string.
-     */
-    toString() {
-        return Base64.encode(this.toBytes());
-    }
-
     [Symbol.for('nodejs.util.inspect.custom')]() {
-        return this.toString();
+        return Base64.encode(this.toBytes());
     }
 }
 
@@ -350,7 +322,7 @@ export class RedeemRequest {
  */
 export class RedeemResponse {
     /**
-     * @param {Array<number>|string} record The redemption record.
+     * @param {number[]|string} record The redemption record.
      */
     constructor(record = []) {
         if (ArrayBuffer.isView(record)) {
@@ -372,15 +344,8 @@ export class RedeemResponse {
             .toBytes();
     }
 
-    /**
-     * @returns {string} The redemption record as a Base64 string.
-     */
-    toString() {
-        return Base64.encode(this.record);
-    }
-
     [Symbol.for('nodejs.util.inspect.custom')]() {
-        return this.toString();
+        return Base64.encode(this.toBytes());
     }
 }
 
@@ -395,6 +360,7 @@ export class PrivateStateTokenIssuer {
     /**
      * @param {string} host The server origin for this issuer.
      * @param {number} maxBatchSize The max batch size for tokens.
+     * @param {number} id The issuer ID, must be increasing on each key rotation.
      * @param {Array<PrivateStateTokenKeyPair>} keys The key pairs for this issuer.
      */
     constructor(host, maxBatchSize, id = 1, keys = []) {
@@ -496,7 +462,7 @@ export class PrivateStateTokenIssuer {
 
     /**
      * A serializer for the issuer keys in token issuer directory format as specfiied in the PrivacyPass Protocol spec.
-     * @returns a token-issuer-directory formatted object
+     * @returns {Object} a token-issuer-directory formatted object
      */
     directory() {
         const tokenKeys = [];
@@ -514,13 +480,13 @@ export class PrivateStateTokenIssuer {
             "id": this.truncatedKeyID,
             "batchsize": this.maxBatchSize,
             "token-keys": tokenKeys
-         }
+        }
     }
 
     /**
      * A serializer for the issuer keys in JWK Set format. Additional fields are added to the JWK Set to provide
      * the host, id (version), and max batch size.
-     * @returns object formatted as a JWK Set.
+     * @returns {Object} object formatted as a JWK Set.
      */
     jwks() {
         const keys = [];

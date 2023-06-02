@@ -22,10 +22,12 @@ class OPRF {
         this.generator = ec.ProjectivePoint.BASE;
     }
 
-    hashToScalar(msg, DSTOverride) {
+    hashToScalar() {
+        throw new Error("Not implemented");
     }
 
-    hashToGroup(msg, DSTOverride) {
+    hashToGroup() {
+        throw new Error("Not implemented");
     }
 
     serializeElement(A, compressed=false) {
@@ -75,6 +77,10 @@ class OPRF {
      *     counter = counter + 1
      *   pkS = G.ScalarMultGen(skS)
      *   return skS, pkS
+     *
+     * @param {number} seed the seed to derive the key pair from
+     * @param {string} info the info to use
+     * @returns {[number, Point]} the key pair
      */
     deriveKeyPair(seed, info="") {
         const deriveInput = new ByteBuffer()
@@ -563,7 +569,8 @@ class VOPRF extends OPRF {
     /**
      * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-hash-to-scalar
      * > The helper function HashToScalar is as defined below, and is an instantiation of the HashToScalar function defined in [I-D.irtf-cfrg-hash-to-curve].
-     * @param {Array<number>} msg the message to use for hashing
+     * @param {number[]} msg the message to use for hashing
+     * @param {string} DSTOverride the domain separation tag to use for hashing
      * @returns {BigInt} the scalar represetnation
      */
     hashToScalar(msg, DSTOverride) {
@@ -586,7 +593,8 @@ class VOPRF extends OPRF {
     /**
      * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#name-hash-to-group
      * > The helper function HashToGroup is as defined below, and is an instantiation of the HashToCurve function defined in [I-D.irtf-cfrg-hash-to-curve].
-     * @param {Array<number>} msg the message to use for hashing
+     * @param {number[]} msg the message to use for hashing
+     * @param {string} DSTOverride the domain separation tag to use for hashing
      * @returns {Point} the point represetnation
      */
     hashToGroup(msg, DSTOverride) {

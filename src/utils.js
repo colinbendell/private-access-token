@@ -352,14 +352,19 @@ export class CBOR {
 }
 
 export class PS384 {
-    static async asnToJWK(rawData = []) {
+    static async toJWK(rawData = [], extra = {notBefore: 0, expires: 0, issuer: ""}) {
+        if (rawData?.kty || rawData?.alg || rawData?.e || rawData?.n) {
+            return rawData;
+        }
+
         if (typeof rawData === "string") {
             rawData = Base64.decode(rawData);
         }
         const e = rawData.slice(-3);
         const n = rawData.slice(-261, -5);
         const keyID = await sha256(PS384.toASN({e: Base64.encode(e), n: Base64.encode(n)}, false));
-        return {
+        const jwk = {
+            iss: extra?.issuer ? extra?.issuer : undefined,
             kty: "RSA",
             alg: "PS384",
             use: "sig",
@@ -367,10 +372,14 @@ export class PS384 {
             "x5t#S256": Base64.urlEncode(keyID),
             e: Base64.urlEncode(e),
             n: Base64.urlEncode(n),
+            nbf: extra?.notBefore ? extra?.notBefore : undefined,
+            exp: extra?.expires ? extra?.expires : undefined,
         }
+        console.log(jwk);
+        return jwk;
     }
 
-    static jwkToASN(jwk, rsaEncoded=false) {
+    static toASN(jwk, rsaEncoded=false) {
 
         // this is a cheat
         // we are going to use a pre-formed header for RSAPSS
@@ -386,10 +395,10 @@ export class PS384 {
             "30820152303d06092a864886f70d01010a3030a00d300b0609608648016503040202a11a301806092a864886f70d010108300b0609608648016503040202a2030201300382010f003082010a0282010100");
 
         const data = new ByteBuffer()
-        .writeBytes(header)
-        .writeBytes(Base64.decode(jwk.n))
-        .writeBytes([0x02, 0x03])
-        .writeBytes(Base64.decode(jwk.e));
+            .writeBytes(header)
+            .writeBytes(Base64.decode(jwk?.n))
+            .writeBytes([0x02, 0x03])
+            .writeBytes(Base64.decode(jwk?.e));
 
         return data.toBytes();
     }
@@ -398,6 +407,9 @@ export class PS384 {
 export class P384 {
     static async toJWK(rawData = []) {
 
+        if (rawData?.kty || rawData?.crv || rawData?.x || rawData?.y) {
+            return rawData;
+        }
         if (typeof rawData === "string") {
             rawData = Base64.decode(rawData);
         }
@@ -409,7 +421,8 @@ export class P384 {
         const y = rawData.slice(-48);
         // just in case the array is not a properly formatted ASN.1 sequence
         const keyID = await sha256(P384.toASN({x: Base64.encode(x), y: Base64.encode(y)}));
-        return {
+        const jwk = {
+            iss: extra?.issuer ? extra?.issuer : undefined,
             kty: 'EC',
             crv: 'P-384',
             use: "sig",
@@ -417,7 +430,11 @@ export class P384 {
             "x5t#S256": Base64.urlEncode(keyID),
             x: Base64.urlEncode(x),
             y: Base64.urlEncode(y),
+            d: extra?.d ? extra?.d : undefined,
+            nbf: extra?.notBefore ? extra?.notBefore : undefined,
+            exp: extra?.expires ? extra?.expires : undefined,
         }
+        return jwk;
     }
 
     static toASN(jwk) {
@@ -428,10 +445,10 @@ export class P384 {
         // 1.3.132.0.34 secp384r1 (SECG (Certicom) named elliptic curve)
         const header = Hex.decode("3076301006072a8648ce3d020106052b81040022036200");
         const data = new ByteBuffer()
-        .writeBytes(header)
-        .writeBytes([0x04])
-        .writeBytes(Base64.decode(jwk.x))
-        .writeBytes(Base64.decode(jwk.y));
+            .writeBytes(header)
+            .writeBytes([0x04])
+            .writeBytes(Base64.decode(jwk?.x))
+            .writeBytes(Base64.decode(jwk?.y));
 
         return data.toBytes();
     }
