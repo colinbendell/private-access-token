@@ -20,32 +20,105 @@ class OPRF {
         this.Ne = 49; // 384 / 8 + 1
         this.Nh = 48; // 384 / 8
         this.generator = ec.ProjectivePoint.BASE;
+        this.identity = ec.ProjectivePoint.ZERO; //technically infinity
     }
 
-    hashToScalar() {
+    /**
+     * > Deterministically maps an array of bytes x to an element in GF(p). This function is optionally
+     * > parameterized by a DST; see Section 4. Security properties of this function are described in
+     * > [I-D.irtf-cfrg-hash-to-curve], Section 10.5
+     *
+     * @param {number[]} msg the message to use for hashing
+     * @param {string} DSTOverride the domain separation tag to use for hashing
+     * @returns {BigInt} the scalar represetnation
+     */
+    hashToScalar(msg, DSTOverride) {
         throw new Error("Not implemented");
     }
 
-    hashToGroup() {
+    /**
+     * > Deterministically maps an array of bytes x to an element of Group. The map must ensure that,
+     * > for any adversary receiving R = HashToGroup(x), it is computationally difficult to reverse the
+     * > mapping. This function is optionally parameterized by a domain separation tag (DST); see
+     * > Section 4. Security properties of this function are described in [I-D.irtf-cfrg-hash-to-curve]
+     *
+     * @param {number[]} msg the message to use for hashing
+     * @param {string} DSTOverride the domain separation tag to use for hashing
+     * @returns {Point} the point represetnation
+     */
+    hashToGroup(msg, DSTOverride) {
         throw new Error("Not implemented");
     }
 
+    /**
+     * Converts a Point to a byte array. Optionally use uncompressed form
+     *
+     * > SerializeElement(A): Implemented using the compressed Elliptic-Curve-Point-to-Octet-String
+     * > method according to [SEC1]; Ne = 49
+     *
+     * @param {Point} A the point to serialize
+     * @param {boolean} compressed whether to use compressed form
+     * @returns {number[]} the serialized point
+     */
     serializeElement(A, compressed=false) {
         return Array.from(A.toRawBytes(compressed));
     }
 
+    /**
+     * Converts a byte array to a Point on the curve. This funciotn is generous and will work for both
+     * compressed and uncompressed points.
+     *
+     * > Implemented by attempting to deserialize a 49-byte array to a public key using the
+     * > compressed Octet-String-to-Elliptic-Curve-Point method according to [SEC1], and then
+     * > performs partial public-key validation as defined in section 5.6.2.3.4 of [KEYAGREEMENT].
+     * > This includes checking that the coordinates of the resulting point are in the correct range,
+     * > that the point is on the curve, and that the point is not the point at infinity. Additionally,
+     * > this function validates that the resulting element is not the group identity element. If
+     * > these checks fail, deserialization returns an InputValidationError error
+     *
+     * @param {number[]} buf the byte array to deserialize
+     * @returns {Point} the point on the curve
+     */
     deserializeElement(buf) {
         return Point.fromHex(Uint8Array.from(buf));
     }
 
+    /**
+     * Serialize a Scalar of Ns length. (Function will work for any length)
+     * NB: Field-Element-to-Octet-String is just a fancy way of saying hex encode but keep as a byte array
+     *
+     * > SerializeScalar(s): Implemented using the Field-Element-to-Octet-String
+     * > conversion according to [SEC1]; Ns = 48
+     *
+     * @param {number} s the scalar to serialize
+     * @returns {number[]} the serialized scalar (in Big Endian)
+     */
     serializeScalar(s) {
         return ByteBuffer.numberToBytes(s, this.Ns);
     }
 
+    /**
+     * Deserialize a Scalar of Ns length. (Function will work for any length)
+     *
+     * > DeserializeScalar(buf): Implemented by attempting to deserialize a Scalar from a
+     * > 48-byte string using Octet-String-to-Field-Element from [SEC1]. This function can fail
+     * > if the input does not represent a Scalar in the range [0, G.Order() - 1].
+
+     */
     deserializeScalar(buf) {
         return ByteBuffer.bytesToNumber(buf);
     }
 
+
+    /**
+     * Generate a Random Scalar
+     *
+     * From https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf-21#random-scalar
+     * > RandomScalar(): Implemented by returning a uniformly random Scalar in the
+     * > range [0, G.Order() - 1]. Refer to Section 4.7 for implementation guidance
+     *
+     * @returns {number} a random scalar
+     */
     randomScalar() {
         const rand = ec.CURVE.randomBytes(this.Ns + 8);
         const val = ByteBuffer.bytesToNumber(rand) % this.order;
@@ -100,7 +173,7 @@ class OPRF {
             skS = this.hashToScalar(input, "DeriveKeyPair" + this.contextString);
             counter++;
         }
-        const pkS = Point.BASE.multiply(skS);
+        const pkS = this.generator.multiply(skS);
         return [ skS, pkS ];
     }
 
@@ -191,7 +264,7 @@ class OPRF {
             .update(Uint8Array.from (seedTranscript.toBytes()))
             .digest());
 
-        let M = ec.ProjectivePoint.ZERO;
+        let M = this.identity;
         for (let i = 0; i < C.length; i++) {
 
             const Ci = C[i].toRawBytes(true);
@@ -467,8 +540,8 @@ class OPRF {
             .update(Uint8Array.from(seedTranscript.toBytes()))
             .digest());
 
-        let M = ec.ProjectivePoint.ZERO;
-        let Z = ec.ProjectivePoint.ZERO;
+        let M = this.identity;
+        let Z = this.identity;
         for (let i = 0; i < C.length; i++) {
             const Ci = C[i].toRawBytes(true);
             const Di = D[i].toRawBytes(true);
@@ -539,7 +612,7 @@ class OPRF {
      */
     evaluate(skS, input) {
         const inputElement = this.hashToGroup(input);
-        if (inputElement.equals(ec.ProjectivePoint.ZERO)) {
+        if (inputElement.equals(this.identity)) {
             throw new Error("Invalid input");
         }
         const evaluatedElement = inputElement.multiply(skS);
@@ -649,8 +722,18 @@ class VOPRF extends OPRF {
     }
 }
 
+/**
+ * This implementation is based on the draft-irtf-cfrg-voprf-07 specification. The curent version of PST
+ * partially depends on Draft7 semantics and has not completely been updated to Draft21.
+ *
+ * The main differences are the following:
+ * * serliazeElement uses the uncompressed representation (97 bytes)
+ * * generateProof and computeCompositesFast have a different DLEQ batch format
+ * * the hashToScalar and hashToGroup functions use a DST and use Hash512 (therefore the Nh = 64)
+ */
 class VOPRFDraft7 extends VOPRF {
-    constructor(cipherSuite = "P384-SHA384") {
+
+    constructor(cipherSuite = "P384-SHA512") {
         super(cipherSuite);
         this.contextString = "";
         this.hash = sha512;
@@ -681,12 +764,12 @@ class VOPRFDraft7 extends VOPRF {
             exponentList.push(exponent);
         }
 
-        let M = ec.ProjectivePoint.ZERO;
+        let M = this.identity;
         for (let i = 0; i < C.length; i++) {
             M = M.add(C[i].multiply(exponentList[i]));
         }
 
-        let Z = ec.ProjectivePoint.ZERO;
+        let Z = this.identity;
         for (let i = 0; i < C.length; i++) {
             Z = Z.add(D[i].multiply(exponentList[i]));
         }

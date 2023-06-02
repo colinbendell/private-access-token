@@ -55,7 +55,7 @@ export default {
                     status: 200,
                     headers: {
                         "Content-Type": "text/plain",
-                        'Sec-Private-State-Token': issueResponse.toString(),
+                        'Sec-Private-State-Token': issueResponse.toHttpHeader(),
                         'Access-Control-Allow-Origin': '*',
                     },
                 });
@@ -74,8 +74,8 @@ export default {
                     status: 200,
                     headers: {
                         "Content-Type": "text/plain",
-                        'Sec-Private-State-Token': redeemResponse?.toString() || "",
-                        'Sec-Private-State-Token-Lifetime': 3660,
+                        'Sec-Private-State-Token': redeemResponse?.toHttpHeader() || "",
+                        'Sec-Private-State-Token-Lifetime': 60*60*24*30, //30 days?
                         'Access-Control-Allow-Origin': '*',
                     },
                 });

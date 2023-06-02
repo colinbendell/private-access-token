@@ -115,7 +115,7 @@ export class PrivateStateTokenKeyPair {
  */
 export class IssueRequest {
     /**
-     * @param {Array<Point>} nonces A list of elliptic curve points to be used as token nonces.
+     * @param {Point[]} nonces A list of elliptic curve points to be used as token nonces.
      */
     constructor(nonces) {
         this.nonces = nonces;
@@ -165,7 +165,7 @@ export class IssueRequest {
 
     /**
      *
-     * @returns {Array<number>} Returns the byte encoding of the request.
+     * @returns {number[]} Returns the byte encoding of the request.
      */
     toBytes() {
         const bytes = new ByteBuffer();
@@ -188,8 +188,8 @@ export class IssueResponse {
 
     /**
      * @param {number} keyID The ID of the key used for signing.
-     * @param {Array<Point>} signed The list of signed nonces.
-     * @param {Array<number>} proof The DLEQ proof.
+     * @param {Point[]} signed The list of signed nonces.
+     * @param {number[]} proof The DLEQ proof.
      */
     constructor(keyID, signed, proof) {
         this.keyID = keyID;
@@ -208,7 +208,7 @@ export class IssueResponse {
      *   opaque proof<1..2^16-1>; // Length-prefixed form of DLEQProof.
      * } IssueResponse;
      *
-     * @returns {Array<number>} The issue response as bytes.
+     * @returns {number[]} The issue response as bytes.
      */
     toBytes() {
         const buf = new ByteBuffer();
@@ -220,6 +220,10 @@ export class IssueResponse {
         buf.writeInt(this.proof.length, 2);
         buf.writeBytes(this.proof);
         return buf.toBytes();
+    }
+
+    toHttpHeader() {
+        return Base64.encode(this.toBytes());
     }
 
     [Symbol.for('nodejs.util.inspect.custom')]() {
@@ -287,7 +291,7 @@ export class RedeemRequest {
 
     /**
      *
-     * @returns {Array<number>} The redeem request as bytes.
+     * @returns {number[]} The redeem request as bytes.
      */
     toBytes() {
         const pointBytes = VOPRF_P384_Draft7.serializeElement(this.W);
@@ -334,13 +338,17 @@ export class RedeemResponse {
     }
 
     /**
-     * @returns {Array<number>} The redemption record as bytes.
+     * @returns {number[]} The redemption record as bytes.
      */
     toBytes() {
         return new ByteBuffer()
             .writeBytes(this.record.length, 2)
             .writeBytes(this.record)
             .toBytes();
+    }
+
+    toHttpHeader() {
+        return Base64.encode(this.toBytes());
     }
 
     [Symbol.for('nodejs.util.inspect.custom')]() {
@@ -354,13 +362,13 @@ export class RedeemResponse {
  */
 export class PrivateStateTokenIssuer {
 
-    static DEFAULT_VERSION = "PrivateStateTokenV3VOPRF";
+    static DEFAULT_VERSION = "PrivateStateTokenV1VOPRF";
 
     /**
      * @param {string} host The server origin for this issuer.
      * @param {number} maxBatchSize The max batch size for tokens.
      * @param {number} id The issuer ID, must be increasing on each key rotation.
-     * @param {Array<PrivateStateTokenKeyPair>} keys The key pairs for this issuer.
+     * @param {PrivateStateTokenKeyPair[]} keys The key pairs for this issuer.
      */
     constructor(host, maxBatchSize, id = 1, keys = []) {
         if (!Array.isArray(keys)) keys = [keys];
@@ -600,9 +608,10 @@ export class PrivateStateTokenIssuer {
      * @param {number} keyId The key ID to use for this issuance.
      * @param {IssueRequest} request The issuance request.
      * @param {string} version The version of PST to use
+     * @param {number} r The random value to use for the DLEQ proof (use for testing)
      * @returns {IssueResponse} The issuance response.
      */
-    issue(keyId, request, version=PrivateStateTokenIssuer.DEFAULT_VERSION) {
+    issue(keyId, request, version=PrivateStateTokenIssuer.DEFAULT_VERSION, r) {
         const keyPair = this.#keys.get(keyId) || this.#keys.values().next().value;
 
         // TODO: validate host
@@ -610,7 +619,7 @@ export class PrivateStateTokenIssuer {
         if (!keyPair) return null;
 
         const k = keyPair.secretKey;
-        const r = VOPRF_P384.order - 1n;
+        r = r ?? VOPRF_P384.randomScalar();
         const blindedElements = request.nonces;
         const evaluatedElements = [];
 
