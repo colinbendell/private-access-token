@@ -48,7 +48,8 @@ export async function sha256(data = []) {
     if (Array.isArray(data)) {
         data = new Uint8Array(data);
     }
-    return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)));
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash));
 }
 
 export class Hex {
@@ -352,7 +353,7 @@ export class CBOR {
 }
 
 export class PS384 {
-    static async toJWK(rawData = [], extra = {notBefore: 0, expires: 0, issuer: ""}) {
+    static async toJWK(rawData = [], extra = {notBefore: 0, expires: 0, issuer: ""}, hasher=sha256) {
         if (rawData?.kty || rawData?.alg || rawData?.e || rawData?.n) {
             return rawData;
         }
@@ -362,7 +363,7 @@ export class PS384 {
         }
         const e = rawData.slice(-3);
         const n = rawData.slice(-261, -5);
-        const keyID = await sha256(PS384.toASN({e: Base64.encode(e), n: Base64.encode(n)}, false));
+        const keyID = await hasher(PS384.toASN({e: Base64.encode(e), n: Base64.encode(n)}, false));
         const jwk = {
             iss: extra?.issuer ? extra?.issuer : undefined,
             kty: "RSA",

@@ -11,6 +11,13 @@ const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 import { Base64, PS384 } from '../src/utils.js';
 import { Challenge } from '../src/private-access-token.js';
 
+async function sha256(data = []) {
+    if (Array.isArray(data)) {
+        data = new Uint8Array(data);
+    }
+    return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)));
+}
+
 async function getCloudflarePublicKey() {
     const browser = await launch({
         args: ['--no-sandbox'],
@@ -133,7 +140,7 @@ async function build() {
     const publicKeys = await Promise.all(
         issuers
             .filter(i => !!i.key)
-            .map(async i => await PS384.toJWK(i.key, {issuer: i.issuer}))
+            .map(async i => await PS384.toJWK(i.key, {issuer: i.issuer}, sha256))
     );
 
     const issuerSet = new Set();
