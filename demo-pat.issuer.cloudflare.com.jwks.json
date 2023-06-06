@@ -4,6 +4,7 @@
     {
       "kty": "RSA",
       "alg": "PS384",
+      "use": "sig",
       "kid": "48",
       "x5t#S256": "VmS2lWdCtE3Eg5-FyCadiOgX0v7IxNpqAGHteZcIkDA=",
       "e": "AQAB",
@@ -12,6 +13,7 @@
     {
       "kty": "RSA",
       "alg": "PS384",
+      "use": "sig",
       "kid": "91",
       "x5t#S256": "nqiqsZEfCN_-lK6_orao8xqK65Tu_EXozmXMrh9ZlVs=",
       "e": "AQAB",
