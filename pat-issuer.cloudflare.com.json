@@ -1,0 +1,9 @@
+{
+  "issuer-name": "pat-issuer.cloudflare.com",
+  "token-keys": [
+    {
+      "token-type": 2,
+      "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA2QmmahoTCdzzWU_cjTkt9rzQkK7r0JRDfy3Ug31wK-hp3n5Nlkur9cyfSmGhvETNfzP7DjBWLuFe3BGfCvaMn-2I8epeGGFpx57OKWenWkS0ozAVw8pZwpCGNdPD2eeeWcC63BypcwUcZnnJKohILWHt5HcJ6e71kKJNsOrcX9gfLt3ZesHAVwc1uJomYnRcvyLUtAXgg8B8n-H2X664Z3WqgUtqA8ZprXuyXHIjXxHORfViPZWU-y48WLmCWq4SgzW8OJH-fB8OU4naRCAme2w1bQV7r8xfE0uHuhhsMqoI6A_Q-BHk2mkZDHYaScQrq-E1vjk9ZMN1gVzfLYDHgwIDAQAB"
+    }
+  ]
+}

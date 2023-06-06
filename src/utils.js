@@ -425,7 +425,7 @@ export class P384 {
             iss: extra?.issuer ? extra?.issuer : undefined,
             kty: 'EC',
             crv: 'P-384',
-            use: "sig",
+            // use: "sig",
             kid: `${keyID.slice(-1)}`,
             "x5t#S256": Base64.urlEncode(keyID),
             x: Base64.urlEncode(x),
