@@ -368,7 +368,7 @@ export class PS384 {
             iss: extra?.issuer ? extra?.issuer : undefined,
             kty: "RSA",
             alg: "PS384",
-            use: "sig",
+            // use: "sig",
             kid: `${keyID.slice(-1)}`,
             "x5t#S256": Base64.urlEncode(keyID),
             e: Base64.urlEncode(e),

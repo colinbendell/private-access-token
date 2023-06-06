@@ -156,7 +156,7 @@ async function build() {
             "issuer": directory["issuer-name"],
             "keys": await Promise.all(
                 directory["token-keys"]
-                ?.map(key => PS384.toJWK(key["token-key"], {nbf: key["not-before"]}, sha256))) || [],
+                ?.map(key => PS384.toJWK(key["token-key"], {notBefore: key["not-before"]}, sha256))) || [],
         };
         await fs.writeFile(__dirname + `/../${directory["issuer-name"]}.jwks.json`, JSON.stringify(jwks, null, 2), {encoding: 'utf8'});
         await fs.writeFile(__dirname + `/../${directory["issuer-name"]}.json`, JSON.stringify(directory, null, 2), {encoding: 'utf8'});
@@ -176,16 +176,20 @@ async function build() {
 
     const jwks = {
         keys: jwkIssuers
+        .sort((a, b) => b.kid - a.kid) //descending
+        .sort((a, b) => (b.nbf || 0) - (a.nbf || 0)) //descending
+        .sort((a, b) => a.iss.localeCompare(b.iss)), //ascending
     }
     await fs.writeFile(jwkPath, JSON.stringify(jwks, null, 2), {encoding: 'utf8'});
 
     const path = __dirname + '/../PRIVATE_ACCESS_TOKEN_ISSUERS.json';
-    issuers = jwkIssuers.map(i => (
+    issuers = jwks.keys.map(i => (
         {
             "issuer-name": i.iss,
             "token-type": 2,
             "token-key": Base64.urlEncode(PS384.toASN(i)),
             "token-key-id": Base64.urlEncode(Base64.decode(i["x5t#S256"])),
+            "not-before": i.nbf,
         }
     ));
 
@@ -194,12 +198,14 @@ async function build() {
     }
     await fs.writeFile(path, JSON.stringify(issuerDirectory, null, 2), {encoding: 'utf8'});
 
-    const cfProdKey = issuers.find(i => i.issuer === 'pat-issuer.cloudflare.com')?.["token-key"];
-    const cfProdKeyID = issuers.find(i => i.issuer === 'pat-issuer.cloudflare.com')?.["token-key-id"];
-    const cfDemoKey = issuers.find(i => i.issuer === 'demo-pat.issuer.cloudflare.com')?.["token-key"];
-    const cfDemoKeyID = issuers.find(i => i.issuer === 'demo-pat.issuer.cloudflare.com')?.["token-key-id"];
-    const fastlyDemoKey = issuers.find(i => i.issuer === 'demo-issuer.private-access-tokens.fastly.com')?.["token-key"];
-    const fastlyDemoKeyID = issuers.find(i => i.issuer === 'demo-issuer.private-access-tokens.fastly.com')?.["token-key-id"];
+    const findToken = (issuer) => {
+        const item = issuers.find(i => i["issuer-name"] === issuer && (i["not-before"] || 0) < Date.now() / 1000);
+        return [item?.["token-key"], item?.["token-key-id"]];
+    }
+
+    const [cfProdKey, cfProdKeyID] = findToken('pat-issuer.cloudflare.com');
+    const [cfDemoKey, cfDemoKeyID] = findToken('demo-pat.issuer.cloudflare.com');
+    const [fastlyDemoKey, fastlyDemoKeyID] = findToken('demo-issuer.private-access-tokens.fastly.com');
 
     for(const file of ['src/private-access-token.js', 'private-access-token.colinbendell.dev/worker/index.js']) {
         const path = __dirname + '/../' + file;

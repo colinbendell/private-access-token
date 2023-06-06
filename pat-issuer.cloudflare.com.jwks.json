@@ -4,7 +4,6 @@
     {
       "kty": "RSA",
       "alg": "PS384",
-      "use": "sig",
       "kid": "136",
       "x5t#S256": "8a7fpo0jzy-8XSduXV3AjUVIfpraNSbxSBGRmEr0yIg=",
       "e": "AQAB",
