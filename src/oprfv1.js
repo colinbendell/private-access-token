@@ -103,12 +103,13 @@ class OPRF {
      * > DeserializeScalar(buf): Implemented by attempting to deserialize a Scalar from a
      * > 48-byte string using Octet-String-to-Field-Element from [SEC1]. This function can fail
      * > if the input does not represent a Scalar in the range [0, G.Order() - 1].
-
+     *
+     * @param {number[]} buf the byte array to deserialize
+     * @returns {number} the scalar
      */
     deserializeScalar(buf) {
         return ByteBuffer.bytesToNumber(buf);
     }
-
 
     /**
      * Generate a Random Scalar
