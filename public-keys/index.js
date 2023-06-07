@@ -3,21 +3,33 @@ import { get } from 'https';
 import { connect } from 'http2';
 import { promises as fs } from 'fs';
 import * as url from 'url';
-
 import * as crypto from 'node:crypto';
-
-const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 import { Base64, PS384 } from '../src/utils.js';
 import { Challenge } from '../src/private-access-token.js';
 
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
+
+/**
+ * Convenience wrapper for sha256(). Unfortunately GitHub actions don't auto include crypto but adding the import causes
+ * compatibility issues with the worker&browser build.
+ *
+ * @param {Uint8Array|Array} data to be hashed
+ * @returns {number[]} sha256 hash
+ */
 async function sha256(data = []) {
     if (Array.isArray(data)) {
         data = new Uint8Array(data);
     }
-    return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)));
+    return await Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)));
 }
 
+/**
+ * Convenience function to convert the PrivateToken www-authenticate header into an issuer directory object. The
+ * value should be in the form of `PrivateToken challenge=abc123, token-key=abc123`.
+ * @param {string} authenticate the value from the `www-authenticate` header.
+ * @returns {object} issuer directory object as defined in PrivacyPass spec
+ */
 function privateTokenToIssuerDirectory(authenticate = "") {
     if (!authenticate?.match(/PrivateToken/)) return;
 
@@ -37,6 +49,13 @@ function privateTokenToIssuerDirectory(authenticate = "") {
     }
 }
 
+/**
+ * Cloudflare - Extracts the public keys for the production instance for PAT. The issuer directory is not publicly
+ * available so we need to use puppeteer to extract the keys from the HTML demo page. Then we look for the request
+ * that is issued that contains the `www-authenticate` header. We then convert that into an issuer directory object.
+ *
+ * @returns {object} issuer directory object as defined in PrivacyPass spec
+ */
 async function getCloudflarePublicKey() {
 
     try {
@@ -65,6 +84,12 @@ async function getCloudflarePublicKey() {
     }
 }
 
+/**
+ * Fastly -  Extracts the public keys for the production instance for PAT. The issuer directory is not publicly
+ * available so we need to use a simple http request to extract the keys from the HTML demo page.
+ *
+ * @returns {object} issuer directory object as defined in PrivacyPass spec
+ */
 async function getFastlyDemoPublicKey() {
     try {
         const headers = await new Promise((resolve, reject) => {
@@ -112,44 +137,45 @@ async function getFastlyDemoPublicKey() {
 
 }
 
+/**
+ * Cloudflare Demo - This is the most straight forward implementation since the token issuer directory is public.
+ *
+ * @returns {object} issuer directory object as defined in PrivacyPass spec
+ */
 async function getCloudflareDemoPublicKey() {
-    let issuer = "demo-pat.issuer.cloudflare.com"
-    let key;
-    const body = await new Promise((resolve, reject) => {
-        get('https://demo-pat.issuer.cloudflare.com/.well-known/token-issuer-directory', (res) => {
-        res.setEncoding('utf8');
-        let body = '';
-        res.on('data', chunk => body += chunk);
-        res.on('end', () => resolve(body));
-        }).end()
-    });
+    try {
+        const issuer = "demo-pat.issuer.cloudflare.com"
+        const body = await new Promise((resolve, reject) => {
+            get('https://demo-pat.issuer.cloudflare.com/.well-known/token-issuer-directory', (res) => {
+            res.setEncoding('utf8');
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => resolve(body));
+            }).end()
+        });
 
-    const issuerDirectory = JSON.parse(body);
-    // const keys = issuerDirectory["token-keys"]
-    //     ?.filter(k => new Date(k["not-before"] * 1000 || 0) < new Date())
-    //     ?.sort((a, b) => b.version - a.version) || [];
+        const issuerDirectory = Object.assign({"issuer-name": issuer}, JSON.parse(body));
+        return issuerDirectory;
 
-    // key = keys[0]?.["token-key"];
-    // if (key) {
-    //     console.log(issuer, key);
-    //     await fs.writeFile(__dirname + `/../${issuer}.txt`, key, {encoding: 'utf8'});
-    // }
-    issuerDirectory["issuer-name"] = issuer;
-
-    return issuerDirectory;
+    }
+    catch (e) {
+        console.log(e);
+    }
 }
 
 async function build() {
+
+    // first try to get the latest public keys from the issuers; filter any errors (http?)
     let issuers = await Promise.all([
         getCloudflarePublicKey(),
         getCloudflareDemoPublicKey(),
         getFastlyDemoPublicKey()
     ]);
-
     issuers = issuers.filter(i => i?.["token-keys"].length > 0);
 
-    const issuerSet = new Set(issuers.map(i => i["issuer-name"]));
+    const issuerNames = new Set(issuers.map(i => i["issuer-name"]));
 
+    // save the issuer directory and jwks for each issuer
     const jwkIssuers = [];
     for (const directory of issuers) {
         const jwks = {
@@ -164,12 +190,14 @@ async function build() {
         jwkIssuers.push(...jwks.keys.map(k => Object.assign(k, {iss: directory["issuer-name"]})));
     }
 
+    // save an aggregated list of all issuers for convenience (also in directory and jwk form)
     const jwkPath = __dirname + '/../PRIVATE_ACCESS_TOKEN.jwks.json';
+    const path = __dirname + '/../PRIVATE_ACCESS_TOKEN_ISSUERS.json';
 
-    // back fill missing just in case an error happened
+    // back fill missing just in case an error happened during the extract
     const prevIssuers = JSON.parse(await fs.readFile(jwkPath, {encoding: 'utf8'}).catch(() => '{}')) || {};
     for (const jwk of prevIssuers?.keys || []) {
-        if (!issuerSet.has(jwk.iss)) {
+        if (!issuerNames.has(jwk.iss)) {
             jwkIssuers.push(jwk);
         }
     }
@@ -182,14 +210,13 @@ async function build() {
     }
     await fs.writeFile(jwkPath, JSON.stringify(jwks, null, 2), {encoding: 'utf8'});
 
-    const path = __dirname + '/../PRIVATE_ACCESS_TOKEN_ISSUERS.json';
     issuers = jwks.keys.map(i => (
         {
             "issuer-name": i.iss,
             "token-type": 2,
             "token-key": Base64.urlEncode(PS384.toASN(i)),
-            "token-key-id": Base64.urlEncode(Base64.decode(i["x5t#S256"])),
-            "not-before": i.nbf,
+            "token-key-id": Base64.urlEncode(Base64.decode(i["x5t#S256"])), // non-standard, but convenient
+            "not-before": i.nbf, //non-standard, but convenient
         }
     ));
 
@@ -198,6 +225,8 @@ async function build() {
     }
     await fs.writeFile(path, JSON.stringify(issuerDirectory, null, 2), {encoding: 'utf8'});
 
+    // finally we update the actual javascript references.
+    // TODO: deprecate this and move it into the worker directly
     const findToken = (issuer) => {
         const item = issuers.find(i => i["issuer-name"] === issuer && (i["not-before"] || 0) < Date.now() / 1000);
         return [item?.["token-key"], item?.["token-key-id"]];

@@ -1,4 +1,5 @@
 {
+  "issuer-name": "demo-pat.issuer.cloudflare.com",
   "issuer-request-key-uri": "/origin-token-key",
   "issuer-request-uri": "/token-request",
   "token-keys": [
@@ -15,6 +16,5 @@
       "token-key-legacy": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAjs9aOuRH9lO-AUJx-jj9ZwQU2KTT7tQunoMbvqUWnEjte4xCscsSYgkfgVVw1ZlXs0BRc9perJefAONia8mHr5PU1D7n0EYMXXUDvSwdXY7Mive-Tmx9JpZiNYPJiqBxW5rFXQ_U1OYZGQ2zcF_u-mWmJu18oSbYN-WAxY0tBf4ciJBHcbQVr18lOM59DeQ1yK8LlG6QJ4BlSSZQ04orfvVjSNpS9v8PWOPbH3OIKoxH5Jn8PmQc730q-7fqusUmN5wJRZM-ozRsvxOj7SGJLIYzC9d0gyx0O18TkkYwIh0A0VWODqFDXfnQSVN1TgMCdUZcFhxT1coJXZDRPIjMmwIDAQAB",
       "version": 52
     }
-  ],
-  "issuer-name": "demo-pat.issuer.cloudflare.com"
+  ]
 }

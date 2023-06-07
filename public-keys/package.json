@@ -1,7 +1,7 @@
 {
   "name": "public-keys",
   "version": "1.0.0",
-  "description": "Cloudflare Public Key harvester",
+  "description": "PrivateAccessToken Public Key harvester",
   "main": "index.js",
   "scripts": {
     "extract": "node index.js"
@@ -10,6 +10,6 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "puppeteer": "^19"
+    "puppeteer": "^20.5.0"
   }
 }
