@@ -10,6 +10,6 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "puppeteer": "^20.5.0"
+    "puppeteer": "^21.6.1"
   }
 }
