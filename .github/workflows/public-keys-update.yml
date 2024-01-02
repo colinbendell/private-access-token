@@ -85,16 +85,19 @@ jobs:
   pages:
     name: Update GH Pages
     needs: extract
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: mkdir build;cp private-access-token.colinbendell.dev/*.html build;cp src/*.js build;cp private-state-token.colinbendell.dev/index.html build/pst.html
       - name: Setup Pages
-        uses: actions/configure-pages@v2
+        uses: actions/configure-pages@v4
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: "build"
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
