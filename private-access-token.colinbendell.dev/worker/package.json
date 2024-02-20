@@ -18,7 +18,7 @@
     "serve": "miniflare --watch --debug --modules dist/index.js"
   },
   "devDependencies": {
-    "esbuild": "^0.19.11",
+    "esbuild": "^0.20.0",
     "miniflare": "^3.20231030.4",
     "prettier": "^3.1.1",
     "wrangler": "^3"

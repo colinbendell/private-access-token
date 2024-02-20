@@ -17,7 +17,7 @@
     "serve": "wrangler pages dev ."
   },
   "devDependencies": {
-    "esbuild": "^0.19.11",
-    "wrangler": "^3"
+    "esbuild": "^0.20.0",
+    "wrangler": "^3.28.3"
   }
 }
