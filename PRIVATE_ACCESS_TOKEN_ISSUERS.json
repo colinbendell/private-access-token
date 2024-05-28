@@ -9,15 +9,15 @@
     {
       "issuer-name": "demo-pat.issuer.cloudflare.com",
       "token-type": 2,
-      "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAprgHEuI_vK8cCS5l_jtvMyZaL5LzVOSK8ERlzknjG5QkNgv9uhg9me1lpWQne0-7IMtF7MOdMLPXvNzv-Dzv6K9np347mzTU69Ixw2fXeAVQiioWGAB6uc_VxkMFmzt4zTSZ6nlef3L1tZGrHwkXcAOaSSur4qpPOHNl_tbT_FNRA5y6_uTx12_P541P3zvQ_8iOGykm8gg4NsAVuR9n4ELGtZoxWdSEuOjgMxeL4jSyboT2xqPwO0xWQ87kcv2_LNzIIKm45qLx9gQyz9W5xlrhfW_APi_R7KHnHoV6c6E3_drp-uV65U_wvaTi1bE6JbMIP3Q5vD_rlWCH-aTOJwIDAQAB",
-      "token-key-id": "B0luJk0u6Qkvbj68IWGb1cJEmc75sUpX56Qv1bwLvKE=",
-      "not-before": 1716322847
+      "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAwbW_bM1fEsGQlYkiFilyc_brx5CAXMULEhrcLCcge9w0mY8CQUB-f_gQE_8jk0NTm6ZDFKRFyaEVs1PKlP8eCyC55l1dHdjv5Z085i0CZlE--h1UH0BAHZDkMukSGBluNrH5bhvtOoBlN2C5XITZoX4CXvjHq_JHFU1Pkwi3fpzZrZD4pnmEzmCDtNh81sWKl0R8pMVYcxsqpF6yBIdNK3S9VuFHkkfs-QjuhiPNlqycvVckJrD1m49sLTScefVz4qBrkI9XyJfQWx88BHIIWCFHjRjWC6BNAjZqj48YRFmikRZTqBBC0inmQYUeR6vSPsE4GP4-WtnDpgIPTZAxSQIDAQAB",
+      "token-key-id": "Qev4baIQl6nPMNKku-BSPMJbAzBbJ2WH2_7Jy9tpmmI=",
+      "not-before": 1716927616
     },
     {
       "issuer-name": "demo-pat.issuer.cloudflare.com",
       "token-type": 2,
-      "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAkzHRn5ccl-dXCqN3ysltuD7P9OTSYZWU3_MpqDAQQW3ojbo2m5gf_TXLM-DKdgEvX-Htb6O6hJXC0IrlFtN9KsZkv9_X1F5RAs7FS7jaPRa4YwG027Bzx8HJ2d4xJwZVPTP1DRa3LeGjPNaSWYNi-kbDK13pso7YM016r732h6BXiib-zlXkE5E7dW2RXZEa_pRMWNznmmpG8DDmc10AmgwvCaBhUL5PTAZhfnUNav4RJT33BnEM3LnEv9l3tkMnYwmI3BprbLj4hm2KWfn27-9YyG3g7UcN6X4g9u1-bZEgPvS8rt1w_thQyWPf7XaCdb8k_Dsb3yKMd6p0KJ--RQIDAQAB",
-      "token-key-id": "38VU-DJojTOzTDZm1d6MHiKveT7EeFff1iGP5nFpJRk="
+      "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAprgHEuI_vK8cCS5l_jtvMyZaL5LzVOSK8ERlzknjG5QkNgv9uhg9me1lpWQne0-7IMtF7MOdMLPXvNzv-Dzv6K9np347mzTU69Ixw2fXeAVQiioWGAB6uc_VxkMFmzt4zTSZ6nlef3L1tZGrHwkXcAOaSSur4qpPOHNl_tbT_FNRA5y6_uTx12_P541P3zvQ_8iOGykm8gg4NsAVuR9n4ELGtZoxWdSEuOjgMxeL4jSyboT2xqPwO0xWQ87kcv2_LNzIIKm45qLx9gQyz9W5xlrhfW_APi_R7KHnHoV6c6E3_drp-uV65U_wvaTi1bE6JbMIP3Q5vD_rlWCH-aTOJwIDAQAB",
+      "token-key-id": "B0luJk0u6Qkvbj68IWGb1cJEmc75sUpX56Qv1bwLvKE="
     },
     {
       "issuer-name": "pat-issuer.cloudflare.com",
