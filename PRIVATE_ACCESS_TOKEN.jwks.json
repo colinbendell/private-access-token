@@ -17,7 +17,7 @@
       "x5t#S256": "M41v3Jph9E0cO-BYIqcHd5W6pd3ejx08Z2fGqIXYWAs=",
       "e": "AQAB",
       "n": "0Z18d-N5nbwkAFnYxpJnCtRGfvwTjy56bZg7lfJJTwzfBH4B6f8Kg6_-9dp2J6w-NVwd-aYMw-xN9UXSLqNtH9bvRlCOPMUaVFIgpM-e1lpQEfHE6O0RfHVX1KgpQhfhCmJU6Tp_yd1buF5fWUiQ9jLQjWLYie48MyFzhOU9l5UbjnzpGZrhbhrjVaSIlhC0t4_nNxBbu_CnOZ3xQFyNTL4NiPnn5GqR72GjoYT8_z309PuE3qytjHr_DomBKEkwyPQkPqp1rRcXbnrLwNDngU5oKXo8n1tj8lLZm2-mYj9Yi4yq6T0yZ_y5LDg6ltzAl_tn1HYpZIqPtiVavoepLQ==",
-      "nbf": 1726250413009
+      "nbf": 1726250413.009
     },
     {
       "iss": "demo-pat.issuer.cloudflare.com",
@@ -27,7 +27,7 @@
       "x5t#S256": "KKLS76IQBrr1WArtc2s58exAXUDeflvUaM03-FTLR2M=",
       "e": "AQAB",
       "n": "497N9fv-W23V0MqFP7_NinodNQCSAiAUqZMUK5JlUHSVnhuDlyUcI2qAz374U45LH-WnqYnnfevtT9obuPIzPbfxaUNa-hjbHM8E9haJuEZUP8jXAxs7rijdSdBTP8pZpHikXsNIwfr7Cw_nvehVsWvkgco75h98Ul38gFOfk3rDhdU3S7kTHOjzSEm2r6f3zHCa9Y7mgjbLnEKAGF7UPKRGfXzRQi6CM9t8_jL-_hGIhVa2EQa2DvlVZzOhVc0fEhVy-L87UpbUWBOUZd8WbyGw72QvfRTmOOfeiQKXyYAproQm_n9QFfjvjRspP5z_g4VQ4R8UvvgwbNK8k5DWZQ==",
-      "nbf": 1726164053485
+      "nbf": 1726164053.485
     },
     {
       "iss": "pat-issuer.cloudflare.com",
