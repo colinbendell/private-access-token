@@ -13,6 +13,16 @@
       "iss": "demo-pat.issuer.cloudflare.com",
       "kty": "RSA",
       "alg": "PS384",
+      "kid": "253",
+      "x5t#S256": "px1cl-dBnrXRJaLVHw63Tte54EQ8-MU0ifHxAoCcBv0=",
+      "e": "AQAB",
+      "n": "sWJsI_ZYMSCKU6eANhkmwzTTKX5zR8FYYNmMMwGHn8vnj7JRm1FelYhm9B6_mGy-4WvwtSs68QeKLINh4WhFuyhKOUIefDmez9kjgB9Kqf5hHdJ3PBNOyY84TTyhT19y-j91TVxKWxB6_8oVay48Q_cNBWB1Fsjv7jx4kOMJ2yNloZcnXytaOy7zzPWcGo4Z_CLFW_lBJTngvt0Qq3Gm01dYFqucIPfT9iD59btMQJ8pyadEGbvsHH_NCf5LmZBsMLOfwiAIaW1DhLfZtNbB2kcUPWvCOWDaghQ-jGKOrDjite650MJAwPX_zfKkgIc0FmoOMnzYX4rxzJMxvqplJQ==",
+      "nbf": 1727632833
+    },
+    {
+      "iss": "demo-pat.issuer.cloudflare.com",
+      "kty": "RSA",
+      "alg": "PS384",
       "kid": "238",
       "x5t#S256": "F-JI7sIcWD-Z65VvkiJcLlZ1c4HA0PTVPuNyYBQYZu4=",
       "e": "AQAB",
