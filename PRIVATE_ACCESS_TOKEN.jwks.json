@@ -30,16 +30,6 @@
       "nbf": 1727632833
     },
     {
-      "iss": "demo-pat.issuer.cloudflare.com",
-      "kty": "RSA",
-      "alg": "PS384",
-      "kid": "238",
-      "x5t#S256": "F-JI7sIcWD-Z65VvkiJcLlZ1c4HA0PTVPuNyYBQYZu4=",
-      "e": "AQAB",
-      "n": "rMiQnQCVz8-AsdvGc7P93zSq8Wm2yx6tHvoA3Ch3abcxWTJmj7ujZqgZ9ZMLCItvzHNgpW9w80XnPcfdk3L4wHyFyUpRZijxy9o6wqJR7jV96_LE1EO2M2JM9CqdGxOhJ_67-XGUo8k6z8gSt1VYIF5vTqC4Tf-Fym7h7F0cRRbQsl6PRbxV0prkPFIw3GaOGU7McWh38mW7uNIgb4n14zNo6UKWznXMYrl4pAYt3GMKR8l9KGP1UD5AYXqLr1-G-1Q1IRDC7tqc_49Wk09wQCMxpE6OPSbJgOZQc0jEElJ34Z-pFreCiib-fz7Q8SIjRsi6nQdQKE33Sc1lRi4ltQ==",
-      "nbf": 1727546431
-    },
-    {
       "iss": "pat-issuer.cloudflare.com",
       "kty": "RSA",
       "alg": "PS384",
