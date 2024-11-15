@@ -1,6 +1,12 @@
 {
   "token-keys": [
     {
+      "issuer-name": "",
+      "token-type": 2,
+      "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAscjm_UO_k901rNdCKgLw5bvI4i6M_jDNCIXpfs2LRbtxwLOrUyplqVvML_hVlB5tIDMuj0ihhaOFHose-Y0_UjQnNUGE_vol46VvGgscTMtTjU4xINriap8AMTIygvljEBt6my-nBwkUGhY3U9v5iKC-eWR5bTfvrqFsuIVxafkSfhHqDXB4KLGNjvOOV71GGJ9x4yxA-C2OcULZ1uDDKuvAaMhuiWdF6OzSTXruP9yPg1vmuteavOW1re0YDbCbtK16PhHdSzWym7v_FrvId-2zf26j50FlTd_vl_DcKNDVCgWDoU0uX3cU6V3rSQoVXREEqPr-2ywSGru8ZuXRoQIDAQAB",
+      "token-key-id": "RB3dC_hWTx5VoYXNRCtI-sBi3fvHy4cs-MFgVBnPgYc="
+    },
+    {
       "issuer-name": "demo-issuer.private-access-tokens.fastly.com",
       "token-type": 2,
       "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA9ih9eHridGkyu_SVO-VSHPbUpkC72Ht90VCxBhETdmE1UYToeWOfU3KGHbddLPXGM1xQozILX6nBKpsDnKieQSsiqPJ533UlsxcMhS8X5oMRC4KSNDjQ73M0RjGeYXgek0uZvDCUywVH_3RrJ8doeo2P4YquZcuI5dbqwZY_-ySeGQ0WAodrQjlVls3mb9y7ocRQmx1__JaSZaZ0IJC8ijkCttve7t5nTnT6s_omPVkANkSj83OTyK-M5XEjyMt4Z6TdaS5vMntqS6oeyMFHYInP_hGHKs5QU1_RmUM2CdJxpxK7ZIQYI0rZwsJ7A8TiclsUpGhj2T4-amcd2DxbWQIDAQAB",
