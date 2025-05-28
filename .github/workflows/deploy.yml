@@ -1,0 +1,68 @@
+name: Deploy to GitHub Pages and Cloudflare Workers
+on:
+  push:
+    branches: main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  worker:
+    name: Update Cloudflare Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # - name: Cache
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: |
+      #       node_modules
+      #       worker/node_modules
+      #     key: ${{ runner.os }}-cache-${{ hashFiles('**/package-lock.json') }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: latest
+      - run: npm install
+      - run: npm --prefix private-access-token.colinbendell.dev/worker install
+      - name: Update Cloudflare (private-access-token.colinbendell.dev)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: "private-access-token.colinbendell.dev/worker"
+      - run: npm --prefix private-state-token.colinbendell.dev install
+      - run: npm --prefix private-state-token.colinbendell.dev run build
+      - name: Update Cloudflare (private-state-token.colinbendell.dev)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: "private-state-token.colinbendell.dev"
+          command: |
+            pages deploy dist --project-name=private-state-token
+  pages:
+    name: Update GH Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: mkdir build;cp private-access-token.colinbendell.dev/*.html build;cp src/*.js build;cp private-state-token.colinbendell.dev/index.html build/pst.html
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "build"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
