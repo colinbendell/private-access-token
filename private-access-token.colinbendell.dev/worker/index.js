@@ -1,3 +1,4 @@
+// eslint-disable-next-line max-len
 const CLOUDFLARE_PUB_KEY = "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAscjm_UO_k901rNdCKgLw5bvI4i6M_jDNCIXpfs2LRbtxwLOrUyplqVvML_hVlB5tIDMuj0ihhaOFHose-Y0_UjQnNUGE_vol46VvGgscTMtTjU4xINriap8AMTIygvljEBt6my-nBwkUGhY3U9v5iKC-eWR5bTfvrqFsuIVxafkSfhHqDXB4KLGNjvOOV71GGJ9x4yxA-C2OcULZ1uDDKuvAaMhuiWdF6OzSTXruP9yPg1vmuteavOW1re0YDbCbtK16PhHdSzWym7v_FrvId-2zf26j50FlTd_vl_DcKNDVCgWDoU0uX3cU6V3rSQoVXREEqPr-2ywSGru8ZuXRoQIDAQAB";
 const CHALLENGE = "AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=";
 
@@ -18,14 +19,14 @@ export default {
             let respInit = {
                 status: 401,
                 headers: {
-                    "WWW-Authenticate": `PrivateToken challenge=${decodeURIComponent(challenge).replaceAll('"', '')}, token-key=${decodeURIComponent(publicKey).replaceAll('"', '')}`,
+                    "WWW-Authenticate": `PrivateToken challenge=${decodeURIComponent(challenge).replaceAll('"', "")}, token-key=${decodeURIComponent(publicKey).replaceAll('"', "")}`,
                 },
             };
 
             if (token) {
                 respInit = {
                     status: 200,
-                }
+                };
             }
 
             const baseResponse = await fetch(request);
@@ -42,5 +43,5 @@ export default {
         else {
             return fetch(request);
         }
-    }
-}
+    },
+};

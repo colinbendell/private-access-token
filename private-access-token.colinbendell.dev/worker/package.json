@@ -8,8 +8,8 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "@noble/curves": "^1.0.0",
-    "@noble/hashes": "^1.0.0"
+    "@noble/curves": "^1.9",
+    "@noble/hashes": "^1.8"
   },
   "scripts": {
     "format": "prettier --write '**/*.{js,css,json,md}'",
@@ -18,9 +18,9 @@
     "serve": "miniflare --watch --debug --modules dist/index.js"
   },
   "devDependencies": {
-    "esbuild": "^0.20.0",
-    "miniflare": "^3.20231030.4",
-    "prettier": "^3.1.1",
-    "wrangler": "^3"
+    "esbuild": "^0.25",
+    "miniflare": "^4",
+    "prettier": "^3.5",
+    "wrangler": "^4"
   }
 }
