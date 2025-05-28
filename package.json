@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "lint": "eslint src/**.js --max-warnings=0",
+    "lint": "eslint **/*.js --max-warnings=0 --fix",
     "test": "node --test"
   },
   "repository": {

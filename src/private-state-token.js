@@ -25,6 +25,7 @@ export class PrivateStateTokenKeyPair {
     expiry;
 
     /**
+     * Creates a new key pair for a trust token issuer.
      * @param {number} id The legacy-token-key-ID associated with the key pair (least significant byte)
      * @param {number[]} tokenKeyID The token-key-ID (or `sha(x509.1(key))`) associated with the key pair
      * @param {Point} publicKey The public component of the key pair.
@@ -115,6 +116,7 @@ export class PrivateStateTokenKeyPair {
  */
 export class IssueRequest {
     /**
+     * Creates a new issuance request
      * @param {Point[]} nonces A list of elliptic curve points to be used as token nonces.
      */
     constructor(nonces) {
@@ -122,6 +124,7 @@ export class IssueRequest {
     }
 
     /**
+     * Returns the number of token nonces in the request
      * @returns {number} The number of token nonces in the request.
      */
     get count() {
@@ -164,7 +167,7 @@ export class IssueRequest {
     }
 
     /**
-     *
+     * encodes the issuance request as bytes.
      * @returns {number[]} Returns the byte encoding of the request.
      */
     toBytes() {
@@ -187,6 +190,8 @@ export class IssueRequest {
 export class IssueResponse {
 
     /**
+     * Create a new issuance response
+     *
      * @param {number} keyID The ID of the key used for signing.
      * @param {Point[]} signed The list of signed nonces.
      * @param {number[]} proof The DLEQ proof.
@@ -236,6 +241,8 @@ export class IssueResponse {
  */
 export class RedeemRequest {
     /**
+     * Create a RdemeemRequest instance
+     *
      * @param {number} keyID The ID of the key used to sign the trust token.
      * @param {number[]} nonce The nonce part of the token.
      * @param {Point} W The elliptic curve point part of the token.
@@ -290,7 +297,7 @@ export class RedeemRequest {
     }
 
     /**
-     *
+     * encode the redemption request as bytes.
      * @returns {number[]} The redeem request as bytes.
      */
     toBytes() {
@@ -325,6 +332,7 @@ export class RedeemRequest {
  */
 export class RedeemResponse {
     /**
+     * Create a RedeemResponse instance
      * @param {number[]|string} record The redemption record.
      */
     constructor(record = []) {
@@ -338,6 +346,7 @@ export class RedeemResponse {
     }
 
     /**
+     * Encodes the redemption record as bytes
      * @returns {number[]} The redemption record as bytes.
      */
     toBytes() {
@@ -365,6 +374,7 @@ export class PrivateStateTokenIssuer {
     static DEFAULT_VERSION = "PrivateStateTokenV1VOPRF";
 
     /**
+     * Create a new trust token issuer
      * @param {string} host The server origin for this issuer.
      * @param {number} maxBatchSize The max batch size for tokens.
      * @param {number} id The issuer ID, must be increasing on each key rotation.

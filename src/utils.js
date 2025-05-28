@@ -106,6 +106,7 @@ export class Base64 {
 */
 export class ByteBuffer {
     /**
+     * Creates a new ByteBuffer instance.
     * @param {Buffer} buffer The byte string to read values from.
     */
     constructor(buffer) {
