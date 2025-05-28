@@ -8,8 +8,8 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "@noble/curves": "^1.0.0",
-    "@noble/hashes": "^1.0.0"
+    "@noble/curves": "^1.9",
+    "@noble/hashes": "^1.8"
   },
   "scripts": {
     "build": "wrangler deploy _worker.js --dry-run --outdir dist --latest --name=private-state-token && mkdir -p dist && cp -v _routes.json *.html dist",
@@ -17,7 +17,7 @@
     "serve": "wrangler pages dev ."
   },
   "devDependencies": {
-    "esbuild": "^0.20.0",
-    "wrangler": "^3.28.3"
+    "esbuild": "^0.25",
+    "wrangler": "^4"
   }
 }
