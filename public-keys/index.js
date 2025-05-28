@@ -31,6 +31,7 @@ async function sha256(data = []) {
  * @returns {object} issuer directory object as defined in PrivacyPass spec
  */
 function privateTokenToIssuerDirectory(authenticate = "") {
+    console.log(`Extracting issuer directory from: ${authenticate}`);
     if (!authenticate?.match(/PrivateToken/)) return;
 
     const key = authenticate?.split(/token-key=/)[1]?.split(/,/)[0];
@@ -95,27 +96,27 @@ async function getFastlyDemoPublicKey() {
         const headers = await new Promise((resolve, reject) => {
             const client = connect('https://patdemo-o.edgecompute.app');
             const req = client.request({
-            ':method': 'POST',
-            ':path': '/',
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-            'accept-language': 'en-US,en;q=0.9,pl;q=0.8',
-            'content-type': 'application/x-www-form-urlencoded',
-            'origin': 'https://patdemo-o.edgecompute.app',
-            'referer': 'https://patdemo-o.edgecompute.app/',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'same-origin',
-            'sec-fetch-user': '?1',
-            'upgrade-insecure-requests': '1',
-            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
+                ':method': 'POST',
+                ':path': '/',
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'accept-language': 'en-US,en;q=0.9,pl;q=0.8',
+                'content-type': 'application/x-www-form-urlencoded',
+                'origin': 'https://patdemo-o.edgecompute.app',
+                'referer': 'https://patdemo-o.edgecompute.app/',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1',
+                'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
             });
 
-            req.on('response', (headers) => {
+            req.on('response', headers => {
                 resolve(headers);
                 client.destroy();
             });
 
-            req.on('error', (error) => {
+            req.on('error', error => {
                 reject(error);
                 client.destroy();
             });
@@ -123,7 +124,7 @@ async function getFastlyDemoPublicKey() {
                 client.destroy();
             });
             // client.on('close', () => {
-                // console.log('All client sockets have been destroyed');
+            // console.log('All client sockets have been destroyed');
             // });
 
             req.end();
@@ -146,13 +147,14 @@ async function getCloudflareDemoPublicKey() {
     try {
         const issuer = "demo-pat.issuer.cloudflare.com"
         const body = await new Promise((resolve, reject) => {
-            get('https://demo-pat.issuer.cloudflare.com/.well-known/token-issuer-directory', (res) => {
-            res.setEncoding('utf8');
-            let body = '';
-            res.on('data', chunk => body += chunk);
-            res.on('end', () => resolve(body));
+            get('https://demo-pat.issuer.cloudflare.com/.well-known/private-token-issuer-directory', res => {
+                res.setEncoding('utf8');
+                let body = '';
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => resolve(body));
             }).end()
         });
+        console.log(`Retrieved issuer directory for ${body}`);
 
         const issuerDirectory = Object.assign({"issuer-name": issuer}, JSON.parse(body));
         return issuerDirectory;
@@ -182,7 +184,7 @@ async function build() {
             "issuer": directory["issuer-name"],
             "keys": await Promise.all(
                 directory["token-keys"]
-                ?.map(key => PS384.toJWK(key["token-key"], {notBefore: key["not-before"]}, sha256))) || [],
+                    ?.map(key => PS384.toJWK(key["token-key"], {notBefore: key["not-before"]}, sha256))) || [],
         };
         await fs.writeFile(__dirname + `/../${directory["issuer-name"]}.jwks.json`, JSON.stringify(jwks, null, 2), {encoding: 'utf8'});
         await fs.writeFile(__dirname + `/../${directory["issuer-name"]}.json`, JSON.stringify(directory, null, 2), {encoding: 'utf8'});
@@ -204,9 +206,9 @@ async function build() {
 
     const jwks = {
         keys: jwkIssuers
-        .sort((a, b) => b.kid - a.kid) //descending
-        .sort((a, b) => (b.nbf || 0) - (a.nbf || 0)) //descending
-        .sort((a, b) => a.iss.localeCompare(b.iss)), //ascending
+            .sort((a, b) => b.kid - a.kid) //descending
+            .sort((a, b) => (b.nbf || 0) - (a.nbf || 0)) //descending
+            .sort((a, b) => a.iss.localeCompare(b.iss)), //ascending
     }
     await fs.writeFile(jwkPath, JSON.stringify(jwks, null, 2), {encoding: 'utf8'});
 
@@ -227,7 +229,7 @@ async function build() {
 
     // finally we update the actual javascript references.
     // TODO: deprecate this and move it into the worker directly
-    const findToken = (issuer) => {
+    const findToken = issuer => {
         const item = issuers.find(i => i["issuer-name"] === issuer && (i["not-before"] || 0) < Date.now() / 1000);
         return [item?.["token-key"], item?.["token-key-id"]];
     }
