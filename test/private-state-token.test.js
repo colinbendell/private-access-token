@@ -5,7 +5,7 @@ import { Base64, Hex } from '../src/utils.js' ;
 import { VOPRF_P384 } from '../src/oprfv1.js';
 // import SAMPLE.jwks.json
 // const SAMPLE_JWKS_JSON = require('./SAMPLE.jwks.json');
-import SAMPLE_JWKS_JSON from '../SAMPLE.jwks.json' assert { type: "json" };
+import SAMPLE_JWKS_JSON from '../SAMPLE.jwks.json' with { type: "json" };
 
 const DEFAULT_JWK = SAMPLE_JWKS_JSON.keys.find(k => k["x5t#S256"] === '1BKV0jzi-c2GZnKWqHy5JI8Owr5PoDtq1Lj_WoVg_Ps=') || {};
 
