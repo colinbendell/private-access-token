@@ -32,14 +32,14 @@ jobs:
       - uses: actions/setup-node@v4
         if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         with:
-          node-version: "20"
+          node-version: "latest"
       - run: npm --prefix public-keys install
         if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
       - name: Extract PublicKey
         if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
-        uses: mujo-code/puppeteer-headful@18.9.0
+        uses: mujo-code/puppeteer-headful
         with:
           args: npm --prefix public-keys run extract
       - name: Commit to branch
