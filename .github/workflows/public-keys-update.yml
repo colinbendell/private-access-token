@@ -30,20 +30,20 @@ jobs:
       #       public-keys/node_modules
       #     key: ${{ runner.os }}-cache-${{ hashFiles('**/package-lock.json') }}
       - uses: actions/setup-node@v4
-        if: ${{ github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         with:
           node-version: "20"
       - run: npm --prefix public-keys install
-        if: ${{ github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
       - name: Extract PublicKey
-        if: ${{ github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         uses: mujo-code/puppeteer-headful@18.9.0
         with:
           args: npm --prefix public-keys run extract
       - name: Commit to branch
-        if: ${{ github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Update Public Keys"
