@@ -31,7 +31,6 @@ async function sha256(data = []) {
  * @returns {object} issuer directory object as defined in PrivacyPass spec
  */
 function privateTokenToIssuerDirectory(authenticate = "") {
-    console.log(`Extracting issuer directory from: ${authenticate}`);
     if (!authenticate?.match(/PrivateToken/)) return;
 
     const key = authenticate?.split(/token-key=/)[1]?.split(/,/)[0];
@@ -98,6 +97,7 @@ async function getFastlyDemoPublicKey() {
             const req = client.request({
                 ':method': 'POST',
                 ':path': '/',
+                 
                 'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
                 'accept-language': 'en-US,en;q=0.9,pl;q=0.8',
                 'content-type': 'application/x-www-form-urlencoded',
@@ -154,8 +154,6 @@ async function getCloudflareDemoPublicKey() {
                 res.on('end', () => resolve(body));
             }).end()
         });
-        console.log(`Retrieved issuer directory for ${body}`);
-
         const issuerDirectory = Object.assign({"issuer-name": issuer}, JSON.parse(body));
         return issuerDirectory;
 
@@ -165,6 +163,13 @@ async function getCloudflareDemoPublicKey() {
     }
 }
 
+/**
+ * Builds the issuer directory and jwks for all issuers. This is used to generate the public keys for the PAT
+ * implementation in the worker and browser. It also updates the references in the worker and browser code to use
+ * the latest public keys.
+ *
+ * @returns {object} issuer directory object as defined in PrivacyPass spec
+ */
 async function build() {
 
     // first try to get the latest public keys from the issuers; filter any errors (http?)
