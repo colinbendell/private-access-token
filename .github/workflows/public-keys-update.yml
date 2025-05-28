@@ -74,14 +74,13 @@ jobs:
       - run: npm --prefix private-state-token.colinbendell.dev install
       - run: npm --prefix private-state-token.colinbendell.dev run build
       - name: Update Cloudflare (private-state-token.colinbendell.dev)
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: "private-state-token"
-          directory: "private-state-token.colinbendell.dev/dist"
-          # Enable Wrangler v3
-          wranglerVersion: '3'
+          workingDirectory: "private-state-token.colinbendell.dev"
+          command: |
+            pages deploy dist --project-name=private-state-token
   pages:
     name: Update GH Pages
     needs: extract
