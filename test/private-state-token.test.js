@@ -1,5 +1,5 @@
-import { should, describe } from 'micro-should';
-import * as assert from 'assert';
+import { strict as assert } from 'node:assert';
+import { describe, it } from 'node:test';
 import { IssueRequest, PrivateStateTokenKeyPair, PrivateStateTokenIssuer, RedeemRequest} from '../src/private-state-token.js';
 import { Base64, Hex } from '../src/utils.js' ;
 import { VOPRF_P384 } from '../src/oprfv1.js';
@@ -10,7 +10,7 @@ import SAMPLE_JWKS_JSON from '../SAMPLE.jwks.json' with { type: "json" };
 const DEFAULT_JWK = SAMPLE_JWKS_JSON.keys.find(k => k["x5t#S256"] === '1BKV0jzi-c2GZnKWqHy5JI8Owr5PoDtq1Lj_WoVg_Ps=') || {};
 
 describe('Private-State-Tokens', async () => {
-    should('IssueRequest.from()', async () => {
+    it('IssueRequest.from()', async () => {
 
         let secPrivateStateToken = "AAEEVFIqN9o3HN46V8fr0KBj1GnlGTx2hX+Hej8tUG8AOI49fPHAQsjhbVY7m4P8DEG4dZMlsPYDQVS/kKkcG7aNnkm0yL9kUdskhfBc+/4OgH2ILjTj1zVRkest+62csHUN";
         let req = IssueRequest.from(secPrivateStateToken, 0);
@@ -22,21 +22,21 @@ describe('Private-State-Tokens', async () => {
         assert.deepStrictEqual(req.count, 10);
 
     });
-    should('PrivateStateTokenKeyPair.generate()', async () => {
+    it('PrivateStateTokenKeyPair.generate()', async () => {
         const keyPair = PrivateStateTokenKeyPair.from(DEFAULT_JWK);
         assert.deepEqual(keyPair.id, 251);
         assert.deepEqual(keyPair.publicKey.toHex(false), '04aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7c9e821b569d9d390a26167406d6d23d6070be242d765eb831625ceec4a0f473ef59f4e30e2817e6285bce2846f15f1a0');
         assert.deepEqual(keyPair.secretKey.toString(16), 'ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972');
     });
 
-    should('KeyCommitment', async () => {
+    it('KeyCommitment', async () => {
         const issuer = new PrivateStateTokenIssuer('https://example.com', 11)
         issuer.addKey(PrivateStateTokenKeyPair.from(DEFAULT_JWK));
         const keyCommitment = issuer.keyCommitment();
         assert.deepEqual(keyCommitment, {"https://example.com":{"PrivateStateTokenV1VOPRF":{"protocol_version":"PrivateStateTokenV1VOPRF","id":1,"batchsize":11,"keys":{"251":{"Y":"AAAA+wSqh8oivosFN46xxx7zIK10bh07Younm5hZ90HgglQqOFUC8l2/VSlsOlReOHJ2CrfJ6CG1adnTkKJhZ0BtbSPWBwviQtdl64MWJc7sSg9HPvWfTjDigX5ihbzihG8V8aA=","expiry":"253402300799000000"}}}}});
     });
 
-    should('PrivateStateTokenIssuer.issue("PrivateStateTokenV3VOPRF")', async () => {
+    it('PrivateStateTokenIssuer.issue("PrivateStateTokenV3VOPRF")', async () => {
       const issuer = new PrivateStateTokenIssuer('https://example.com', 10)
       issuer.addKey(PrivateStateTokenKeyPair.from(DEFAULT_JWK));
 
@@ -75,7 +75,7 @@ describe('Private-State-Tokens', async () => {
         assert.deepEqual(Base64.encode(response.toBytes()), "AAoAAAD7BOjFUnOQE/DshYYIc9u66ASsvQNV/k5I46+Th/U8f8byWukpeNg7ktJavrUeoJjf4tUG69+VWkAR2QMwMiqTyCia/mCgJTZW2u3LztliH6Ut1i5/jScDqOedt4CSwTBv9gTFCq4aEEi8xUy0FLEzUIu/d7pYipgjbegU4Ol6E2GhNx87YAifYsT8kYn8DzNO/bCSm4qQfShPR8iOHIh6yTTdWpeQsBPEbN0bUjl/MpUBGYL6IpA08gYQfOLhE0Y9e9EESXK46AO52m7kwxs0SdQqOT9IT3gpl9rqfltCgwxlALIvVKaI+iGZhVfTmVoXRl7wGbrBk2aG9bFQ9lr+F8hZkv2f4vRRwiY/LoLUQh4lKRkCFiBgFV/ghzsKlazLpImcBDitiLBwpzKLbwqGUkULDlysFql8diQVqBzjuMAxnhDBK+WCbPgo8zmkiZEs52bwWWQKiq4hOyV6Jm5KuGNerH4SLUAPF98RxaHG1onz/wl8ZcHNmrDgStG5pXnwZsXQMwQyM7eqvs5pHwDKMp0JspuXbctMIzSoK7zj0tgi3cNH4qu7dkZr6aRMMN9151k5ZK/U32opcTTO6orFG+ZwR7uFnNp2tpat2nO1azXtaH/BDv6xUcaNDdy3DEQPQv6hVlMECdamvGdTqXIQE2K/81mHKECxlUH/tGCZpQj7hiTk+ITR9Mvcy7/+foEMiHThpEpTBeH70aqLveJEgsOt05BIqMP8ktIWzj34lhjumqBlKQzXXoiq52D2XLeve+VJCmRsBAbfTFSJ3gIKiM0+AAx2D+OGz2guVAyzlvt5ACYSijbiqMRwIJV9whKgK8yL6zOGHe/NzS/edRlQuPc5HHehqo/SITuaN0tAp0bfWvcrrLfZG491BwC1yuiSF3yqsgG7WASugWiDpXpM+nttA0ngA+tCs3F1FBpSvMCNM/xTjwLGGjHBbdIXtrf4kpu51PVEKw/8EtiJUlnViqJVd3wcyb47VNJ5q+g2OiIkn3hC9+vrvA5+epSdKspF6FUc+lbJ15AEofxgWXA6MICBBxd7bSaMYx4nX0aloRti1z9NvUDjZMt4onNADXsAD+n0A7zIRd/kIfranGyLmC6GV9gKbNtHn146MDscec4e8GmznHMmTMZAcxvfzhwZVfW7smVBd41xBOuJweSXGCnDHcGCa6ZXxqV6avTgdQM+1NEhWSyWIar+fBg+d3ICWxZ37aOqt6lLwC2KnnjHt8xPHoECUFc8ldEoLQsMPSAG7ivDqztgCXYZOIt/zM+a9zq8LMhpHh2CwwBgcEQxxk1M8C7Fje6qGT1rwtmEvUOzV1DqjWQlZmk+BUG65jNFb+Q95/2RHsle2C7Wj7vOObKzD9E6chFV5sKUPSZ7QrxMqK8VOf8oG4r5KJ2dM9ps2Mxpku9a+qFt7Pqc");
     });
 
-    should('PrivateStateTokenIssuer.issue("PrivateStateTokenV1VOPRF")', async () => {
+    it('PrivateStateTokenIssuer.issue("PrivateStateTokenV1VOPRF")', async () => {
       const issuer = new PrivateStateTokenIssuer('https://example.com', 10)
       issuer.addKey(PrivateStateTokenKeyPair.from(DEFAULT_JWK));
 
@@ -114,7 +114,7 @@ describe('Private-State-Tokens', async () => {
         assert.deepEqual(Base64.encode(response.toBytes()), "AAoAAAD7BOjFUnOQE/DshYYIc9u66ASsvQNV/k5I46+Th/U8f8byWukpeNg7ktJavrUeoJjf4tUG69+VWkAR2QMwMiqTyCia/mCgJTZW2u3LztliH6Ut1i5/jScDqOedt4CSwTBv9gTFCq4aEEi8xUy0FLEzUIu/d7pYipgjbegU4Ol6E2GhNx87YAifYsT8kYn8DzNO/bCSm4qQfShPR8iOHIh6yTTdWpeQsBPEbN0bUjl/MpUBGYL6IpA08gYQfOLhE0Y9e9EESXK46AO52m7kwxs0SdQqOT9IT3gpl9rqfltCgwxlALIvVKaI+iGZhVfTmVoXRl7wGbrBk2aG9bFQ9lr+F8hZkv2f4vRRwiY/LoLUQh4lKRkCFiBgFV/ghzsKlazLpImcBDitiLBwpzKLbwqGUkULDlysFql8diQVqBzjuMAxnhDBK+WCbPgo8zmkiZEs52bwWWQKiq4hOyV6Jm5KuGNerH4SLUAPF98RxaHG1onz/wl8ZcHNmrDgStG5pXnwZsXQMwQyM7eqvs5pHwDKMp0JspuXbctMIzSoK7zj0tgi3cNH4qu7dkZr6aRMMN9151k5ZK/U32opcTTO6orFG+ZwR7uFnNp2tpat2nO1azXtaH/BDv6xUcaNDdy3DEQPQv6hVlMECdamvGdTqXIQE2K/81mHKECxlUH/tGCZpQj7hiTk+ITR9Mvcy7/+foEMiHThpEpTBeH70aqLveJEgsOt05BIqMP8ktIWzj34lhjumqBlKQzXXoiq52D2XLeve+VJCmRsBAbfTFSJ3gIKiM0+AAx2D+OGz2guVAyzlvt5ACYSijbiqMRwIJV9whKgK8yL6zOGHe/NzS/edRlQuPc5HHehqo/SITuaN0tAp0bfWvcrrLfZG491BwC1yuiSF3yqsgG7WASugWiDpXpM+nttA0ngA+tCs3F1FBpSvMCNM/xTjwLGGjHBbdIXtrf4kpu51PVEKw/8EtiJUlnViqJVd3wcyb47VNJ5q+g2OiIkn3hC9+vrvA5+epSdKspF6FUc+lbJ15AEofxgWXA6MICBBxd7bSaMYx4nX0aloRti1z9NvUDjZMt4onNADXsAD+n0A7zIRd/kIfranGyLmC6GV9gKbNtHn146MDscec4e8GmznHMmTMZAcxvfzhwZVfW7smVBd41xBOuJweSXGCnDHcGCa6ZXxqV6avTgdQM+1NEhWSyWIar+fBg+d3ICWxZ37aOqt6lLwC2KnnjHt8xPHoECUFc8ldEoLQsMPSAG7ivDqztgCXYZOIt/zM+a9zq8LMhpHh2CwwBgRX5jkhaM+l7Sf9E5OjuVbzUNsH8rMAtxji5OCCMnIuBEG6UuuTTU78vsh5wmJCt+RX5jkhaM+l7Sf9E5OjuVbzUNsH8rMAtxji5OCCMnIuBEG6UuuTTU78vsh5wmJCt9");
     });
 
-    should('PrivateStateTokenIssuer.redeem()', async () => {
+    it('PrivateStateTokenIssuer.redeem()', async () => {
       const issuer = new PrivateStateTokenIssuer('https://example.com', 11)
       issuer.addKey(PrivateStateTokenKeyPair.from(DEFAULT_JWK));
 

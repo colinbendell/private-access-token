@@ -1,10 +1,10 @@
-import { should, describe } from 'micro-should';
-import * as assert from 'assert';
+import { strict as assert } from 'node:assert';
+import { describe, it } from 'node:test';
 import { PublicKey, Challenge, Token } from '../src/private-access-token.js';
 import { sha256 } from '../src/utils.js';
 
 describe('Private-Access-Tokens', async () => {
-    should('PublicKey.from()', async () => {
+    it('PublicKey.from()', async () => {
         const fastly = PublicKey.FASTLY;
 
         assert.deepStrictEqual(PublicKey.from(fastly), fastly);
@@ -13,7 +13,7 @@ describe('Private-Access-Tokens', async () => {
         assert.deepStrictEqual(PublicKey.from(await fastly.toTokenKeyID()), fastly);
     });
 
-    should('Challenge.from()', async () => {
+    it('Challenge.from()', async () => {
         const challenge = Challenge.from("AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=");
         assert.deepStrictEqual(challenge.issuerName, "pat-issuer.cloudflare.com");
         assert.deepStrictEqual(challenge.getTokenKey(), PublicKey.CLOUDFLARE);
@@ -21,7 +21,7 @@ describe('Private-Access-Tokens', async () => {
         assert.deepStrictEqual(challenge.originInfo, "");
     });
 
-    should('Challenge.toString()', async () => {
+    it('Challenge.toString()', async () => {
         let challenge = new Challenge(Token.BLIND_RSA, "pat-issuer.cloudflare.com", "", "");
         assert.deepStrictEqual(challenge.toString(), "AAIAGXBhdC1pc3N1ZXIuY2xvdWRmbGFyZS5jb20AAAA=");
 
@@ -41,7 +41,7 @@ describe('Private-Access-Tokens', async () => {
 
     });
 
-    should('Token.from()', async () => {
+    it('Token.from()', async () => {
         const token = Token.from("AAKX5pNIYklVMbf4MFBRPCrv7lsehPyLIb-JrxRRhBn3iH5KiF5TAqGbeBQ6wy0MSzGrQl-h4QSDP-eRlprUYGADYGxwjWIWHdmidCezltPXnOAwu_H7uuKfaERZm_w9BEVQf5R1vludYDOk_kapvOVJC43mFLJV5ibvDk3jwAgRwqiBUdBJogdhNtCJ8SNULbBhU8Y7k3Q67C76LjVf-byGPDFNilZKVtaGIzJU4qzKnegpICe36SPPih5tikp1h5wZkqa3uEBc_p649YmvdwzpXIVIerDX2G7R_gmWjA_w5dsHia3aQ8brx3t0EdN9D0dBnxBhu9-mGUgQk92SiohAmEFCttl8LKhQBFFfiwNuEfRE-JGil1vHPIGqF1np1ekH1Gll-8Qr0Cxb1cFdVL3oz641-UF35uCe6D4-xlJObcIhfqYc7NONo2-l4V9D_IW6WBJIpxjgRk5uPjWWrNft");
         assert.deepStrictEqual(token.tokenType, Token.BLIND_RSA);
         // pat-issuer.cloudflare.com

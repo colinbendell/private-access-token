@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "lint": "eslint src/**.js --max-warnings=0",
-    "test": "node test/index.test.js"
+    "test": "node --test"
   },
   "repository": {
     "type": "git",
@@ -26,7 +26,6 @@
     "@eslint/js": "^9",
     "eslint": "^9",
     "eslint-config-google": "^0.14.0",
-    "eslint-plugin-jsdoc": "^50.6.17",
-    "micro-should": "^0.5"
+    "eslint-plugin-jsdoc": "^50.6.17"
   }
 }

@@ -1,12 +1,12 @@
-import { should, describe } from 'micro-should';
-import * as assert from 'assert';
+import { strict as assert } from 'node:assert';
+import { describe, it } from 'node:test';
 import { ByteBuffer, Hex } from "../src/utils.js";
 import { VOPRF_P384 } from "../src/oprfv1.js";
 import { p384 as ec, hashToCurve } from '@noble/curves/p384';
 const Point = ec.ProjectivePoint;
 
 describe('OPRFv1', () => {
-    should('generateProof()', async () => {
+    it('generateProof()', async () => {
 
         const tests = [
             {
