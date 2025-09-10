@@ -13,10 +13,10 @@
       "iss": "demo-issuer.private-access-tokens.fastly.com",
       "kty": "RSA",
       "alg": "PS384",
-      "kid": "157",
-      "x5t#S256": "LPCXFsERo4b6AUcBIlg_tDSaDwRVNCCsz4rtTnMiWp0=",
+      "kid": "147",
+      "x5t#S256": "hBla-iKRWWp4DwfAGufPCtyNXgY2eR7wGB-UCb0uS5M=",
       "e": "AQAB",
-      "n": "oXMJ8e-bgEUXOgev6OXPICuKhg_Vt5cJruNbTLkOVgH7UdesvsQovFo5s7QKYgTJ2ECPQfZhHFCsrOvZSd4zcl1DxFS749rOcTRGTL6ree-pdSlvPX9qK1b5mddxMWEXvYFsuxn3ZXUEXWzPvD1a3vqGgFfGDHp7OESO_LD3alVpaqZkUVa8PKwgQoyoVXfY30_EBpE_r1cQE1JQIV2qLqSXa1xRK720Wikwxlyf57u9OU8AIGCOyPP56dCuyN4wvJP46e4A9EhyHZt2Q5DYnfYT4A7EhBg4htegxrVDz0fY_-366lSwgZjMAoCbDiioEgERsF751Ah55uoAIUvX_Q=="
+      "n": "uxbkKhT8_w9VKACGL3dirl3p75_r0fDmjqyt_pxrlxnG4Ha_3MXP2BREp7_HccobveqUp6StvTpcnR5-z-vE4KqRmXiue3KjhUmSnmCSqkBNgJYZIrbcM0KpGja_HMQNfgilS1KsWvq94WhFUG6QRN2XWnz0TYncnP4zSYHO2_ZwCKnq1NDSevBqH8-k-DbkyXLcc8Qj7TPWR7G2YmRevVdsoYSLIpaMHacAzdLbEYdt0EvC7iXeS-4O7fgIa2nULCn72SfWVKXIZQe257tDL2H6vGymJpQPMuR0aGA93POwTdq0OihjWgXomDJSkDR_eYTfCNEM-JMQjuK8LfEHSQ=="
     },
     {
       "iss": "demo-pat.issuer.cloudflare.com",
@@ -42,10 +42,10 @@
       "iss": "pat-issuer.cloudflare.com",
       "kty": "RSA",
       "alg": "PS384",
-      "kid": "102",
-      "x5t#S256": "nX3tyDy51ta1HkwTBogf1VCy83SFE5_fUltSM7PZ6GY=",
+      "kid": "120",
+      "x5t#S256": "P4yhZ_0yQ2QFgnsoE6wsBW7mjLH8rXWwgTdaI0Y3Ing=",
       "e": "AQAB",
-      "n": "s7S3RcRPjX5NjPALexPx9U4ouiiBjr58Q_HVfNmWBzaeC6cf0ebplmatbFNCSbhYLrmBjhHByYpdaJkBAiZ-vh3GVDTIefhkAQFG72CCGejgjc65fTiphixp8lJd_ljIIL2pg5xoyH0sqXd77DPw_ExnS1NTxytHdUbDXLoisAF1PjabzpbkX2U2eIDHXGarLe8f70V78i6rJY4sKj9DhuBI_c0rYaYSJijhlUqwVspzTKTX_ZEcSWdJxhPt6HzNU3KhLqTHGfichhT9e5jAd6KW3WAZzeNoYMy-5mX8IaJayhBB_th4MYhzn0RPkWL47_mrsUWTOBViwcy_BULBMQ=="
+      "n": "zJib-kW0NmCMKkBhsAjdktGObYWSQZeMd6Zox_SFMquJn_DDrq3OVQ0Uht53UXixe0CiA2ndOLnTLI-HDeOUyJ4qrHZXgNle1EX-rS37pCYDprCl6wabCg7YvC_lp1bp72KXz8J8Zum3j72Ht2e5jy6XwcdPrgxH9UIheHjvUb9ZAAPjl1UDhERtb39QADDNJX_aYiZxf2yWndLapJqjdfaTL96Do_SEjkP_MOI7QyBqChRjw-ZVemvKVwHVB--kihwQAqX6iAeaAPm9qOSpuwX-2T9whYICcl1zLPOwAUbBlmFIIBEvW6HjDfjcr9YwnAMLR_oADLSy1C_XwBM3iQ=="
     }
   ]
 }
