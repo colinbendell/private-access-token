@@ -9,8 +9,8 @@
     {
       "issuer-name": "demo-issuer.private-access-tokens.fastly.com",
       "token-type": 2,
-      "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA2GP2e-Qp61qNSZwa29_OF6MvWzu0LMVVAnwDUWl_3tN3pSmyfi-0SJ-UAN6bp7xDqdW1ImQNGXf1B-S8myTW8oxWpOH9FDNwO4rk4psWnPG_vlZ_kC9qOEHb3VRT3vq3tCoDxTNP5cjiu8PQbvzaXH8VQvlujfqvOxt8-WTPKCVzqTrZ7U67iZLPRBkf8eRoGxqrLD5EMWre8qMYEzxhTVH11elkEkIZ8mh9pD7hYpSMcmdQmM2sUtWKROuvBm89l79vW_5gdxV6CWfFXBU1JhEZ71L4_A_si64T2_iEjAFCbjsMoJHVnBhuHmXlZ8eTqSeSZpA5652wuzAHGQ0PywIDAQAB",
-      "token-key-id": "oApHvY4d5HG5xGNqnd5jZpRsSEORWwWNYAVye5OS5Vk="
+      "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAmqo2kTfTzmUl9yxpxbwrWLcGrVVyNYC3mqX5SDTwV8eKaIzni3qOZWxOPxhquS1UVExY7M_Pah-xLoiLHTS2QbKe7s0SZMqq-fiUaz1x6QeNTPsEifSLQyGQAT0HQn-TIgoe8-iwrRmVunlLYtQaJOcE1iEqOmfkAYe-QiUthSCGOINInn6G3HGpwqZQ5gkUGIv6qDFyHjR_0_lmfR_NvbNQGxFtMVvzOPpvxAozc5per_zMpiMBSDl7cuqxh4TKsW5UEYElJqJGAn-G6uQ2Xl2nKcz31XbB4G4EONXsNfRlwLIqo9UddjEqFBUJPU5Sre2DYJcvpubT4O4cEgPggwIDAQAB",
+      "token-key-id": "pbgUanwdNWGhoAeAZq7DyC7ha9xLJEWwZUU_GfPaIlM="
     },
     {
       "issuer-name": "demo-pat.issuer.cloudflare.com",
