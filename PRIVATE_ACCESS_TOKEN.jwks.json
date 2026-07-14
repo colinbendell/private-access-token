@@ -42,10 +42,10 @@
       "iss": "pat-issuer.cloudflare.com",
       "kty": "RSA",
       "alg": "PS384",
-      "kid": "213",
-      "x5t#S256": "mHMvJNADBINZnsq_pB5GXa9S98lgzOw3USIsbErjQNU=",
+      "kid": "24",
+      "x5t#S256": "w4wyWqG01eiymzc6TvXZPewW6HBm5qYEaOWi-GiMaBg=",
       "e": "AQAB",
-      "n": "zxXe-WYJASl6Crkkbt4-lkCk8lG0t9ptgNtP10ESUifnUqrCcSl7A0xxpBQPKToe0zPwezKX6HpCJnWjtRSbG967y97I5kNMnQqZSidny41ogdlr27XNjLi9ly33M5OZ1nwHVm0D7lROB_0bYLbnKI1XMQwQLctwkP3-RaTnsKQk3lz4BDwyLcPFTeWrG9lrrig468S9Qfjgi_5z1nClAne8YyMNOH5BCflec5KhU2vchUkZVXmkUKaVQHfM5IqbTIO-2g0vEm1h1YVvLj1hJ0jycuEh1ydJr2qnEQpq1RifZk1qK86w0_IqdzuJsY1o4bN85qFlWAgfXLs-StScZQ=="
+      "n": "wfFmI79rlZY7PdOjSkvMB30XjTb5d7TirC_h24YZkzMiguBZ2qr_B3GU-nk4CNsR9ETf5Me3j7Sonb3tuoG9f8ln0_TlbmxGCXM8caCNvgR9vrcS8pzK1ivRIDrzJFhfw4Jvf87Ud2Yv-uPp0csHTEtLq51IqZzxbkTWk7ULY9H5WCJiY64DKH_yZCLDwexI7vUgS2jmtJ9WGzrSNPFLBuTddxEKFKPU1xR8Qhe45rhBrQ2giptTjCYDjVbumDYCMTxFT16Ze0MVI07aGfwMiqoqt-NO6mh-PqT7FjTizwKSsi5ekU8eoDKvIlIeE-NZhDH4kU4Vhg6FGbYoNbZGfw=="
     }
   ]
 }
