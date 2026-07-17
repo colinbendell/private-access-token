@@ -29,8 +29,8 @@
     {
       "issuer-name": "pat-issuer.cloudflare.com",
       "token-type": 2,
-      "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEAoC6bJafBwxQf6GExDruTvYqmdhCLZkI9O7fcFOET9nysVcXWtpD1gLWw6-fAywNcbqAgKwRHW_SDtMkcy-vVE9qyNgytaxyLAp83yTSGLFboi3eOY2S4sIDOIdBkEDkDM8-Ai0dkMIXToffLJPgwwxG4JgZVeIIHO0XqeGNg-svJhG9pVNMU3U0geAiMVEmaTXmgPQASHUxYqsselhm5p8JbypIoLHVATu7_hk4snDVknwLRNPb10-BLl3o6cgTSGOhXDtYx6F6OijWZshtPbbs2x7LBBTG61wV2YayQxOZpj3QzjkHLeeHWxflyPdEwE1zpJA6_fEg4HM6Pj63bzwIDAQAB",
-      "token-key-id": "4j2io6R6bLzepf0EM9rt6p8QxaARdfgAgFKTVwK2HTo="
+      "token-key": "MIIBUjA9BgkqhkiG9w0BAQowMKANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQMEAgKiAwIBMAOCAQ8AMIIBCgKCAQEA3azykgH0PaAlLlthDU_wxB8hKbOOCr3Elg61ryBvYkgY-sPuWyP12lU67CDnvD0VHVO1uzyM3ZDTFFFUsnQDdyqb5oxaxyS9cffOwGMKlxldozTY0ubH_z1T4lzVyUhamr6FK9lZy7H-t_dhHP3LJzYkfdFGPLL6hC_Mo-X2Gp7ngI9EdFDAsON4TDB-oYr6lgyKq9NhW5UHv8qH7uPlDn5Ys3gowHlJ-HzRWsJJZtu2eo9Pid60BT_aC2aaEtCUda9SgYut7Cda_gRc_c4Q0Kusi2HvJ38xvtSonso0sFcayOJfPiIB0cN2hRzN5x49Ufwe6qvCJXuLIuyAyNOYGQIDAQAB",
+      "token-key-id": "ocLUrvjGximPlOnz34WelkQptlwkFUWLSBDy4rnEdTI="
     }
   ]
 }
